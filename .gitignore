@@ -1,1 +1,145 @@
 
+# =========================
+# Python
+# =========================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+.venv/
+venv/
+env/
+
+*.egg-info/
+.eggs/
+build/
+dist/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyright/
+.coverage
+coverage.xml
+htmlcov/
+
+# =========================
+# Secrets / credentials
+# =========================
+
+.env
+.env.*
+!.env.example
+
+secrets/
+credentials/
+
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+
+# =========================
+# Local configuration
+# =========================
+
+config.local.*
+*.local.json
+*.local.yaml
+*.local.yml
+*.local.toml
+
+# =========================
+# Databases / local state
+# =========================
+
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+
+state/
+runtime/
+
+# =========================
+# Market data / datasets
+# =========================
+
+data/*
+!data/.gitkeep
+!data/README.md
+
+datasets/
+downloads/
+
+*.csv
+*.parquet
+*.feather
+*.arrow
+
+# =========================
+# ML / models
+# =========================
+
+models/
+checkpoints/
+artifacts/
+
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+runs/
+mlruns/
+wandb/
+
+# Hugging Face / model caches
+.cache/
+huggingface/
+hf_cache/
+
+# =========================
+# Logs / temporary files
+# =========================
+
+logs/
+*.log
+
+tmp/
+temp/
+*.tmp
+
+*.pid
+*.pid.lock
+
+# =========================
+# Jupyter
+# =========================
+
+.ipynb_checkpoints/
+
+# =========================
+# IDE / editors
+# =========================
+
+.vscode/
+.idea/
+
+*.swp
+*.swo
+*~
+
+# =========================
+# OS
+# =========================
+
+.DS_Store
+Thumbs.db
+desktop.ini
