@@ -1,4 +1,3 @@
-
 # =========================
 # Python
 # =========================
@@ -51,20 +50,35 @@ config.local.*
 *.local.yml
 *.local.toml
 
+.envrc
+.direnv/
+
 # =========================
-# Databases / local state
+# Scryntic local state
+# =========================
+
+.scryntic/
+
+state/
+runtime/
+staging/
+quarantine/
+
+# =========================
+# Databases / SQLite runtime
 # =========================
 
 *.db
 *.db-shm
 *.db-wal
+
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 *.sqlite3
 *.sqlite3-shm
 *.sqlite3-wal
-
-state/
-runtime/
 
 # =========================
 # Market data / datasets
@@ -76,11 +90,8 @@ data/*
 
 datasets/
 downloads/
-
-*.csv
-*.parquet
-*.feather
-*.arrow
+exports/
+archive/
 
 # =========================
 # ML / models
@@ -90,17 +101,11 @@ models/
 checkpoints/
 artifacts/
 
-*.pt
-*.pth
-*.ckpt
-*.safetensors
-*.onnx
-
 runs/
 mlruns/
 wandb/
 
-# Hugging Face / model caches
+# Model / framework caches
 .cache/
 huggingface/
 hf_cache/
@@ -118,6 +123,13 @@ temp/
 
 *.pid
 *.pid.lock
+
+# =========================
+# Backups / local snapshots
+# =========================
+
+backups/
+*.bak
 
 # =========================
 # Jupyter
@@ -143,3 +155,19 @@ temp/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# =========================
+# Internal architecture / agent workflow
+# =========================
+
+ARCHITECTURE.md
+
+.agents/
+
+docs/WORKFLOW.md
+docs/HANDOFF.md
+
+HANDOFF.md
+*.handoff.md
+
+.local/
