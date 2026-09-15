@@ -64,6 +64,10 @@ def main() -> None:
             elif kind == "type":
                 target.write_text('def broken() -> int:\n    return "wrong"\n')
             elif kind == "lock":
+                # Stale metadata triggers resolution before locked sync refuses
+                # the update. Prove rejection without relying on cached indexes.
+                env["UV_OFFLINE"] = "0"
+                env["UV_CACHE_DIR"] = str(temp / "uv-cache")
                 config.write_text(
                     config.read_text().replace(
                         'version = "0.1.0.dev0"',

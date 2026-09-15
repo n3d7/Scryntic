@@ -49,6 +49,9 @@ nonzero failures for tests, lint, formatting, types and stale locked sync; it
 builds a wheel deliberately missing `py.typed` and verifies rejection. A fake
 unavailable audit service must also fail the audit command. The modified inputs
 must remain unchanged by the checks. No broken fixtures remain in the checkout.
+The stale-lock control uses a fresh temporary uv cache and permits registry
+access: uv resolves changed metadata before refusing the lock update. It must
+reach the lockfile diagnostic; a network or resolution failure is not a pass.
 
 ## Dependency review
 
