@@ -1,0 +1,29 @@
+name: Quality and supply chain
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.13"
+          enable-cache: false
+      - name: Provision pinned Python
+        run: uv python install --no-bin
+      - name: Run local quality, packaging and audit gates
+        run: bash scripts/check.sh
+      - name: Prove failure detection with disposable negative controls
+        run: uv run --locked --no-sync python scripts/check_negative.py
