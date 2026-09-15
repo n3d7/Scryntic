@@ -1,0 +1,4 @@
+# Build-only lock for the qualified Linux x86_64 wheel; no transitive dependencies.
+# Enforce with: uv build --force-pep517 --build-constraints build-constraints.txt --require-hashes
+uv_build==0.12.13 \
+    --hash=sha256:03121fd93aebf85a3a8ff2edcd1cd2b15a5f9eab1a3a51f3867ceb8487af3baa

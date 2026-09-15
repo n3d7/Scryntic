@@ -1,0 +1,33 @@
+[project]
+name = "scryntic"
+version = "0.1.0.dev0"
+description = "Linux crypto market intelligence platform"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.12.14,<3.13"
+classifiers = [
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = []
+
+[dependency-groups]
+# Add dependencies only when their implementation task is approved.
+collector = []
+analysis = []
+dev = []
+
+[build-system]
+requires = ["uv_build==0.12.13"]
+build-backend = "uv_build"
+
+[tool.uv]
+required-version = "==0.12.13"
+default-groups = []
+python-preference = "only-managed"
+python-downloads = "manual"
+
+[tool.uv.build-backend]
+source-include = [".python-version", "uv.lock", "build-constraints.txt"]

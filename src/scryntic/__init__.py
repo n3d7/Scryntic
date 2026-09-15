@@ -1,0 +1,1 @@
+"""Scryntic market intelligence package."""
