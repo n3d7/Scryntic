@@ -1,1 +1,1 @@
-# CONTRIBUTING
+# CONTRIBUTING to Scryntic
