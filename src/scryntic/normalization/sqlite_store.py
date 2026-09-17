@@ -464,6 +464,88 @@ class NormalizationStore:
         )
         return None if row is None else self._decode_observation(row)
 
+    def block(
+        self,
+        record: RawRecord,
+        *,
+        expected_predecessor: IngestionId | None,
+        reason: BarrierReason,
+        schema: SchemaRef | None,
+        instrument: InstrumentId | None = None,
+    ) -> ProcessingBarrier:
+        """Persist the next blocker without changing outcomes or progress."""
+        self._require_open()
+        connection = self._connection
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            predecessor = self.checkpoint()
+            if predecessor != expected_predecessor:
+                raise NormalizationError(
+                    "Normalization checkpoint does not match predecessor"
+                )
+            identity = record.identity
+            if identity.producer != self._producer or identity.offset <= (
+                0 if predecessor is None else predecessor.offset
+            ):
+                raise NormalizationError("Invalid normalization record order")
+            if (
+                not isinstance(reason, BarrierReason)
+                or not isinstance(schema, SchemaRef)
+                or (
+                    reason is BarrierReason.UNSUPPORTED_SCHEMA
+                    and instrument is not None
+                )
+                or (
+                    reason is BarrierReason.METADATA_UNAVAILABLE
+                    and (
+                        not isinstance(instrument, InstrumentId)
+                        or instrument != record.envelope.subject
+                    )
+                )
+            ):
+                raise NormalizationError("Invalid normalization barrier details")
+            barrier = ProcessingBarrier(
+                identity,
+                predecessor,
+                record.envelope.content_sha256,
+                reason,
+                schema,
+                instrument,
+            )
+            existing = self.barrier()
+            if existing is None:
+                connection.execute(
+                    "INSERT INTO processing_barrier VALUES "
+                    "(1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        *_identity_values(identity),
+                        *_identity_values(predecessor),
+                        barrier.raw_sha256,
+                        reason.value,
+                        schema.name,
+                        schema.version.major,
+                        schema.version.minor,
+                        instrument.venue if instrument is not None else None,
+                        instrument.category if instrument is not None else None,
+                        instrument.symbol if instrument is not None else None,
+                    ),
+                )
+            elif existing != barrier:
+                raise NormalizationError("Normalization record does not match barrier")
+            if self.barrier() != barrier or self.checkpoint() != predecessor:
+                raise NormalizationError("Normalization barrier readback failed")
+            connection.execute("COMMIT")
+            return barrier
+        except BaseException as error:
+            self._rollback()
+            if isinstance(error, NormalizationError):
+                raise
+            if isinstance(error, Exception):
+                raise NormalizationError(
+                    "Unable to persist normalization barrier"
+                ) from None
+            raise
+
     def process(
         self,
         record: RawRecord,

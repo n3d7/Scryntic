@@ -1,4 +1,4 @@
-"""Pure normalization contracts."""
+"""Pure normalization contracts and recoverable one-record processing."""
 
 from scryntic.normalization.candle import (
     FAKE_CANDLE_SCHEMA,
@@ -15,19 +15,49 @@ from scryntic.normalization.candle import (
     inspect_fake_candle,
     normalize_parsed_candle,
 )
+from scryntic.normalization.runner import (
+    Blocked,
+    NoWork,
+    Processed,
+    RawRecordReader,
+    process_next,
+)
+from scryntic.normalization.sqlite_store import (
+    BarrierReason,
+    NormalizationError,
+    NormalizationStatus,
+    NormalizationStore,
+    NormalizerOwned,
+    OutcomeKind,
+    ProcessingBarrier,
+    ProcessingOutcome,
+)
 
 __all__ = [
     "FAKE_CANDLE_SCHEMA",
     "NORMALIZER_VERSION",
     "PAYLOAD_LIMIT",
+    "BarrierReason",
+    "Blocked",
     "CandleNormalization",
     "CandleSemantics",
+    "NoWork",
+    "NormalizationError",
     "NormalizationRejection",
+    "NormalizationStatus",
+    "NormalizationStore",
+    "NormalizerOwned",
+    "OutcomeKind",
     "ParsedFakeCandle",
+    "Processed",
+    "ProcessingBarrier",
+    "ProcessingOutcome",
+    "RawRecordReader",
     "RejectionCode",
     "RejectionField",
     "UnsupportedSchema",
     "canonical_decimal",
     "inspect_fake_candle",
     "normalize_parsed_candle",
+    "process_next",
 ]
