@@ -5,11 +5,14 @@ import re
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
+from hashlib import sha256
 from typing import Any
 
 from scryntic.domain.identity import InstrumentId, SchemaRef, Version
+from scryntic.domain.market import CANDLE_SCHEMA, Candle, CandleKey, Instrument
 from scryntic.domain.raw import IngestionId, RawRecord
 from scryntic.domain.time import SourceTime, TimeUnit
+from scryntic.domain.validation import digest, identifier, immutable_tuple, integer
 
 FAKE_CANDLE_SCHEMA = SchemaRef("fake_candle", Version(1, 0))
 NORMALIZER_VERSION = "f06.fake_candle.v1"
@@ -34,6 +37,9 @@ _TOP_LEVEL_FIELDS = frozenset(
 _SCHEMA_FIELDS = frozenset({"name", "major", "minor"})
 _PUBLICATION_TIME_FIELDS = frozenset({"value", "unit"})
 _DECIMAL_PATTERN = re.compile(r"[0-9]+(?:\.[0-9]+)?", flags=re.ASCII)
+_CANONICAL_DECIMAL_PATTERN = re.compile(
+    r"(?:0|[1-9][0-9]*|(?:0|[1-9][0-9]*)\.[0-9]*[1-9])", flags=re.ASCII
+)
 
 
 class RejectionCode(StrEnum):
@@ -98,6 +104,149 @@ class NormalizationRejection:
     instrument_revision: str | None = None
     output_schema: SchemaRef | None = None
     normalized_at_ns: int | None = None
+
+    def __post_init__(self) -> None:
+        digest(self.raw_sha256)
+        if self.normalizer_version != NORMALIZER_VERSION:
+            raise ValueError("Unexpected normalizer version")
+        instrument_values = (self.instrument_schema, self.instrument_revision)
+        if (instrument_values[0] is None) != (instrument_values[1] is None):
+            raise ValueError("Instrument provenance must be complete")
+        if self.instrument_revision is not None:
+            identifier(self.instrument_revision)
+        if self.normalized_at_ns is not None:
+            integer(self.normalized_at_ns)
+
+
+def canonical_decimal(value: Decimal) -> str:
+    """Render a nonnegative finite decimal without using ambient context."""
+    if not isinstance(value, Decimal):
+        raise TypeError("Expected an exact Decimal")
+    sign, digits, exponent = value.as_tuple()
+    if not isinstance(exponent, int):
+        raise ValueError("Expected a finite decimal")
+    if not any(digits):
+        return "0"
+    if sign:
+        raise ValueError("Expected a nonnegative decimal")
+
+    coefficient = list(digits)
+    while coefficient[-1] == 0:
+        coefficient.pop()
+        exponent += 1
+    text = "".join(str(digit) for digit in coefficient)
+    if exponent >= 0:
+        return text + ("0" * exponent)
+    decimal_index = len(text) + exponent
+    if decimal_index > 0:
+        return f"{text[:decimal_index]}.{text[decimal_index:]}"
+    return f"0.{('0' * -decimal_index)}{text}"
+
+
+def _canonical_decimal_text(value: str) -> None:
+    if (
+        type(value) is not str
+        or not 1 <= len(value) <= 128
+        or _CANONICAL_DECIMAL_PATTERN.fullmatch(value) is None
+        or canonical_decimal(Decimal(value)) != value
+    ):
+        raise ValueError("Expected canonical decimal text")
+
+
+@dataclass(frozen=True, slots=True)
+class CandleSemantics:
+    key: CandleKey
+    open: str
+    high: str
+    low: str
+    close: str
+    volume: str
+    volume_unit: str
+    finalized: bool
+    source_time: SourceTime | None
+    publication_time: SourceTime | None
+    quality_flags: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.key, CandleKey):
+            raise TypeError("Expected a candle key")
+        for value in (self.open, self.high, self.low, self.close, self.volume):
+            _canonical_decimal_text(value)
+        identifier(self.volume_unit)
+        if type(self.finalized) is not bool:
+            raise TypeError("Expected explicit candle finality")
+        for timestamp in (self.source_time, self.publication_time):
+            if timestamp is not None and not isinstance(timestamp, SourceTime):
+                raise TypeError("Expected an explicit source timestamp")
+        immutable_tuple(self.quality_flags, 32)
+        for flag in self.quality_flags:
+            identifier(flag)
+        if self.quality_flags != tuple(sorted(set(self.quality_flags))):
+            raise ValueError("Quality flags must be sorted and unique")
+
+    def canonical_bytes(self) -> bytes:
+        semantic_value = [
+            "scryntic-candle-semantic-v1",
+            [
+                self.key.instrument.venue,
+                self.key.instrument.category,
+                self.key.instrument.symbol,
+            ],
+            self.key.start_ns,
+            self.key.interval_ns,
+            self.open,
+            self.high,
+            self.low,
+            self.close,
+            self.volume,
+            self.volume_unit,
+            self.finalized,
+            None
+            if self.source_time is None
+            else [self.source_time.value, self.source_time.unit.value],
+            None
+            if self.publication_time is None
+            else [self.publication_time.value, self.publication_time.unit.value],
+            list(self.quality_flags),
+        ]
+        return json.dumps(
+            semantic_value,
+            ensure_ascii=True,
+            allow_nan=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+    def revision(self) -> str:
+        return f"sha256:{sha256(self.canonical_bytes()).hexdigest()}"
+
+
+@dataclass(frozen=True, slots=True)
+class CandleNormalization:
+    candle: Candle
+    input_schema: SchemaRef
+    instrument_schema: SchemaRef
+    instrument_revision: str
+    semantics: CandleSemantics
+
+    def __post_init__(self) -> None:
+        if self.candle.revision != self.semantics.revision():
+            raise ValueError("Candle revision does not match semantic revision")
+        semantic_fields_match = (
+            self.candle.key == self.semantics.key
+            and canonical_decimal(self.candle.open) == self.semantics.open
+            and canonical_decimal(self.candle.high) == self.semantics.high
+            and canonical_decimal(self.candle.low) == self.semantics.low
+            and canonical_decimal(self.candle.close) == self.semantics.close
+            and canonical_decimal(self.candle.volume) == self.semantics.volume
+            and self.candle.volume_unit == self.semantics.volume_unit
+            and self.candle.finalized is self.semantics.finalized
+            and self.candle.source_time == self.semantics.source_time
+            and self.candle.publication_time == self.semantics.publication_time
+            and self.candle.quality_flags == self.semantics.quality_flags
+        )
+        if not semantic_fields_match:
+            raise ValueError("Candle fields do not match semantic value")
+        identifier(self.instrument_revision)
 
 
 @dataclass(frozen=True, slots=True)
@@ -323,3 +472,94 @@ def inspect_fake_candle(
             failure.field,
             input_schema=FAKE_CANDLE_SCHEMA,
         )
+
+
+def _domain_rejection(
+    record: RawRecord,
+    parsed: ParsedFakeCandle,
+    instrument: Instrument,
+    normalized_at_ns: int,
+) -> NormalizationRejection:
+    return NormalizationRejection(
+        raw_record=record.identity,
+        raw_sha256=record.envelope.content_sha256,
+        normalizer_version=NORMALIZER_VERSION,
+        code=RejectionCode.INVALID_DOMAIN_VALUE,
+        field=None,
+        input_schema=parsed.schema,
+        instrument_schema=instrument.schema,
+        instrument_revision=instrument.revision,
+        output_schema=CANDLE_SCHEMA,
+        normalized_at_ns=normalized_at_ns,
+    )
+
+
+def normalize_parsed_candle(
+    record: RawRecord,
+    parsed: ParsedFakeCandle,
+    instrument: Instrument,
+    *,
+    normalized_at_ns: int,
+) -> CandleNormalization | NormalizationRejection:
+    """Construct a candle using only explicit values supplied by the caller."""
+    if not isinstance(record, RawRecord):
+        raise TypeError("Expected a raw record")
+    if not isinstance(parsed, ParsedFakeCandle):
+        raise TypeError("Expected a parsed fake candle")
+    if not isinstance(instrument, Instrument):
+        raise TypeError("Expected instrument metadata")
+    integer(normalized_at_ns)
+    subject = record.envelope.subject
+    if not isinstance(subject, InstrumentId) or subject != instrument.identity:
+        raise ValueError("Raw and instrument identity mismatch")
+    if parsed.schema != FAKE_CANDLE_SCHEMA:
+        raise ValueError("Parsed candle schema mismatch")
+
+    try:
+        key = CandleKey(subject, parsed.start_ns, parsed.interval_ns)
+        semantics = CandleSemantics(
+            key,
+            canonical_decimal(parsed.open),
+            canonical_decimal(parsed.high),
+            canonical_decimal(parsed.low),
+            canonical_decimal(parsed.close),
+            canonical_decimal(parsed.volume),
+            instrument.volume_unit,
+            parsed.finalized,
+            record.envelope.source_time,
+            parsed.publication_time,
+            (),
+        )
+    except (TypeError, ValueError):
+        return _domain_rejection(record, parsed, instrument, normalized_at_ns)
+
+    revision = semantics.revision()
+    try:
+        candle = Candle(
+            key=key,
+            open=parsed.open,
+            high=parsed.high,
+            low=parsed.low,
+            close=parsed.close,
+            volume=parsed.volume,
+            volume_unit=instrument.volume_unit,
+            finalized=parsed.finalized,
+            revision=revision,
+            normalizer_version=NORMALIZER_VERSION,
+            raw_record=record.identity,
+            receipt=record.envelope.receipt,
+            normalized_at_ns=normalized_at_ns,
+            source_time=record.envelope.source_time,
+            publication_time=parsed.publication_time,
+            quality_flags=(),
+            schema=CANDLE_SCHEMA,
+        )
+    except (TypeError, ValueError):
+        return _domain_rejection(record, parsed, instrument, normalized_at_ns)
+    return CandleNormalization(
+        candle,
+        parsed.schema,
+        instrument.schema,
+        instrument.revision,
+        semantics,
+    )

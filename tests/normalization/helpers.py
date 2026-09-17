@@ -12,6 +12,13 @@ from scryntic.domain.raw import IngestionId, RawEnvelope, RawRecord
 from scryntic.domain.time import ClockSample, SourceTime, TimeQuality, TimeUnit
 
 INSTRUMENT_ID = InstrumentId("fake-venue", "spot", "BTC-USDT")
+DEFAULT_RECEIPT = ClockSample(
+    1_700_000_001_000_000_000,
+    42,
+    "session-a",
+    TimeQuality("clock-a"),
+)
+DEFAULT_SOURCE_TIME = SourceTime(1_700_000_000_000, TimeUnit.MILLISECOND)
 
 
 def fake_candle_payload(
@@ -71,22 +78,19 @@ def envelope(
     *,
     payload: bytes = fake_candle_payload(),
     subject: SubjectId | None = INSTRUMENT_ID,
+    receipt: ClockSample = DEFAULT_RECEIPT,
+    source_time: SourceTime | None = DEFAULT_SOURCE_TIME,
 ) -> RawEnvelope:
     return RawEnvelope(
         source="fake-source",
         stream="candles",
         channel="public",
         adapter_version="1.0",
-        receipt=ClockSample(
-            1_700_000_001_000_000_000,
-            42,
-            "session-a",
-            TimeQuality("clock-a"),
-        ),
+        receipt=receipt,
         payload=payload,
         payload_limit=max(8_192, len(payload)),
         subject=subject,
-        source_time=SourceTime(1_700_000_000_000, TimeUnit.MILLISECOND),
+        source_time=source_time,
     )
 
 
@@ -96,8 +100,15 @@ def raw_record(
     epoch: str = "epoch-a",
     payload: bytes = fake_candle_payload(),
     subject: SubjectId | None = INSTRUMENT_ID,
+    receipt: ClockSample = DEFAULT_RECEIPT,
+    source_time: SourceTime | None = DEFAULT_SOURCE_TIME,
 ) -> RawRecord:
     return RawRecord(
         IngestionId("collector-a", epoch, offset),
-        envelope(payload=payload, subject=subject),
+        envelope(
+            payload=payload,
+            subject=subject,
+            receipt=receipt,
+            source_time=source_time,
+        ),
     )
