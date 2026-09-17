@@ -26,6 +26,7 @@ DEFAULT_RECEIPT = ClockSample(
     TimeQuality("clock-a"),
 )
 DEFAULT_SOURCE_TIME = SourceTime(1_700_000_000_000, TimeUnit.MILLISECOND)
+NORMALIZED_AT_NS = 1_700_000_002_000_000_000
 
 
 def fake_candle_payload(
@@ -121,11 +122,37 @@ def raw_record(
     )
 
 
-def normalization(record: RawRecord) -> CandleNormalization | NormalizationRejection:
+def normalization(
+    record: RawRecord, *, normalized_at_ns: int = NORMALIZED_AT_NS
+) -> CandleNormalization | NormalizationRejection:
     inspected = inspect_fake_candle(record)
     if isinstance(inspected, NormalizationRejection):
         return inspected
     assert isinstance(inspected, ParsedFakeCandle)
     return normalize_parsed_candle(
-        record, inspected, instrument(), normalized_at_ns=1_700_000_002_000_000_000
+        record, inspected, instrument(), normalized_at_ns=normalized_at_ns
+    )
+
+
+class FixedRawReader:
+    """Retained committed inputs implementing the public F05 reader contract."""
+
+    def __init__(self, records: tuple[RawRecord, ...]) -> None:
+        self.records = records
+
+    def records_after(self, offset: int, *, limit: int) -> tuple[RawRecord, ...]:
+        return tuple(
+            record for record in self.records if record.identity.offset > offset
+        )[:limit]
+
+
+def recovery_records() -> tuple[RawRecord, ...]:
+    """Fixed accepted, rejected, duplicate and unsupported-schema inputs."""
+    return (
+        raw_record(offset=2),
+        raw_record(offset=5, epoch="epoch-b", payload=b"not json"),
+        raw_record(offset=9, epoch="epoch-c"),
+        raw_record(
+            offset=12, payload=fake_candle_payload(schema=("future_candle", 2, 0))
+        ),
     )

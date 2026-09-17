@@ -393,10 +393,29 @@ class NormalizationStore:
         # Decode incrementally, retaining no database-sized list of owned values.
         for row in self._rows("SELECT * FROM candle_observations"):
             self._decode_observation(row)
+        outcome_count = 0
         for row in self._rows("SELECT * FROM processing_outcomes"):
             self._decode_outcome(row)
-        self.checkpoint()
-        self.barrier()
+            outcome_count += 1
+        checkpoint = self.checkpoint()
+        current = checkpoint
+        traversed = 0
+        while current is not None:
+            if traversed >= outcome_count:
+                raise NormalizationError("Invalid normalization processing chain")
+            outcome = self.outcome(current)
+            if outcome is None:
+                raise NormalizationError("Invalid normalization processing chain")
+            current = outcome.predecessor
+            traversed += 1
+        # Each decoded predecessor strictly decreases the offset, so traversal
+        # cannot repeat a row. Reaching every outcome proves a single root,
+        # no fork or disconnected component, and the checkpoint as the only tail.
+        if traversed != outcome_count:
+            raise NormalizationError("Invalid normalization processing chain")
+        barrier = self.barrier()
+        if barrier is not None and barrier.predecessor != checkpoint:
+            raise NormalizationError("Invalid normalization barrier")
 
     def _require_open(self) -> None:
         if self._failed:
