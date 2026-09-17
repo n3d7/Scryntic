@@ -764,6 +764,15 @@ def test_invalid_caller_time_and_identity_mismatch_propagate() -> None:
         )
 
 
+def test_invalid_parsed_field_type_propagates() -> None:
+    parsed = replace(parsed_candle(), open="100.1")  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="Decimal"):
+        normalize_parsed_candle(
+            raw_record(), parsed, instrument(), normalized_at_ns=1
+        )
+
+
 def test_supported_domain_failure_becomes_provenanced_rejection() -> None:
     record = raw_record()
     parsed = replace(parsed_candle(), high=Decimal("1"))

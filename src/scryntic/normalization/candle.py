@@ -509,6 +509,19 @@ def normalize_parsed_candle(
     if not isinstance(instrument, Instrument):
         raise TypeError("Expected instrument metadata")
     integer(normalized_at_ns)
+    if not isinstance(parsed.schema, SchemaRef):
+        raise TypeError("Expected a parsed schema reference")
+    integer(parsed.start_ns)
+    integer(parsed.interval_ns)
+    for value in (parsed.open, parsed.high, parsed.low, parsed.close, parsed.volume):
+        if not isinstance(value, Decimal):
+            raise TypeError("Expected parsed candle Decimal values")
+    if type(parsed.finalized) is not bool:
+        raise TypeError("Expected parsed candle finality")
+    if parsed.publication_time is not None and not isinstance(
+        parsed.publication_time, SourceTime
+    ):
+        raise TypeError("Expected parsed publication time")
     subject = record.envelope.subject
     if not isinstance(subject, InstrumentId) or subject != instrument.identity:
         raise ValueError("Raw and instrument identity mismatch")
@@ -530,7 +543,7 @@ def normalize_parsed_candle(
             parsed.publication_time,
             (),
         )
-    except (TypeError, ValueError):
+    except ValueError:
         return _domain_rejection(record, parsed, instrument, normalized_at_ns)
 
     revision = semantics.revision()
@@ -554,7 +567,7 @@ def normalize_parsed_candle(
             quality_flags=(),
             schema=CANDLE_SCHEMA,
         )
-    except (TypeError, ValueError):
+    except ValueError:
         return _domain_rejection(record, parsed, instrument, normalized_at_ns)
     return CandleNormalization(
         candle,
