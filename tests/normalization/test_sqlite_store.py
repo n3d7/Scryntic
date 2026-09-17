@@ -432,6 +432,29 @@ def test_startup_rejects_invalid_stored_values_without_echoing_rows(
     assert "secret" not in str(error.value)
 
 
+def test_outcome_wraps_sqlite_fetch_errors_without_echoing_stored_values(
+    tmp_path: Path,
+) -> None:
+    target = installation(tmp_path)
+    with NormalizationStore(target, producer="collector-a"):
+        pass
+    path = target.state_dir / "normalization.sqlite3"
+    seed_state(path)
+    with NormalizationStore(target, producer="collector-a") as store:
+        with sqlite3.connect(path, autocommit=True) as db:
+            db.execute(
+                "UPDATE processing_outcomes "
+                "SET raw_sha256=CAST(X'7365637265742dff' AS TEXT) WHERE offset=2"
+            )
+            assert db.execute("PRAGMA quick_check(1)").fetchall() == [("ok",)]
+            assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+        with pytest.raises(
+            NormalizationError, match="^Unable to read normalization state$"
+        ) as error:
+            store.outcome(IngestionId("collector-a", "epoch-a", 2))
+        assert "secret" not in str(error.value)
+
+
 @pytest.mark.parametrize(
     "sql",
     [

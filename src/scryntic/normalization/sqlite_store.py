@@ -6,6 +6,7 @@ import os
 import sqlite3
 import stat
 import threading
+from collections.abc import Iterator
 from contextlib import ExitStack
 from dataclasses import dataclass
 from decimal import Decimal
@@ -403,18 +404,31 @@ class NormalizationStore:
         if threading.get_ident() != self._owner_thread:
             raise NormalizationError("Normalization store requires its owning thread")
 
-    def _rows(self, sql: str, parameters: tuple[object, ...] = ()) -> sqlite3.Cursor:
+    def _row(self, sql: str, parameters: tuple[object, ...] = ()) -> sqlite3.Row | None:
         cursor = self._connection.cursor()
         cursor.row_factory = sqlite3.Row
         try:
-            return cursor.execute(sql, parameters)
+            return cast(sqlite3.Row | None, cursor.execute(sql, parameters).fetchone())
         except sqlite3.Error:
-            cursor.close()
             raise NormalizationError("Unable to read normalization state") from None
+        finally:
+            cursor.close()
+
+    def _rows(
+        self, sql: str, parameters: tuple[object, ...] = ()
+    ) -> Iterator[sqlite3.Row]:
+        cursor = self._connection.cursor()
+        cursor.row_factory = sqlite3.Row
+        try:
+            yield from cursor.execute(sql, parameters)
+        except sqlite3.Error:
+            raise NormalizationError("Unable to read normalization state") from None
+        finally:
+            cursor.close()
 
     def checkpoint(self) -> IngestionId | None:
         self._require_open()
-        row = self._rows("SELECT * FROM processing_checkpoint").fetchone()
+        row = self._row("SELECT * FROM processing_checkpoint")
         if row is None:
             return None
         try:
@@ -426,23 +440,23 @@ class NormalizationStore:
 
     def barrier(self) -> ProcessingBarrier | None:
         self._require_open()
-        row = self._rows("SELECT * FROM processing_barrier").fetchone()
+        row = self._row("SELECT * FROM processing_barrier")
         return None if row is None else self._decode_barrier(row)
 
     def outcome(self, identity: IngestionId) -> ProcessingOutcome | None:
         self._require_open()
-        row = self._rows(
+        row = self._row(
             "SELECT * FROM processing_outcomes WHERE producer=? AND epoch=? AND offset=?",
             (identity.producer, identity.epoch, identity.offset),
-        ).fetchone()
+        )
         return None if row is None else self._decode_outcome(row)
 
     def observation(self, revision: str) -> CandleSemantics | None:
         self._require_open()
         _revision(revision)
-        row = self._rows(
+        row = self._row(
             "SELECT * FROM candle_observations WHERE revision=?", (revision,)
-        ).fetchone()
+        )
         return None if row is None else self._decode_observation(row)
 
     def status(self) -> NormalizationStatus:
