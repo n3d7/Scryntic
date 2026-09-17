@@ -10,6 +10,13 @@ from scryntic.domain.identity import InstrumentId, SubjectId
 from scryntic.domain.market import Instrument
 from scryntic.domain.raw import IngestionId, RawEnvelope, RawRecord
 from scryntic.domain.time import ClockSample, SourceTime, TimeQuality, TimeUnit
+from scryntic.normalization.candle import (
+    CandleNormalization,
+    NormalizationRejection,
+    ParsedFakeCandle,
+    inspect_fake_candle,
+    normalize_parsed_candle,
+)
 
 INSTRUMENT_ID = InstrumentId("fake-venue", "spot", "BTC-USDT")
 DEFAULT_RECEIPT = ClockSample(
@@ -111,4 +118,14 @@ def raw_record(
             receipt=receipt,
             source_time=source_time,
         ),
+    )
+
+
+def normalization(record: RawRecord) -> CandleNormalization | NormalizationRejection:
+    inspected = inspect_fake_candle(record)
+    if isinstance(inspected, NormalizationRejection):
+        return inspected
+    assert isinstance(inspected, ParsedFakeCandle)
+    return normalize_parsed_candle(
+        record, inspected, instrument(), normalized_at_ns=1_700_000_002_000_000_000
     )

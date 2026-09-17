@@ -18,11 +18,13 @@ from typing import Literal, cast
 from scryntic.configuration.paths import Installation, directory
 from scryntic.domain.identity import InstrumentId, SchemaRef, Version
 from scryntic.domain.market import CandleKey
-from scryntic.domain.raw import IngestionId
+from scryntic.domain.raw import IngestionId, RawRecord
 from scryntic.domain.time import ClockSample, SourceTime, TimeQuality, TimeUnit
 from scryntic.domain.validation import digest, identifier
 from scryntic.normalization.candle import (
+    CandleNormalization,
     CandleSemantics,
+    NormalizationRejection,
     RejectionCode,
     RejectionField,
 )
@@ -264,6 +266,7 @@ class NormalizationStore:
         self._producer = producer
         self._owner_thread = threading.get_ident()
         self._closed = False
+        self._failed = False
         self._resources = ExitStack()
         try:
             state_fd = self._resources.enter_context(
@@ -396,6 +399,8 @@ class NormalizationStore:
         self.barrier()
 
     def _require_open(self) -> None:
+        if self._failed:
+            raise NormalizationError("Durable normalization store failed")
         if self._closed:
             raise NormalizationError("Normalization store is closed")
         self._require_thread()
@@ -459,6 +464,268 @@ class NormalizationStore:
         )
         return None if row is None else self._decode_observation(row)
 
+    def process(
+        self,
+        record: RawRecord,
+        normalization: CandleNormalization | NormalizationRejection,
+        *,
+        expected_predecessor: IngestionId | None,
+    ) -> ProcessingOutcome:
+        """Commit one immutable outcome and its checkpoint as a single unit."""
+        self._require_open()
+        connection = self._connection
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            predecessor = self.checkpoint()
+            if predecessor != expected_predecessor:
+                raise NormalizationError(
+                    "Normalization checkpoint does not match predecessor"
+                )
+            identity = record.identity
+            if identity.producer != self._producer or identity.offset <= (
+                0 if predecessor is None else predecessor.offset
+            ):
+                raise NormalizationError("Invalid normalization record order")
+            barrier = self.barrier()
+            if barrier is not None and (
+                barrier.blocker != identity
+                or barrier.predecessor != predecessor
+                or barrier.raw_sha256 != record.envelope.content_sha256
+            ):
+                raise NormalizationError("Normalization record does not match barrier")
+            if isinstance(normalization, CandleNormalization):
+                if (
+                    normalization.candle.raw_record != identity
+                    or normalization.candle.receipt != record.envelope.receipt
+                ):
+                    raise NormalizationError(
+                        "Normalization result does not match raw record"
+                    )
+                kind = self._store_semantics(normalization.semantics)
+            else:
+                if (
+                    normalization.raw_record != identity
+                    or normalization.raw_sha256 != record.envelope.content_sha256
+                ):
+                    raise NormalizationError(
+                        "Normalization result does not match raw record"
+                    )
+                kind = OutcomeKind.REJECTED
+            outcome = self._processing_outcome(record, normalization, predecessor, kind)
+            self._insert_outcome(outcome)
+            identity_values = (identity.producer, identity.epoch, identity.offset)
+            if predecessor is None:
+                connection.execute(
+                    "INSERT INTO processing_checkpoint VALUES (1, ?, ?, ?)",
+                    identity_values,
+                )
+            else:
+                updated = connection.execute(
+                    "UPDATE processing_checkpoint SET producer=?, epoch=?, offset=? "
+                    "WHERE singleton=1 AND producer=? AND epoch=? AND offset=?",
+                    (
+                        *identity_values,
+                        predecessor.producer,
+                        predecessor.epoch,
+                        predecessor.offset,
+                    ),
+                )
+                if updated.rowcount != 1:
+                    raise NormalizationError("Normalization checkpoint did not advance")
+            if barrier is not None:
+                connection.execute(
+                    "DELETE FROM processing_barrier WHERE singleton=1 "
+                    "AND producer=? AND epoch=? AND offset=? AND raw_sha256=? "
+                    "AND predecessor_producer IS ? AND predecessor_epoch IS ? "
+                    "AND predecessor_offset IS ?",
+                    (
+                        *identity_values,
+                        barrier.raw_sha256,
+                        *_identity_values(predecessor),
+                    ),
+                )
+            if (
+                self.outcome(identity) != outcome
+                or self.checkpoint() != identity
+                or self.barrier() is not None
+            ):
+                raise NormalizationError("Normalization transaction readback failed")
+            if (
+                isinstance(normalization, CandleNormalization)
+                and self.observation(normalization.candle.revision)
+                != normalization.semantics
+            ):
+                raise NormalizationError(
+                    "Stored semantic revision does not match computed values"
+                )
+            connection.execute("COMMIT")
+            return outcome
+        except BaseException as error:
+            self._rollback()
+            if isinstance(error, NormalizationError):
+                raise
+            if isinstance(error, Exception):
+                raise NormalizationError(
+                    "Unable to persist normalization outcome"
+                ) from None
+            raise
+
+    def _rollback(self) -> None:
+        try:
+            if self._connection.in_transaction:
+                self._connection.execute("ROLLBACK")
+            if self._connection.in_transaction:
+                raise NormalizationError("Durable normalization store failed")
+        except BaseException:
+            self._failed = True
+            try:
+                self._connection.close()
+            except BaseException:
+                pass
+            raise NormalizationError("Durable normalization store failed") from None
+
+    def _store_semantics(self, value: CandleSemantics) -> OutcomeKind:
+        revision = value.revision()
+        existing = self.observation(revision)
+        if existing is not None:
+            if existing != value:
+                raise NormalizationError(
+                    "Stored semantic revision does not match computed values"
+                )
+            return OutcomeKind.DUPLICATE
+        key = value.key
+        instrument = key.instrument
+        previous = self._row(
+            "SELECT MAX(finalized) AS finalized FROM candle_observations "
+            "WHERE venue=? AND category=? AND symbol=? AND start_ns=? AND interval_ns=?",
+            (
+                instrument.venue,
+                instrument.category,
+                instrument.symbol,
+                key.start_ns,
+                key.interval_ns,
+            ),
+        )
+        assert previous is not None
+        if previous["finalized"] is None:
+            kind = OutcomeKind.ACCEPTED
+        elif previous["finalized"] == 1:
+            kind = OutcomeKind.CONFLICT
+        elif value.finalized:
+            kind = OutcomeKind.FINALIZATION
+        else:
+            kind = OutcomeKind.OPEN_REVISION
+        self._connection.execute(
+            "INSERT INTO candle_observations VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                revision,
+                instrument.venue,
+                instrument.category,
+                instrument.symbol,
+                key.start_ns,
+                key.interval_ns,
+                value.open,
+                value.high,
+                value.low,
+                value.close,
+                value.volume,
+                value.volume_unit,
+                int(value.finalized),
+                *_time_values(value.source_time),
+                *_time_values(value.publication_time),
+                json.dumps(
+                    value.quality_flags, ensure_ascii=True, separators=(",", ":")
+                ),
+            ),
+        )
+        return kind
+
+    @staticmethod
+    def _processing_outcome(
+        record: RawRecord,
+        normalization: CandleNormalization | NormalizationRejection,
+        predecessor: IngestionId | None,
+        kind: OutcomeKind,
+    ) -> ProcessingOutcome:
+        revision: str | None
+        code: RejectionCode | None
+        field: RejectionField | None
+        output_schema: SchemaRef | None
+        normalized_at_ns: int | None
+        if isinstance(normalization, CandleNormalization):
+            revision = normalization.candle.revision
+            code = None
+            field = None
+            output_schema = normalization.candle.schema
+            normalizer_version = normalization.candle.normalizer_version
+            normalized_at_ns = normalization.candle.normalized_at_ns
+        else:
+            revision = None
+            code = normalization.code
+            field = normalization.field
+            output_schema = normalization.output_schema
+            normalizer_version = normalization.normalizer_version
+            normalized_at_ns = normalization.normalized_at_ns
+        return ProcessingOutcome(
+            identity=record.identity,
+            predecessor=predecessor,
+            raw_sha256=record.envelope.content_sha256,
+            kind=kind,
+            semantic_revision=revision,
+            rejection_code=code,
+            rejection_field=field,
+            input_schema=normalization.input_schema,
+            instrument_schema=normalization.instrument_schema,
+            output_schema=output_schema,
+            instrument_revision=normalization.instrument_revision,
+            normalizer_version=normalizer_version,
+            receipt=record.envelope.receipt,
+            normalized_at_ns=normalized_at_ns,
+        )
+
+    def _insert_outcome(self, outcome: ProcessingOutcome) -> None:
+        receipt = outcome.receipt
+        quality = receipt.quality
+        predecessor = _identity_values(outcome.predecessor)
+        values: dict[str, object] = {
+            "producer": outcome.identity.producer,
+            "epoch": outcome.identity.epoch,
+            "offset": outcome.identity.offset,
+            "predecessor_producer": predecessor[0],
+            "predecessor_epoch": predecessor[1],
+            "predecessor_offset": predecessor[2],
+            "raw_sha256": outcome.raw_sha256,
+            "kind": outcome.kind.value,
+            "semantic_revision": outcome.semantic_revision,
+            "rejection_code": outcome.rejection_code,
+            "rejection_field": outcome.rejection_field,
+            "instrument_revision": outcome.instrument_revision,
+            "normalizer_version": outcome.normalizer_version,
+            "receipt_wall_time_ns": receipt.wall_time_ns,
+            "receipt_monotonic_ns": receipt.monotonic_ns,
+            "receipt_session_id": receipt.session_id,
+            "quality_epoch": quality.epoch,
+            "quality_status": quality.status,
+            "quality_offset_ns": quality.offset_ns,
+            "quality_uncertainty_ns": quality.uncertainty_ns,
+            "quality_evidence_age_ns": quality.evidence_age_ns,
+            "normalized_at_ns": outcome.normalized_at_ns,
+        }
+        for prefix, schema in (
+            ("input_schema", outcome.input_schema),
+            ("instrument_schema", outcome.instrument_schema),
+            ("output_schema", outcome.output_schema),
+        ):
+            values[prefix + "_name"] = None if schema is None else schema.name
+            values[prefix + "_major"] = None if schema is None else schema.version.major
+            values[prefix + "_minor"] = None if schema is None else schema.version.minor
+        # Column names are fixed above; all record-derived values are parameters.
+        self._connection.execute(
+            f"INSERT INTO processing_outcomes ({', '.join(values)}) "
+            f"VALUES ({', '.join('?' for _ in values)})",
+            tuple(values.values()),
+        )
+
     def status(self) -> NormalizationStatus:
         self._require_open()
         return NormalizationStatus(
@@ -515,7 +782,9 @@ class NormalizationStore:
     @staticmethod
     def _decode_observation(row: sqlite3.Row) -> CandleSemantics:
         try:
-            revision = _revision(row["revision"])
+            # Structural validity is checked on every read. Hash/value binding
+            # is checked against the incoming full semantics inside process().
+            _revision(row["revision"])
             encoded_flags = _text(row["quality_flags"])
             flags = json.loads(encoded_flags)
             if type(flags) is not list or any(type(flag) is not str for flag in flags):
@@ -555,8 +824,6 @@ class NormalizationStore:
                 <= max(Decimal(value.open), Decimal(value.close))
                 <= Decimal(value.high)
             ):
-                raise ValueError
-            if value.revision() != revision:
                 raise ValueError
             return value
         except (TypeError, ValueError, KeyError, IndexError):
@@ -682,6 +949,18 @@ class NormalizationStore:
             )
         except (TypeError, ValueError, KeyError, IndexError):
             raise NormalizationError("Invalid normalization barrier") from None
+
+
+def _identity_values(
+    identity: IngestionId | None,
+) -> tuple[str | None, str | None, int | None]:
+    if identity is None:
+        return (None, None, None)
+    return (identity.producer, identity.epoch, identity.offset)
+
+
+def _time_values(value: SourceTime | None) -> tuple[int | None, str | None]:
+    return (None, None) if value is None else (value.value, value.unit.value)
 
 
 def _text(value: object) -> str:

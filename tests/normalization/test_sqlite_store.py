@@ -4,14 +4,17 @@ import os
 import sqlite3
 import stat
 import threading
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
 
+from scryntic.domain.identity import SchemaRef, Version
 from scryntic.domain.raw import IngestionId
+from scryntic.domain.time import ClockSample, TimeQuality
+from scryntic.normalization.candle import CandleNormalization, NormalizationRejection
 from scryntic.normalization.sqlite_store import (
     BarrierReason,
     NormalizationError,
@@ -19,7 +22,605 @@ from scryntic.normalization.sqlite_store import (
     NormalizerOwned,
     OutcomeKind,
 )
-from tests.normalization.helpers import installation
+from tests.normalization.helpers import (
+    fake_candle_payload,
+    installation,
+    normalization,
+    raw_record,
+)
+
+
+class TransactionConnection(sqlite3.Connection):
+    """Real SQLite with boundary-only failure injection and SQL observation."""
+
+    failure: str | None = None
+    rollback_failure: str | None = None
+    ignored_statement: str | None = None
+
+    def execute(self, sql: str, parameters: Any = (), /) -> sqlite3.Cursor:
+        if self.ignored_statement is not None and sql.startswith(
+            self.ignored_statement
+        ):
+            self.ignored_statement = None
+            return super().execute("SELECT 1")
+        if self.failure is not None and sql.startswith(self.failure):
+            self.failure = None
+            raise sqlite3.OperationalError("injected private detail")
+        if sql == "ROLLBACK":
+            if self.rollback_failure == "raise":
+                raise sqlite3.OperationalError("private rollback detail")
+            if self.rollback_failure == "residual":
+                return super().execute("SELECT 1")
+        return super().execute(sql, parameters)
+
+    def commit(self) -> None:
+        pytest.fail("Production must use explicit SQL COMMIT")
+
+    def rollback(self) -> None:
+        pytest.fail("Production must use explicit SQL ROLLBACK")
+
+
+def observe_connection(monkeypatch: pytest.MonkeyPatch) -> list[TransactionConnection]:
+    real_connect = sqlite3.connect
+    connections: list[TransactionConnection] = []
+
+    def connect(database: Path, **kwargs: Any) -> sqlite3.Connection:
+        assert kwargs["autocommit"] is True
+        connection = real_connect(database, factory=TransactionConnection, **kwargs)
+        connections.append(connection)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", connect)
+    return connections
+
+
+@pytest.mark.parametrize("reject", [False, True])
+def test_process_transaction_exposes_complete_outcome_and_checkpoint_together(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reject: bool
+) -> None:
+    target = installation(tmp_path)
+    real_connect = sqlite3.connect
+    connections = observe_connection(monkeypatch)
+    record = raw_record(
+        offset=3, payload=b"not json" if reject else fake_candle_payload()
+    )
+    result = normalization(record)
+    with NormalizationStore(target, producer="collector-a") as store:
+        (db,) = connections
+        statements: list[tuple[str, bool]] = []
+        snapshots: list[tuple[int, int, int]] = []
+        with real_connect(
+            target.state_dir / "normalization.sqlite3", autocommit=True
+        ) as reader:
+
+            def trace(sql: str) -> None:
+                statements.append((sql, db.in_transaction))
+                snapshots.append(
+                    tuple(
+                        reader.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+                        for table in (
+                            "candle_observations",
+                            "processing_outcomes",
+                            "processing_checkpoint",
+                        )
+                    )
+                )
+
+            db.set_trace_callback(trace)
+            outcome = store.process(record, result, expected_predecessor=None)
+            db.set_trace_callback(None)
+            assert statements[0] == ("BEGIN IMMEDIATE", False)
+            assert statements[-1] == ("COMMIT", True)
+            assert all(active for _, active in statements[1:])
+            assert not db.in_transaction
+            assert all(snapshot == (0, 0, 0) for snapshot in snapshots)
+            sql = [statement for statement, _ in statements]
+            outcome_insert = next(
+                i
+                for i, statement in enumerate(sql)
+                if statement.startswith("INSERT INTO processing_outcomes")
+            )
+            checkpoint_write = next(
+                i
+                for i, statement in enumerate(sql)
+                if statement.startswith("INSERT INTO processing_checkpoint")
+            )
+            assert outcome_insert < checkpoint_write < len(sql) - 2
+            assert any(
+                statement.startswith("SELECT * FROM processing_outcomes")
+                for statement in sql[checkpoint_write + 1 : -1]
+            )
+            assert any(
+                statement.startswith("SELECT * FROM processing_checkpoint")
+                for statement in sql[checkpoint_write + 1 : -1]
+            )
+            assert reader.execute(
+                "SELECT count(*) FROM processing_outcomes"
+            ).fetchone() == (1,)
+            assert reader.execute(
+                "SELECT producer, epoch, offset FROM processing_checkpoint"
+            ).fetchone() == ("collector-a", "epoch-a", 3)
+            assert outcome == store.outcome(record.identity)
+            assert outcome.predecessor is None
+            assert outcome.identity == record.identity
+            assert outcome.raw_sha256 == record.envelope.content_sha256
+            assert outcome.receipt == record.envelope.receipt
+            assert store.checkpoint() == record.identity
+            if isinstance(result, NormalizationRejection):
+                assert outcome.kind is OutcomeKind.REJECTED
+                assert outcome.semantic_revision is None
+                assert outcome.rejection_code == "invalid_json"
+                assert outcome.input_schema is None
+                assert reader.execute(
+                    "SELECT count(*) FROM candle_observations"
+                ).fetchone() == (0,)
+            else:
+                assert outcome.kind is OutcomeKind.ACCEPTED
+                assert store.observation(result.candle.revision) == result.semantics
+                semantic_insert = next(
+                    i
+                    for i, statement in enumerate(sql)
+                    if statement.startswith("INSERT INTO candle_observations")
+                )
+                assert semantic_insert < outcome_insert
+                assert outcome.input_schema == result.input_schema
+                assert outcome.instrument_schema == result.instrument_schema
+                assert outcome.output_schema == result.candle.schema
+                assert outcome.instrument_revision == result.instrument_revision
+                assert outcome.normalizer_version == result.candle.normalizer_version
+                assert outcome.normalized_at_ns == result.candle.normalized_at_ns
+
+
+@pytest.mark.parametrize(
+    "invalid", ["stale", "epoch", "producer", "same", "lower", "zero"]
+)
+def test_process_requires_exact_predecessor_and_increasing_producer_offsets(
+    tmp_path: Path, invalid: str
+) -> None:
+    first = raw_record(offset=3)
+    later = raw_record(offset=8, epoch="epoch-b")
+    with NormalizationStore(installation(tmp_path), producer="collector-a") as store:
+        store.process(first, normalization(first), expected_predecessor=None)
+        expected: IngestionId | None = first.identity
+        if invalid == "stale":
+            expected = None
+        elif invalid == "epoch":
+            expected = replace(first.identity, epoch="other-epoch")
+        elif invalid == "producer":
+            later = replace(later, identity=replace(later.identity, producer="other"))
+        else:
+            later = replace(
+                later,
+                identity=replace(
+                    later.identity, offset={"same": 3, "lower": 2, "zero": 0}[invalid]
+                ),
+            )
+        with pytest.raises(NormalizationError):
+            store.process(later, normalization(later), expected_predecessor=expected)
+        assert store.checkpoint() == first.identity
+        assert store.outcome(later.identity) is None
+
+
+def test_process_offset_gaps_and_epoch_changes_link_exact_history(
+    tmp_path: Path,
+) -> None:
+    target = installation(tmp_path)
+    records = [
+        raw_record(offset=3),
+        raw_record(offset=8, epoch="epoch-b"),
+        raw_record(offset=20, epoch="epoch-c", payload=b"invalid"),
+    ]
+    with NormalizationStore(target, producer="collector-a") as store:
+        predecessor = None
+        for record in records:
+            outcome = store.process(
+                record, normalization(record), expected_predecessor=predecessor
+            )
+            assert outcome.predecessor == predecessor
+            predecessor = record.identity
+    with NormalizationStore(target, producer="collector-a") as store:
+        assert store.checkpoint() == records[-1].identity
+        for record in records:
+            assert store.outcome(record.identity) is not None
+
+
+def test_process_retains_every_classification_and_semantic_revision(
+    tmp_path: Path,
+) -> None:
+    target = installation(tmp_path)
+    vectors = [
+        ("100.1", False, OutcomeKind.ACCEPTED),
+        ("100.1", False, OutcomeKind.DUPLICATE),
+        ("100.2", False, OutcomeKind.OPEN_REVISION),
+        ("100.3", True, OutcomeKind.FINALIZATION),
+        ("100.4", True, OutcomeKind.CONFLICT),
+        ("100.5", False, OutcomeKind.CONFLICT),
+        ("100.4", True, OutcomeKind.DUPLICATE),
+    ]
+    with NormalizationStore(target, producer="collector-a") as store:
+        predecessor = None
+        prior_outcomes = []
+        prior_observations = {}
+        for offset, (close, finalized, expected) in enumerate(vectors, start=1):
+            record = raw_record(
+                offset=offset,
+                payload=fake_candle_payload(close=close, finalized=finalized),
+            )
+            result = normalization(record)
+            assert isinstance(result, CandleNormalization)
+            outcome = store.process(record, result, expected_predecessor=predecessor)
+            assert outcome.kind is expected
+            assert outcome.semantic_revision == result.candle.revision
+            assert outcome.predecessor == predecessor
+            prior_outcomes.append(outcome)
+            prior_observations[result.candle.revision] = result.semantics
+            for previous in prior_outcomes:
+                assert store.outcome(previous.identity) == previous
+            for revision, semantics in prior_observations.items():
+                assert store.observation(revision) == semantics
+            predecessor = record.identity
+    with sqlite3.connect(
+        target.state_dir / "normalization.sqlite3", autocommit=True
+    ) as db:
+        assert db.execute("SELECT count(*) FROM processing_outcomes").fetchone() == (7,)
+        assert db.execute("SELECT count(*) FROM candle_observations").fetchone() == (5,)
+
+
+def test_process_accepts_first_final_and_classifies_each_logical_key_independently(
+    tmp_path: Path,
+) -> None:
+    with NormalizationStore(installation(tmp_path), producer="collector-a") as store:
+        first = raw_record(payload=fake_candle_payload(finalized=True))
+        second = raw_record(
+            offset=2, payload=fake_candle_payload(start_ns=1_700_000_060_000_000_000)
+        )
+        assert (
+            store.process(first, normalization(first), expected_predecessor=None).kind
+            is OutcomeKind.ACCEPTED
+        )
+        assert (
+            store.process(
+                second, normalization(second), expected_predecessor=first.identity
+            ).kind
+            is OutcomeKind.ACCEPTED
+        )
+
+
+def test_process_provenance_only_changes_are_auditable_duplicates(
+    tmp_path: Path,
+) -> None:
+    first = raw_record()
+    later = raw_record(
+        offset=10,
+        epoch="epoch-b",
+        payload=fake_candle_payload(close="100.7500"),
+        receipt=ClockSample(
+            99, 55, "session-b", TimeQuality("clock-b", "healthy", -2, 3, 4)
+        ),
+    )
+    first_result = normalization(first)
+    result = normalization(later)
+    assert isinstance(first_result, CandleNormalization)
+    assert isinstance(result, CandleNormalization)
+    result = replace(
+        result,
+        input_schema=SchemaRef("fake_candle", Version(1, 1)),
+        instrument_schema=SchemaRef("instrument", Version(1, 2)),
+        instrument_revision="instrument-r2",
+        candle=replace(
+            result.candle, normalizer_version="f06.fake_candle.v2", normalized_at_ns=999
+        ),
+    )
+    with NormalizationStore(installation(tmp_path), producer="collector-a") as store:
+        original = store.process(first, first_result, expected_predecessor=None)
+        duplicate = store.process(later, result, expected_predecessor=first.identity)
+        assert duplicate.kind is OutcomeKind.DUPLICATE
+        assert duplicate.semantic_revision == original.semantic_revision
+        assert duplicate.raw_sha256 != original.raw_sha256
+        assert duplicate.receipt == later.envelope.receipt
+        assert duplicate.input_schema == SchemaRef("fake_candle", Version(1, 1))
+        assert duplicate.instrument_schema == SchemaRef("instrument", Version(1, 2))
+        assert duplicate.output_schema == SchemaRef("candle", Version(1, 0))
+        assert duplicate.instrument_revision == "instrument-r2"
+        assert duplicate.normalizer_version == "f06.fake_candle.v2"
+        assert duplicate.normalized_at_ns == 999
+        assert store.outcome(first.identity) == original
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "venue='other'",
+        "category='future'",
+        "symbol='ETH-USDT'",
+        "start_ns=start_ns+1",
+        "interval_ns=interval_ns+1",
+        "open='100.2'",
+        "high='102'",
+        "low='99'",
+        "close='100.8'",
+        "volume='13'",
+        "volume_unit='USDT'",
+        "finalized=1",
+        "source_time_value=source_time_value+1",
+        "source_time_unit='us'",
+        "publication_time_value=9",
+        "publication_time_unit='ms'",
+        "quality_flags='[\"changed\"]'",
+    ],
+)
+def test_process_rejects_stored_semantic_revision_value_mismatch_after_reopen(
+    tmp_path: Path, change: str
+) -> None:
+    target = installation(tmp_path)
+    payload = fake_candle_payload(publication_time={"value": 8, "unit": "ns"})
+    first = raw_record(payload=payload)
+    later = raw_record(offset=3, payload=payload)
+    with NormalizationStore(target, producer="collector-a") as store:
+        store.process(first, normalization(first), expected_predecessor=None)
+    with sqlite3.connect(
+        target.state_dir / "normalization.sqlite3", autocommit=True
+    ) as db:
+        db.execute(f"UPDATE candle_observations SET {change}")
+    with NormalizationStore(target, producer="collector-a") as store:
+        with pytest.raises(
+            NormalizationError,
+            match="^Stored semantic revision does not match computed values$",
+        ):
+            store.process(
+                later, normalization(later), expected_predecessor=first.identity
+            )
+        assert store.checkpoint() == first.identity
+        assert store.outcome(later.identity) is None
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "BEGIN IMMEDIATE",
+        "INSERT INTO candle_observations",
+        "INSERT INTO processing_outcomes",
+        "INSERT INTO processing_checkpoint",
+        "UPDATE processing_checkpoint",
+        "COMMIT",
+    ],
+)
+def test_process_write_failure_rolls_back_and_permits_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    target = installation(tmp_path)
+    real_connect = sqlite3.connect
+    connections = observe_connection(monkeypatch)
+    record = raw_record(offset=5)
+    result = normalization(record)
+    assert isinstance(result, CandleNormalization)
+    with NormalizationStore(target, producer="collector-a") as store:
+        (db,) = connections
+        predecessor = None
+        if failure == "UPDATE processing_checkpoint":
+            first = raw_record(payload=b"invalid")
+            store.process(first, normalization(first), expected_predecessor=None)
+            predecessor = first.identity
+        statements: list[str] = []
+        db.set_trace_callback(statements.append)
+        db.failure = failure
+        with pytest.raises(NormalizationError) as error:
+            store.process(record, result, expected_predecessor=predecessor)
+        assert "private" not in str(error.value)
+        assert not db.in_transaction
+        assert ("ROLLBACK" in statements) is (failure != "BEGIN IMMEDIATE")
+        assert store.checkpoint() == predecessor
+        assert store.outcome(record.identity) is None
+        assert store.observation(result.candle.revision) is None
+        with real_connect(
+            target.state_dir / "normalization.sqlite3", autocommit=True
+        ) as reader:
+            assert reader.execute(
+                "SELECT count(*) FROM processing_outcomes"
+            ).fetchone() == (int(predecessor is not None),)
+        assert (
+            store.process(record, result, expected_predecessor=predecessor).kind
+            is OutcomeKind.ACCEPTED
+        )
+        assert store.checkpoint() == record.identity
+
+
+@pytest.mark.parametrize("rollback_failure", ["raise", "residual"])
+def test_process_failed_rollback_closes_connection_and_permanently_fails_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rollback_failure: str
+) -> None:
+    target = installation(tmp_path)
+    connections = observe_connection(monkeypatch)
+    record = raw_record()
+    result = normalization(record)
+    assert isinstance(result, CandleNormalization)
+    store = NormalizationStore(target, producer="collector-a")
+    (db,) = connections
+    db.failure = "INSERT INTO processing_outcomes"
+    db.rollback_failure = rollback_failure
+    with pytest.raises(
+        NormalizationError, match="^Durable normalization store failed$"
+    ):
+        store.process(record, result, expected_predecessor=None)
+    with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+        db.execute("SELECT 1")
+    for call in (
+        store.checkpoint,
+        store.barrier,
+        store.status,
+        store.__enter__,
+        lambda: store.outcome(record.identity),
+        lambda: store.observation(result.candle.revision),
+        lambda: store.process(record, result, expected_predecessor=None),
+    ):
+        with pytest.raises(
+            NormalizationError, match="^Durable normalization store failed$"
+        ):
+            call()
+    store.close()
+    with NormalizationStore(target, producer="collector-a") as replacement:
+        assert replacement.checkpoint() is None
+        assert replacement.outcome(record.identity) is None
+
+
+def test_process_engine_rollback_does_not_issue_redundant_rollback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    connections = observe_connection(monkeypatch)
+    record = raw_record()
+    result = normalization(record)
+    assert isinstance(result, CandleNormalization)
+    with NormalizationStore(installation(tmp_path), producer="collector-a") as store:
+        (db,) = connections
+        db.execute(
+            "CREATE TEMP TRIGGER fail_outcome BEFORE INSERT ON processing_outcomes "
+            "BEGIN SELECT RAISE(ROLLBACK, 'private engine detail'); END"
+        )
+        statements: list[str] = []
+        db.set_trace_callback(statements.append)
+        with pytest.raises(NormalizationError) as error:
+            store.process(record, result, expected_predecessor=None)
+        assert "private" not in str(error.value)
+        assert not db.in_transaction
+        assert "ROLLBACK" not in statements
+        assert store.checkpoint() is None
+        assert store.outcome(record.identity) is None
+        assert store.observation(result.candle.revision) is None
+        db.execute("DROP TRIGGER fail_outcome")
+        assert (
+            store.process(record, result, expected_predecessor=None).kind
+            is OutcomeKind.ACCEPTED
+        )
+
+
+@pytest.mark.parametrize(
+    "ignored_statement",
+    ["INSERT INTO processing_checkpoint", "UPDATE processing_checkpoint"],
+)
+def test_process_verifies_checkpoint_write_before_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ignored_statement: str
+) -> None:
+    connections = observe_connection(monkeypatch)
+    record = raw_record(offset=5)
+    result = normalization(record)
+    assert isinstance(result, CandleNormalization)
+    with NormalizationStore(installation(tmp_path), producer="collector-a") as store:
+        (db,) = connections
+        predecessor = None
+        if ignored_statement.startswith("UPDATE"):
+            first = raw_record(payload=b"invalid")
+            store.process(first, normalization(first), expected_predecessor=None)
+            predecessor = first.identity
+        db.ignored_statement = ignored_statement
+        with pytest.raises(NormalizationError):
+            store.process(record, result, expected_predecessor=predecessor)
+        assert store.checkpoint() == predecessor
+        assert store.outcome(record.identity) is None
+        assert store.observation(result.candle.revision) is None
+
+
+@pytest.mark.parametrize("mismatch", [None, "identity", "hash", "predecessor"])
+def test_process_deletes_only_the_matching_barrier_atomically(
+    tmp_path: Path, mismatch: str | None
+) -> None:
+    target = installation(tmp_path)
+    first = raw_record()
+    record = raw_record(offset=5)
+    with NormalizationStore(target, producer="collector-a") as store:
+        store.process(first, normalization(first), expected_predecessor=None)
+        with sqlite3.connect(
+            target.state_dir / "normalization.sqlite3", autocommit=True
+        ) as db:
+            db.execute(
+                "INSERT INTO processing_barrier VALUES "
+                "(1, 'collector-a', 'epoch-a', ?, ?, ?, ?, ?, "
+                "'metadata_unavailable', 'fake_candle', 1, 0, 'fake-venue', 'spot', 'BTC-USDT')",
+                (
+                    7 if mismatch == "identity" else 5,
+                    None if mismatch == "predecessor" else "collector-a",
+                    None if mismatch == "predecessor" else "epoch-a",
+                    None if mismatch == "predecessor" else 1,
+                    "a" * 64 if mismatch == "hash" else record.envelope.content_sha256,
+                ),
+            )
+        barrier = store.barrier()
+        assert barrier is not None
+        if mismatch is None:
+            outcome = store.process(
+                record, normalization(record), expected_predecessor=first.identity
+            )
+            assert outcome.kind is OutcomeKind.DUPLICATE
+            assert store.barrier() is None
+            assert store.checkpoint() == record.identity
+        else:
+            with pytest.raises(NormalizationError, match="barrier"):
+                store.process(
+                    record, normalization(record), expected_predecessor=first.identity
+                )
+            assert store.barrier() == barrier
+            assert store.checkpoint() == first.identity
+            assert store.outcome(record.identity) is None
+
+
+def test_process_rejection_keeps_recoverable_schema_and_field_provenance(
+    tmp_path: Path,
+) -> None:
+    record = raw_record(payload=fake_candle_payload(close="invalid"))
+    result = normalization(record)
+    assert isinstance(result, NormalizationRejection)
+    result = replace(
+        result,
+        instrument_schema=SchemaRef("instrument", Version(1, 0)),
+        instrument_revision="metadata-r2",
+        output_schema=SchemaRef("candle", Version(1, 0)),
+        normalized_at_ns=999,
+    )
+    with NormalizationStore(installation(tmp_path), producer="collector-a") as store:
+        outcome = store.process(record, result, expected_predecessor=None)
+        assert outcome.kind is OutcomeKind.REJECTED
+        assert outcome.rejection_code == "invalid_decimal"
+        assert outcome.rejection_field == "close"
+        assert outcome.input_schema == SchemaRef("fake_candle", Version(1, 0))
+        assert outcome.instrument_schema == SchemaRef("instrument", Version(1, 0))
+        assert outcome.instrument_revision == "metadata-r2"
+        assert outcome.output_schema == SchemaRef("candle", Version(1, 0))
+        assert outcome.normalized_at_ns == 999
+
+
+@pytest.mark.parametrize(
+    "mismatch", ["accepted_identity", "receipt", "rejected_identity", "raw_hash"]
+)
+def test_process_rejects_mismatched_raw_provenance(
+    tmp_path: Path, mismatch: str
+) -> None:
+    record = raw_record(
+        payload=b"invalid"
+        if mismatch in ("rejected_identity", "raw_hash")
+        else fake_candle_payload()
+    )
+    result = normalization(record)
+    if isinstance(result, CandleNormalization):
+        candle = (
+            replace(
+                result.candle, raw_record=IngestionId("collector-a", "epoch-other", 1)
+            )
+            if mismatch == "accepted_identity"
+            else replace(
+                result.candle, receipt=replace(result.candle.receipt, monotonic_ns=99)
+            )
+        )
+        result = replace(result, candle=candle)
+    else:
+        result = (
+            replace(result, raw_record=IngestionId("collector-a", "epoch-other", 1))
+            if mismatch == "rejected_identity"
+            else replace(result, raw_sha256="a" * 64)
+        )
+    with NormalizationStore(installation(tmp_path), producer="collector-a") as store:
+        with pytest.raises(NormalizationError, match="raw record"):
+            store.process(record, result, expected_predecessor=None)
+        assert store.checkpoint() is None
+        assert store.outcome(record.identity) is None
 
 
 def test_competing_owner_is_rejected_before_second_sqlite_open(
@@ -402,7 +1003,6 @@ def test_decodes_populated_state_and_returns_owned_frozen_values(
     "sql",
     [
         "UPDATE candle_observations SET open='1.00'",
-        "UPDATE candle_observations SET high='3'",
         "UPDATE candle_observations SET quality_flags='[ \"test\" ]'",
         'UPDATE candle_observations SET quality_flags=\'["test","test"]\'',
         "UPDATE candle_observations SET quality_flags='{}'",
