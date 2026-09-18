@@ -211,8 +211,9 @@ payload, and leaves the checkpoint unchanged. Later records are not requested.
 
 Each retry reads from that unchanged checkpoint and requires the next F05 record
 to match the stored blocker identity and hash. Supplying missing metadata can
-make the same record processable. An unsupported schema requires a reader that
-supports it; the current implementation adds no future schema reader. Successful
+make the same record processable. An unsupported schema requires compatible
+payload inspection and normalization support; the current implementation adds no
+future schema reader. Successful
 processing deletes the matching barrier atomically with outcome and checkpoint.
 
 Startup rejects incompatible versions, unexpected schema objects, mismatched
