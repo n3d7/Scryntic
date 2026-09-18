@@ -334,15 +334,15 @@ def _schema(document: object) -> SchemaRef:
     name = document["name"]
     major = document["major"]
     minor = document["minor"]
-    if type(name) is not str or not isinstance(major, _IntegerToken) or not isinstance(
-        minor, _IntegerToken
+    if (
+        type(name) is not str
+        or not isinstance(major, _IntegerToken)
+        or not isinstance(minor, _IntegerToken)
     ):
         raise _ValidationFailure(RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
     major_value = int(major.text)
     minor_value = int(minor.text)
-    if not (1 <= major_value <= _INT64_MAX) or not (
-        0 <= minor_value <= _INT64_MAX
-    ):
+    if not (1 <= major_value <= _INT64_MAX) or not (0 <= minor_value <= _INT64_MAX):
         raise _ValidationFailure(RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
     try:
         return SchemaRef(name, Version(major_value, minor_value))
@@ -387,9 +387,7 @@ def _supported(document: dict[str, Any], record: RawRecord) -> ParsedFakeCandle:
         raise _ValidationFailure(RejectionCode.FIELD_SET_MISMATCH, None)
 
     start_ns = _bounded_integer(document["start_ns"], RejectionField.START_NS)
-    interval_ns = _bounded_integer(
-        document["interval_ns"], RejectionField.INTERVAL_NS
-    )
+    interval_ns = _bounded_integer(document["interval_ns"], RejectionField.INTERVAL_NS)
     if start_ns < 0:
         raise _ValidationFailure(RejectionCode.INVALID_TIME, RejectionField.START_NS)
     if interval_ns <= 0:
@@ -410,9 +408,7 @@ def _supported(document: dict[str, Any], record: RawRecord) -> ParsedFakeCandle:
         )
     publication_time = _publication_time(document["publication_time"])
     if not isinstance(record.envelope.subject, InstrumentId):
-        raise _ValidationFailure(
-            RejectionCode.INVALID_SUBJECT, RejectionField.SUBJECT
-        )
+        raise _ValidationFailure(RejectionCode.INVALID_SUBJECT, RejectionField.SUBJECT)
     return ParsedFakeCandle(
         schema=FAKE_CANDLE_SCHEMA,
         start_ns=start_ns,
@@ -454,9 +450,7 @@ def inspect_fake_candle(
         return _rejection(record, RejectionCode.INVALID_JSON)
 
     if not isinstance(document, dict) or "schema" not in document:
-        return _rejection(
-            record, RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA
-        )
+        return _rejection(record, RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
     try:
         schema = _schema(document["schema"])
     except _ValidationFailure as failure:

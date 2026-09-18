@@ -121,9 +121,7 @@ def test_decoder_recursion_errors_are_bounded_rejections(
 
 
 def test_duplicate_keys_are_rejected_at_nested_levels() -> None:
-    payload = (
-        b'{"schema":{"name":"fake_candle","major":1,"major":1,"minor":0}}'
-    )
+    payload = b'{"schema":{"name":"fake_candle","major":1,"major":1,"minor":0}}'
     result = rejection(payload, RejectionCode.DUPLICATE_JSON_KEY)
     assert "major" not in repr(result)
 
@@ -197,9 +195,9 @@ def test_well_formed_unsupported_schema_quarantines_before_body_or_subject(
         separators=(",", ":"),
     ).encode()
 
-    assert inspect_fake_candle(raw_record(payload=payload, subject=None)) == UnsupportedSchema(
-        schema
-    )
+    assert inspect_fake_candle(
+        raw_record(payload=payload, subject=None)
+    ) == UnsupportedSchema(schema)
 
 
 def test_rejection_rendering_never_contains_payload_or_decoder_text() -> None:
@@ -264,9 +262,7 @@ def test_supported_fields_reject_wrong_scalar_types(field: str, value: object) -
         ("interval_ns", INT64_MAX + 1),
     ],
 )
-def test_supported_integers_require_signed_64_bit_range(
-    field: str, value: int
-) -> None:
+def test_supported_integers_require_signed_64_bit_range(field: str, value: int) -> None:
     body = json.loads(fake_candle_payload())
     body[field] = value
     rejection(
@@ -559,9 +555,7 @@ def test_every_semantic_field_changes_the_revision() -> None:
         ),
         replace(
             original,
-            publication_time=SourceTime(
-                publication_time.value, TimeUnit.NANOSECOND
-            ),
+            publication_time=SourceTime(publication_time.value, TimeUnit.NANOSECOND),
         ),
         replace(original, publication_time=None),
         replace(original, quality_flags=("flag-b",)),
@@ -768,9 +762,7 @@ def test_invalid_parsed_field_type_propagates() -> None:
     parsed = replace(parsed_candle(), open="100.1")  # type: ignore[arg-type]
 
     with pytest.raises(TypeError, match="Decimal"):
-        normalize_parsed_candle(
-            raw_record(), parsed, instrument(), normalized_at_ns=1
-        )
+        normalize_parsed_candle(raw_record(), parsed, instrument(), normalized_at_ns=1)
 
 
 def test_supported_domain_failure_becomes_provenanced_rejection() -> None:
