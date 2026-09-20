@@ -171,21 +171,6 @@ HANDOFF.md
 *.handoff.md
 
 .local/
-
-# =========================
-# Internal architecture / agent workflow
-# =========================
-
-ARCHITECTURE.md
 AGENTS.md
 
-.agents/
-
-docs/WORKFLOW.md
-docs/HANDOFF.md
-
-HANDOFF.md
-*.handoff.md
 docs/RUNTIME.md
-
-.local/
