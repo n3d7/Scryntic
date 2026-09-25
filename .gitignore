@@ -92,6 +92,10 @@ datasets/
 downloads/
 exports/
 archive/
+!src/scryntic/archive/
+!src/scryntic/archive/*.py
+!tests/archive/
+!tests/archive/*.py
 
 # =========================
 # ML / models

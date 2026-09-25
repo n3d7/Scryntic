@@ -15,7 +15,7 @@ dependencies = []
 
 [dependency-groups]
 # Add dependencies only when their implementation task is approved.
-collector = []
+collector = ["pyarrow==25.0.1"]
 analysis = []
 dev = [
     "mypy==2.3.1",

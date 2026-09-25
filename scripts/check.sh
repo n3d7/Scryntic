@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 uv lock --check
-uv sync --locked --no-default-groups --group dev
+uv sync --locked --no-default-groups --group dev --group collector
 uv run --locked --no-sync ruff check .
 uv run --locked --no-sync ruff format --check .
 uv run --locked --no-sync mypy --no-incremental

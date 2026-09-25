@@ -87,6 +87,8 @@ def main() -> None:
                 check=True,
             )
             forbidden = ["pytest", "ruff", "mypy", "pip_audit"]
+            if profile != "collector":
+                forbidden += ["pyarrow"]
             if profile != "analysis":
                 forbidden += ["torch", "transformers", "timesfm", "huggingface_hub"]
             manifest = temp / "expected.json"
@@ -108,6 +110,12 @@ def main() -> None:
                 cwd=temp,
                 check=True,
             )
+            if profile == "collector":
+                subprocess.run(
+                    [python, "-I", str(ROOT / "scripts/verify_archive_install.py")],
+                    cwd=temp,
+                    check=True,
+                )
     print("Packaging and installed profile checks passed", file=sys.stdout)
 
 
