@@ -414,9 +414,7 @@ class ParquetRawArchive:
                     if len(rows) >= limits.max_records:
                         raise ArchiveError("Archive limits exceeded")
                     record = _decode_row(stored, limits.max_decoded_bytes)
-                    size = len(
-                        canonical_json_bytes({"raw": raw_projection(record)})
-                    )
+                    size = len(canonical_json_bytes({"raw": raw_projection(record)}))
                     if observed_logical + size > limits.max_decoded_bytes:
                         raise ArchiveError("Archive limits exceeded")
                     observed_logical += size

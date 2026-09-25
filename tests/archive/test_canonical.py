@@ -24,7 +24,6 @@ from scryntic.normalization.candle import (
 from scryntic.normalization.sqlite_store import OutcomeKind, ProcessingOutcome
 from tests.normalization.helpers import normalization, raw_record
 
-
 _PAYLOAD_SHA256 = "a90a10503fbfc95789ff38a1bb5039cb71869ab9c0eb1cb51c4a9099f2933c6b"
 _INPUT_BYTES = (
     b'{"algorithm":"scryntic-publication-input-v1","outcome":{"identity":'
@@ -201,9 +200,7 @@ def test_subject_projection_distinguishes_entity_from_instrument_and_null() -> N
                 value,
                 outcome=replace(
                     value.outcome,
-                    receipt=ClockSample(
-                        101, 90, "session-a", TimeQuality("quality-a")
-                    ),
+                    receipt=ClockSample(101, 90, "session-a", TimeQuality("quality-a")),
                 ),
             ),
             "receipt",

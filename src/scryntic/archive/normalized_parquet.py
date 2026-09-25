@@ -142,7 +142,9 @@ def _schema(record_count: int, logical_bytes: int) -> pa.Schema:
     )
 
 
-def _schema_values(value: SchemaRef | None) -> tuple[str | None, int | None, int | None]:
+def _schema_values(
+    value: SchemaRef | None,
+) -> tuple[str | None, int | None, int | None]:
     if value is None:
         return None, None, None
     return value.name, value.version.major, value.version.minor
@@ -206,9 +208,13 @@ def _row(value: PublicationInput) -> dict[str, object]:
         "semantic_category": (
             None if semantics is None else semantics.key.instrument.category
         ),
-        "semantic_symbol": None if semantics is None else semantics.key.instrument.symbol,
+        "semantic_symbol": None
+        if semantics is None
+        else semantics.key.instrument.symbol,
         "semantic_start_ns": None if semantics is None else semantics.key.start_ns,
-        "semantic_interval_ns": None if semantics is None else semantics.key.interval_ns,
+        "semantic_interval_ns": None
+        if semantics is None
+        else semantics.key.interval_ns,
         "open": None if semantics is None else semantics.open,
         "high": None if semantics is None else semantics.high,
         "low": None if semantics is None else semantics.low,
@@ -459,7 +465,9 @@ class NormalizedParquetArchive:
             if isinstance(error, NormalizedArchiveError):
                 raise
             if isinstance(error, Exception):
-                raise NormalizedArchiveError("Unable to seal normalized archive") from None
+                raise NormalizedArchiveError(
+                    "Unable to seal normalized archive"
+                ) from None
             raise
 
     async def read(
@@ -476,7 +484,9 @@ class NormalizedParquetArchive:
             if isinstance(error, NormalizedArchiveError):
                 raise
             if isinstance(error, Exception):
-                raise NormalizedArchiveError("Unable to read normalized archive") from None
+                raise NormalizedArchiveError(
+                    "Unable to read normalized archive"
+                ) from None
             raise
 
     def _read_path(

@@ -66,7 +66,9 @@ def test_raw_binary_round_trip_preserves_every_field(tmp_path: Path) -> None:
     segment = asyncio.run(archive.seal(records, _limits()))
     recovered = tuple(
         asyncio.run(
-            archive.read(RawRecordRef(segment.sha256, index, record.identity), _limits())
+            archive.read(
+                RawRecordRef(segment.sha256, index, record.identity), _limits()
+            )
         )
         for index, record in enumerate(records)
     )
@@ -83,12 +85,18 @@ def test_repeated_payloads_keep_distinct_ingestion_identities(tmp_path: Path) ->
 
     segment = asyncio.run(archive.seal((first, second), _limits()))
 
-    assert asyncio.run(
-        archive.read(RawRecordRef(segment.sha256, 0, first.identity), _limits())
-    ) == first
-    assert asyncio.run(
-        archive.read(RawRecordRef(segment.sha256, 1, second.identity), _limits())
-    ) == second
+    assert (
+        asyncio.run(
+            archive.read(RawRecordRef(segment.sha256, 0, first.identity), _limits())
+        )
+        == first
+    )
+    assert (
+        asyncio.run(
+            archive.read(RawRecordRef(segment.sha256, 1, second.identity), _limits())
+        )
+        == second
+    )
 
 
 def test_seal_accepts_exact_logical_limit_and_rejects_one_below(
@@ -121,12 +129,15 @@ def test_read_enforces_exact_encoded_limit_and_rejects_one_below(
     archive = ParquetRawArchive(installation(tmp_path))
     segment = asyncio.run(archive.seal((record,), _limits()))
 
-    assert asyncio.run(
-        archive.read(
-            RawRecordRef(segment.sha256, 0, record.identity),
-            _limits(encoded=segment.encoded_bytes),
+    assert (
+        asyncio.run(
+            archive.read(
+                RawRecordRef(segment.sha256, 0, record.identity),
+                _limits(encoded=segment.encoded_bytes),
+            )
         )
-    ) == record
+        == record
+    )
     with pytest.raises(ArchiveError, match="limits"):
         asyncio.run(
             archive.read(
@@ -183,7 +194,9 @@ def test_seal_rejects_non_increasing_or_cross_producer_records(tmp_path: Path) -
     archive = ParquetRawArchive(installation(tmp_path))
     first = raw_record(offset=5)
     lower = raw_record(offset=2)
-    other = replace(raw_record(offset=7), identity=replace(first.identity, producer="b"))
+    other = replace(
+        raw_record(offset=7), identity=replace(first.identity, producer="b")
+    )
 
     with pytest.raises(ArchiveError, match="order"):
         asyncio.run(archive.seal((first, lower), _limits()))
