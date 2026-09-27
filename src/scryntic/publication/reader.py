@@ -56,6 +56,7 @@ class ValidatedManifest:
     document: ManifestDocument
     raw_records: tuple[RawRecord, ...]
     continuity: Continuity
+    inputs: tuple[PublicationInput, ...]
 
 
 class PublicationReader:
@@ -152,7 +153,7 @@ class PublicationReader:
                 continuity = Continuity.GLOBAL
         return continuity
 
-    def _read_objects(self, document: ManifestDocument) -> tuple[RawRecord, ...]:
+    def _read_objects(self, document: ManifestDocument) -> tuple[PublicationInput, ...]:
         body = document.body
         raw_descriptor, normalized_descriptor = body.objects
         if (
@@ -220,7 +221,7 @@ class PublicationReader:
             for record in records
         ):
             raise PublicationReaderError("Publication partition mismatch")
-        return records
+        return tuple(values)
 
     @staticmethod
     def _utc_date(record: RawRecord) -> str:
@@ -245,7 +246,8 @@ class PublicationReader:
             document, data = self._external_document(ref)
             self._validate_catalog(document, data)
             continuity = self._continuity(document)
-            records = self._read_objects(document)
+            inputs = self._read_objects(document)
+            records = tuple(value.raw for value in inputs)
             body = document.body
             if (
                 len(records) != body.record_count
@@ -258,7 +260,7 @@ class PublicationReader:
                 )
             ):
                 raise PublicationReaderError("Invalid publication input coverage")
-            return ValidatedManifest(document, records, continuity)
+            return ValidatedManifest(document, records, continuity, inputs)
         except PublicationReaderError:
             raise
         except Exception:

@@ -52,6 +52,29 @@ def test_interleaved_epoch_page_validates_global_and_epoch_continuity(
         bundle.close()
 
 
+def test_exact_manifest_exposes_ordered_validated_normalized_inputs(
+    tmp_path: Path,
+) -> None:
+    bundle = configured_coordinator(
+        tmp_path, offsets=(2, 5), epochs=("epoch-a", "epoch-a")
+    )
+    try:
+        result = bundle.coordinator.publish_next()
+        assert isinstance(result, Published)
+
+        validated = _reader(bundle).resolve_exact(result.manifest.manifest_hash)
+        assert tuple(item.raw for item in validated.inputs) == validated.raw_records
+        assert tuple(item.raw.identity.offset for item in validated.inputs) == (2, 5)
+        assert all(item.semantics is not None for item in validated.inputs)
+        assert all(
+            item.outcome.semantic_revision == item.semantics.revision()
+            for item in validated.inputs
+            if item.semantics is not None
+        )
+    finally:
+        bundle.close()
+
+
 def test_exact_hash_uses_catalog_and_page_is_bounded(tmp_path: Path) -> None:
     bundle = configured_coordinator(
         tmp_path, offsets=(2, 5), epochs=("epoch-a", "epoch-b")
