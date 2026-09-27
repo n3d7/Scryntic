@@ -147,6 +147,9 @@ backups/
 
 .vscode/
 .idea/
+.serena/
+:memory:.ses
+opencode.jsonc
 
 *.swp
 *.swo
