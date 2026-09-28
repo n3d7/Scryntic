@@ -180,4 +180,10 @@ HANDOFF.md
 .local/
 AGENTS.md
 
+# SonarQube scanner working directory
+.scannerwork/
+
+# Private local checkpoint audit summaries
+/docs/local-audits/
+
 docs/RUNTIME.md
