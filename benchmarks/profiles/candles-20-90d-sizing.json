@@ -1,0 +1,23 @@
+{
+  "archive_bytes": 1658880000,
+  "burst_backlog_records": 0,
+  "derived_bytes": 5308416000,
+  "horizon_days": 90,
+  "manifest_catalog_bytes": 248832000,
+  "queue_memory_bytes": 75694080,
+  "queue_payload_bytes": 25231360,
+  "queue_records": 128,
+  "records": 2592000,
+  "required_disk_bytes": 13943474469,
+  "retained_bytes": 9206784000,
+  "segment_decoded_within_budget": true,
+  "segment_expected_logical_bytes": 327680,
+  "segment_payload_worst_case_bytes": 16777216,
+  "segments": 10125,
+  "service_records_per_second": 65.0,
+  "spool_bytes": 1990656000,
+  "staging_reserve_bytes": 16777216,
+  "sustained_records_per_second": 0.3333333333333333,
+  "sustained_utilization": 0.005128205128205128,
+  "sustained_within_budget": true
+}

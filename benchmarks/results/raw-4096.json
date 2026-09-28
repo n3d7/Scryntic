@@ -1,0 +1,1956 @@
+{
+  "schema": "scryntic.raw-benchmark.v1",
+  "command": [
+    "/home/void/Project/Scryntic/.venv/bin/python",
+    "scripts/benchmark_raw.py",
+    "--workloads",
+    "recorded-candle",
+    "trade",
+    "orderbook",
+    "--instruments",
+    "20",
+    "--records",
+    "4096",
+    "--segments",
+    "4",
+    "--repeats",
+    "3",
+    "--point-reads",
+    "8",
+    "--ingestion-records",
+    "512",
+    "--storage-root",
+    "/home/void/Project/Scryntic",
+    "--output",
+    "benchmarks/results/raw-4096.json"
+  ],
+  "environment": {
+    "python": "3.12.14 (main, Sep  1 2026, 14:16:52) [Clang 22.1.3 ]",
+    "executable": "/home/void/Project/Scryntic/.venv/bin/python",
+    "platform": "Linux-7.2.7-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "machine": "x86_64",
+    "cpu_model": "13th Gen Intel(R) Core(TM) i5-13600KF",
+    "cpu_count": 12,
+    "physical_memory_bytes": 50479767552,
+    "pyarrow": "25.0.1",
+    "zlib_runtime": "1.3.2",
+    "storage_root": "/home/void/Project/Scryntic",
+    "filesystem_mount": [
+      "/dev/vda3",
+      "/home",
+      "btrfs",
+      "rw,seclabel,relatime,compress=zstd:1,discard=async,space_cache=v2,subvolid=256,subvol=/home",
+      "0",
+      "0"
+    ],
+    "filesystem_block_bytes": 4096,
+    "filesystem_available_bytes": 26832441344,
+    "cache_policy": "warm OS cache; no privileged cache drop; fresh process per case/repeat",
+    "rss_policy": "Linux process ru_maxrss including Python, dependency imports, generated inputs, codec and read verification",
+    "provenance": "committed public candles replayed exactly; seeded synthetic trade/orderbook shapes",
+    "source_file_sha256": {
+      "scripts/benchmark_raw.py": "d58d7eb4d20ef739dc1534e5e48175a3ea3d6631e165b6729a99a97cff8796d7",
+      "src/scryntic/benchmarks/workloads.py": "95921c64e487eaa8464a7e481050e9a84b3ead3b3cca1983bf276c7df0258922",
+      "src/scryntic/archive/raw_parquet.py": "bfac1ae78f551144240a367f547f45a19de69295588cbf56d7eef0388e38a83c",
+      "src/scryntic/archive/raw_framed.py": "f69bdb962c74651fe5a01df1e8e2df41340d6d59b10d56625b36d69810449eaa",
+      "src/scryntic/archive/canonical.py": "14cf972daa97723bebb0ef0e398eb7c744409698de1fecdc5754afb166d198d7",
+      "src/scryntic/archive/storage.py": "db43af4f70876e9f7f5d18954afa647816a6f9ca87fbf18bdaf2716ba6d83dc9",
+      "src/scryntic/ingestion/sqlite_spool.py": "041f1bd6c9be8cc8d10a59b47a776462bf5bbfd6de8676fc1287fc225cd972b6",
+      "pyproject.toml": "393c5c972786299ad902a762aa22ff285e275b7a0e2e30a54d792a61cd3917a3",
+      "uv.lock": "db6d8cb6caea6a05ba0d8ff03afc39b71c021f562926d9f7bf4c500dba1d7d2c"
+    }
+  },
+  "parameters": {
+    "segments": 4,
+    "repeats": 3,
+    "point_reads": 8,
+    "ingestion_records": 512,
+    "timeout_seconds": 180
+  },
+  "results": [
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "recorded-candle",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json"
+      },
+      "repeat": 0,
+      "workload_digest": "92a612c2046f8bc1d77dc993d804eaf77201c200c4f73772676b48bb53bfff8d",
+      "segment_workload_digests": [
+        "fa1b96acaa94ec61ca2414ba2bbe1dc6e5d0f925bf3a51d4b0af3b3d292d0348",
+        "1e925adb05619fab79033b8efe4f3b3b51ebb616ec6ee0efff3ea68971f12fd3",
+        "e84468a3ccfe18c4fbc5df964aaedd678e4545211353d0c7db3b08f03ffd54b8",
+        "dc2675c8196f97958facd7fc4b3b0ff8cef8a892e128005a5e5925003e0e15eb"
+      ],
+      "segment_hashes": [
+        "ad15cca3e59a376b73c599b219159e1c038606554a6905bf28c3a6ca781d427c",
+        "224f5984fc0b0ad376b8534e7a647a3948f8ed0396609407851cae986206b8e4",
+        "9e80edd92743f15328864c4eba226edb83f0978ed30fc86b38374edb698a4722",
+        "de0df3a3c9e42cafd947600aaf210a69ee2aa9615fb849b01123fccfa876eeaf"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.1138133040003595,
+      "measured_wall_seconds": 4.262645855000301,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": {
+        "path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json",
+        "sha256": "f9f97d1570d15b0d516fc9d0fc507a3dd9f0bb563cf86ec96354bddad066807f",
+        "provenance": "Public Bybit V5 spot kline responses; one completed 2024-01-01 UTC minute per instrument. Replayed verbatim, not a live market chronology.",
+        "replay": "exact fixed public HTTP response payloads; synthetic receipts; source_time unparsed; no live chronology claim"
+      },
+      "payload_bytes": 3325972,
+      "logical_decoded_bytes": 17704376,
+      "encoded_bytes": 8335400,
+      "encoded_to_payload_ratio": 2.506154591800532,
+      "durable_write_seconds": 1.0613590200000544,
+      "durable_write_records_per_second": 15436.812323881846,
+      "durable_write_payload_bytes_per_second": 3133691.7455130587,
+      "verified_scan_seconds": 0.32043134400009876,
+      "verified_scan_records_per_second": 51131.07786357801,
+      "verified_scan_payload_bytes_per_second": 10379671.22217287,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.2913787260013123,
+        "median_seconds": 0.07959698249987923,
+        "p95_seconds": 0.08673766399988381,
+        "max_seconds": 0.08673766399988381
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.3221340070003862,
+        "median_seconds": 0.07997749649985053,
+        "p95_seconds": 0.09276670100007323,
+        "max_seconds": 0.09276670100007323
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 127758336,
+      "peak_process_rss_with_ingestion_bytes": 127758336,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 0.9596415030036951,
+        "committed_records_per_second": 533.5325727341209,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 0.9596415030036951,
+          "median_seconds": 0.0017712660001052427,
+          "p95_seconds": 0.002908010999817634,
+          "max_seconds": 0.010829328999534482
+        },
+        "records_after_seconds": 0.00620605499989324,
+        "records_after_records_per_second": 82500.0745254123,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 241664,
+          "wal": 4124152,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 274432,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 274432,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "recorded-candle",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json"
+      },
+      "repeat": 1,
+      "workload_digest": "94e3cdbdfbe0e1d1589f16fe8220bac1fcd4c75c314ebc441672b152a7a233af",
+      "segment_workload_digests": [
+        "80c7c672cdbe0ebad5f6d4cfcd9d03a00e74ba775b76e809eadac91278e400d8",
+        "3e13f3e4ff8f39606e60e40f2ab7fd3d763ea72c3b3fedfee7138880bfa0a3b4",
+        "19c66814b62fbdf68c5adb5ca3b3964d1bfc86443b3eda29ea474e2d320acee6",
+        "afef5967cd03444b5f1d94cdf1fe0997a64727b73baf0ae93a926fe8e6fe33a6"
+      ],
+      "segment_hashes": [
+        "a8be03c691a6695f8dcdcee1ee27b3eebbb825b1a264ec23f242b573c819f021",
+        "188536a43072814ea997ac8e06d137a9f4820071626fcfaf52cac17d57ef3650",
+        "c8ae3b373c4348e16894643a270a8cb87cdff8c2e62a77610254425bead00602",
+        "ed9257b6afa1509480ed56609458e52897ea020c598c5b4f1ceaae42d7ce1c98"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.11120516700066219,
+      "measured_wall_seconds": 4.045982922999428,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": {
+        "path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json",
+        "sha256": "f9f97d1570d15b0d516fc9d0fc507a3dd9f0bb563cf86ec96354bddad066807f",
+        "provenance": "Public Bybit V5 spot kline responses; one completed 2024-01-01 UTC minute per instrument. Replayed verbatim, not a live market chronology.",
+        "replay": "exact fixed public HTTP response payloads; synthetic receipts; source_time unparsed; no live chronology claim"
+      },
+      "payload_bytes": 3325972,
+      "logical_decoded_bytes": 17704376,
+      "encoded_bytes": 8335400,
+      "encoded_to_payload_ratio": 2.506154591800532,
+      "durable_write_seconds": 0.889250959000492,
+      "durable_write_records_per_second": 18424.495171099315,
+      "durable_write_payload_bytes_per_second": 3740195.010571993,
+      "verified_scan_seconds": 0.31663788900004874,
+      "verified_scan_records_per_second": 51743.64966789391,
+      "verified_scan_payload_bytes_per_second": 10504024.046217311,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.2845917290014768,
+        "median_seconds": 0.07880225450026046,
+        "p95_seconds": 0.08719582000048831,
+        "max_seconds": 0.08719582000048831
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.2942608420016768,
+        "median_seconds": 0.07874516800029596,
+        "p95_seconds": 0.08767873400029202,
+        "max_seconds": 0.08767873400029202
+      },
+      "baseline_process_rss_bytes": 60964864,
+      "peak_process_rss_bytes": 126525440,
+      "peak_process_rss_with_ingestion_bytes": 126525440,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 0.8951577429925237,
+        "committed_records_per_second": 571.9662305420914,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 0.8951577429925237,
+          "median_seconds": 0.001673961499818688,
+          "p95_seconds": 0.0027069899997513858,
+          "max_seconds": 0.0038481680003314978
+        },
+        "records_after_seconds": 0.007875210000747757,
+        "records_after_records_per_second": 65014.1392993184,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 241664,
+          "wal": 4124152,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 274432,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 274432,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "recorded-candle",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json"
+      },
+      "repeat": 2,
+      "workload_digest": "c408a1ba843155d8fa7a4cba09a65abc1443cffaed69a40e59af888b61d2f9e7",
+      "segment_workload_digests": [
+        "7139c598e9b04e49ff1666c1f9c01a10f73b3c6d01620d34b6480d3ef882e641",
+        "24f0d2223501e59fc55c61cce999a0771660a61421d32c0d709de12b484edf76",
+        "9f4a5099a4870e1f2099d31c940245a8c7ea2e11b2f718f47bce3e69d48a4c09",
+        "dee17ef9d5e8ab97f33a8ef1d4539cf3f2d63b52b7faf9f014823c07f199a30a"
+      ],
+      "segment_hashes": [
+        "292ca686368904fdfa5a5a82d182cd02c550b2009f14160e14522526fe45d87c",
+        "776b6b9be6c04386cb1dd5d07e9af2cb3e9f8532524a2450c0a8b7bc251779f3",
+        "13babf66244a1d6627331cad5ac78811ad03934b67e324d823f5286026e1fd4e",
+        "b8a329ff1dcae9cba9bb04653f21ce3c615ee9896ad5a47a651d8ebf7aea1c12"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.11659166299978097,
+      "measured_wall_seconds": 4.083029456999611,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": {
+        "path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json",
+        "sha256": "f9f97d1570d15b0d516fc9d0fc507a3dd9f0bb563cf86ec96354bddad066807f",
+        "provenance": "Public Bybit V5 spot kline responses; one completed 2024-01-01 UTC minute per instrument. Replayed verbatim, not a live market chronology.",
+        "replay": "exact fixed public HTTP response payloads; synthetic receipts; source_time unparsed; no live chronology claim"
+      },
+      "payload_bytes": 3325972,
+      "logical_decoded_bytes": 17712568,
+      "encoded_bytes": 8343592,
+      "encoded_to_payload_ratio": 2.5086176311766906,
+      "durable_write_seconds": 0.9254358709995358,
+      "durable_write_records_per_second": 17704.09005467243,
+      "durable_write_payload_bytes_per_second": 3593951.892536558,
+      "verified_scan_seconds": 0.32141288699949655,
+      "verified_scan_records_per_second": 50974.93181729724,
+      "verified_scan_payload_bytes_per_second": 10347973.384169906,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.2821213840024939,
+        "median_seconds": 0.07851804150004682,
+        "p95_seconds": 0.08757677599987801,
+        "max_seconds": 0.08757677599987801
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.287546526999904,
+        "median_seconds": 0.07846391400016728,
+        "p95_seconds": 0.08668340399981389,
+        "max_seconds": 0.08668340399981389
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 126279680,
+      "peak_process_rss_with_ingestion_bytes": 126279680,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 0.721076729007109,
+        "committed_records_per_second": 710.0492630028451,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 0.721076729007109,
+          "median_seconds": 0.001297390999752679,
+          "p95_seconds": 0.0019280559999970137,
+          "max_seconds": 0.00875323499985825
+        },
+        "records_after_seconds": 0.005782461999842781,
+        "records_after_records_per_second": 88543.5995971821,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 241664,
+          "wal": 4124152,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 274432,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 274432,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "recorded-candle",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json"
+      },
+      "repeat": 0,
+      "workload_digest": "92a612c2046f8bc1d77dc993d804eaf77201c200c4f73772676b48bb53bfff8d",
+      "segment_workload_digests": [
+        "fa1b96acaa94ec61ca2414ba2bbe1dc6e5d0f925bf3a51d4b0af3b3d292d0348",
+        "1e925adb05619fab79033b8efe4f3b3b51ebb616ec6ee0efff3ea68971f12fd3",
+        "e84468a3ccfe18c4fbc5df964aaedd678e4545211353d0c7db3b08f03ffd54b8",
+        "dc2675c8196f97958facd7fc4b3b0ff8cef8a892e128005a5e5925003e0e15eb"
+      ],
+      "segment_hashes": [
+        "53b08ff69101388e07d1711e6d15f048e62691c79e6f9d8462312d8d108dcb19",
+        "e6ed48b1bf808d8c6dae0eb65b23b8b8ae98c529aacefba0fde148cd8b296fe6",
+        "894e8ba578722a71f2a0c027c9b57d6605c05239f892e04aa32bd7aceb6e4ca7",
+        "9c65fa291ee36040df646fd6e14c2537399d4f018735b49887c7b7314e8c7829"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.116334606998862,
+      "measured_wall_seconds": 6.053512513999522,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": {
+        "path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json",
+        "sha256": "f9f97d1570d15b0d516fc9d0fc507a3dd9f0bb563cf86ec96354bddad066807f",
+        "provenance": "Public Bybit V5 spot kline responses; one completed 2024-01-01 UTC minute per instrument. Replayed verbatim, not a live market chronology.",
+        "replay": "exact fixed public HTTP response payloads; synthetic receipts; source_time unparsed; no live chronology claim"
+      },
+      "payload_bytes": 3325972,
+      "logical_decoded_bytes": 17704376,
+      "encoded_bytes": 9889042,
+      "encoded_to_payload_ratio": 2.973278788877357,
+      "durable_write_seconds": 1.6827236100007212,
+      "durable_write_records_per_second": 9736.596017686456,
+      "durable_write_payload_bytes_per_second": 1976540.8770835362,
+      "verified_scan_seconds": 0.4686681700004556,
+      "verified_scan_records_per_second": 34958.636085706596,
+      "verified_scan_payload_bytes_per_second": 7096645.799514755,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.8117942249991756,
+        "median_seconds": 0.11304829400023664,
+        "p95_seconds": 0.11473214400029974,
+        "max_seconds": 0.11473214400029974
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.809736499999417,
+        "median_seconds": 0.1130691714997738,
+        "p95_seconds": 0.1140025759996206,
+        "max_seconds": 0.1140025759996206
+      },
+      "baseline_process_rss_bytes": 60964864,
+      "peak_process_rss_bytes": 79724544,
+      "peak_process_rss_with_ingestion_bytes": 84914176,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "recorded-candle",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json"
+      },
+      "repeat": 1,
+      "workload_digest": "94e3cdbdfbe0e1d1589f16fe8220bac1fcd4c75c314ebc441672b152a7a233af",
+      "segment_workload_digests": [
+        "80c7c672cdbe0ebad5f6d4cfcd9d03a00e74ba775b76e809eadac91278e400d8",
+        "3e13f3e4ff8f39606e60e40f2ab7fd3d763ea72c3b3fedfee7138880bfa0a3b4",
+        "19c66814b62fbdf68c5adb5ca3b3964d1bfc86443b3eda29ea474e2d320acee6",
+        "afef5967cd03444b5f1d94cdf1fe0997a64727b73baf0ae93a926fe8e6fe33a6"
+      ],
+      "segment_hashes": [
+        "d98aac977a17dbc7ed094bdfb916c61996da16c11c36709ed21518e9c09559d2",
+        "f0bfad551e12557010c175fb7ae96aa23b0f2c8f54e15e253bf9b3cd0de8f4e9",
+        "0cdbe7446ca80487fa2b850d73b2f4de5a599eba1078719e2a63fb6372ff16e7",
+        "451da1c109b1e931340552e7d09945afe99b1a478db145afae2eabcbac370560"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.11907833399891388,
+      "measured_wall_seconds": 5.945696449000025,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": {
+        "path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json",
+        "sha256": "f9f97d1570d15b0d516fc9d0fc507a3dd9f0bb563cf86ec96354bddad066807f",
+        "provenance": "Public Bybit V5 spot kline responses; one completed 2024-01-01 UTC minute per instrument. Replayed verbatim, not a live market chronology.",
+        "replay": "exact fixed public HTTP response payloads; synthetic receipts; source_time unparsed; no live chronology claim"
+      },
+      "payload_bytes": 3325972,
+      "logical_decoded_bytes": 17704376,
+      "encoded_bytes": 9888844,
+      "encoded_to_payload_ratio": 2.97321925740806,
+      "durable_write_seconds": 1.6300064340002791,
+      "durable_write_records_per_second": 10051.494066677527,
+      "durable_write_payload_bytes_per_second": 2040465.5654257562,
+      "verified_scan_seconds": 0.47657164800057217,
+      "verified_scan_records_per_second": 34378.88105332764,
+      "verified_scan_payload_bytes_per_second": 6978954.820233047,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.7861866820003343,
+        "median_seconds": 0.11163180050016308,
+        "p95_seconds": 0.11220965599932242,
+        "max_seconds": 0.11220965599932242
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.7831534320002902,
+        "median_seconds": 0.11149619899970276,
+        "p95_seconds": 0.11219560800054751,
+        "max_seconds": 0.11219560800054751
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 79605760,
+      "peak_process_rss_with_ingestion_bytes": 84566016,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "recorded-candle",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json"
+      },
+      "repeat": 2,
+      "workload_digest": "c408a1ba843155d8fa7a4cba09a65abc1443cffaed69a40e59af888b61d2f9e7",
+      "segment_workload_digests": [
+        "7139c598e9b04e49ff1666c1f9c01a10f73b3c6d01620d34b6480d3ef882e641",
+        "24f0d2223501e59fc55c61cce999a0771660a61421d32c0d709de12b484edf76",
+        "9f4a5099a4870e1f2099d31c940245a8c7ea2e11b2f718f47bce3e69d48a4c09",
+        "dee17ef9d5e8ab97f33a8ef1d4539cf3f2d63b52b7faf9f014823c07f199a30a"
+      ],
+      "segment_hashes": [
+        "ce9114bb82faa21a6fa03e584c49ed15630fd12fbff10f297194f6a3e25f4aa5",
+        "c608e3174c47bef03f9a3b7479786396d5828fb1bcd1d9999cde0f42c76ae7cf",
+        "b51647cc2e4d7435ff4d40a8be9b83b6be76fbb4c01585e69176e027bf454c24",
+        "d41be09cb4fff2bc0d661b8ef89ec1058ef13ad114251b80e5f5f884946d08b2"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.11171364999881916,
+      "measured_wall_seconds": 5.980090633000145,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": {
+        "path": "/home/void/Project/Scryntic/benchmarks/fixtures/candles.json",
+        "sha256": "f9f97d1570d15b0d516fc9d0fc507a3dd9f0bb563cf86ec96354bddad066807f",
+        "provenance": "Public Bybit V5 spot kline responses; one completed 2024-01-01 UTC minute per instrument. Replayed verbatim, not a live market chronology.",
+        "replay": "exact fixed public HTTP response payloads; synthetic receipts; source_time unparsed; no live chronology claim"
+      },
+      "payload_bytes": 3325972,
+      "logical_decoded_bytes": 17712568,
+      "encoded_bytes": 9893200,
+      "encoded_to_payload_ratio": 2.9745289497325893,
+      "durable_write_seconds": 1.6182702070000232,
+      "durable_write_records_per_second": 10124.390802678705,
+      "durable_write_payload_bytes_per_second": 2055263.6918192687,
+      "verified_scan_seconds": 0.46199724600046466,
+      "verified_scan_records_per_second": 35463.41486196548,
+      "verified_scan_payload_bytes_per_second": 7199116.507280338,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.8315435630001957,
+        "median_seconds": 0.1126479089998611,
+        "p95_seconds": 0.13115881300018373,
+        "max_seconds": 0.13115881300018373
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.8068256849992395,
+        "median_seconds": 0.11297597700013284,
+        "p95_seconds": 0.11514128300041193,
+        "max_seconds": 0.11514128300041193
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 79724544,
+      "peak_process_rss_with_ingestion_bytes": 84697088,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "trade",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 0,
+      "workload_digest": "a27b877316447d1d0c8e6c4f1425bdafb0a88d91eda4d07d2f83356157cdc1d5",
+      "segment_workload_digests": [
+        "30bf5e4c8e6375da775672f2b38731386bedfbab6098aec64c517f413963e36a",
+        "0070bd1fd186f6e111cf784ff6be26eeb5253bd5c707d32c6b201138821342bb",
+        "72b4d47fa23185ac026e741f47028902dc9a17b4ca2e433b71cb49348bac1375",
+        "6b2abb3c641e5dc6dabae5b148e3c33fb1bac91789c1633d2e3123423c5a0bdf"
+      ],
+      "segment_hashes": [
+        "612ef4b2b924f5783f9ca6b4cb72faf22a8430ae537a9b7d57d392f480779f89",
+        "71411b686f714d4aea1d601770d24cc6abe3c9e09dee1e550ba2c4e1495a4269",
+        "2f5a272886d696384d0461dd47c10dcc85f88575dd6b5a4796b6734531b332de",
+        "6eba87d1ce96492a70aaf5ee997ba475570083a8ec1829520cf0d88a1260f5ec"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.2172047760004716,
+      "measured_wall_seconds": 4.61376745600046,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 5141784,
+      "logical_decoded_bytes": 21886504,
+      "encoded_bytes": 10423280,
+      "encoded_to_payload_ratio": 2.027171892090372,
+      "durable_write_seconds": 1.0256003350023093,
+      "durable_write_records_per_second": 15975.03378346996,
+      "durable_write_payload_bytes_per_second": 5013438.300006428,
+      "verified_scan_seconds": 0.35333345500021096,
+      "verified_scan_records_per_second": 46369.7953537692,
+      "verified_scan_payload_bytes_per_second": 14552213.857012011,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.418441552999866,
+        "median_seconds": 0.0865899239997816,
+        "p95_seconds": 0.09497679400010384,
+        "max_seconds": 0.09497679400010384
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.4265589279966662,
+        "median_seconds": 0.08675042199956806,
+        "p95_seconds": 0.09550330999991274,
+        "max_seconds": 0.09550330999991274
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 135016448,
+      "peak_process_rss_with_ingestion_bytes": 135016448,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 0.8395230809956047,
+        "committed_records_per_second": 609.8700697934481,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 0.8395230809956047,
+          "median_seconds": 0.0014730190005138866,
+          "p95_seconds": 0.0027588100001594285,
+          "max_seconds": 0.0040473390008628485
+        },
+        "records_after_seconds": 0.00626917899990076,
+        "records_after_records_per_second": 81669.38605646846,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 299008,
+          "wal": 4124152,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 352256,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 352256,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "trade",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 1,
+      "workload_digest": "db67be66d70496892e9bfb617b97503943b877d833d58d25e7455de29f45636b",
+      "segment_workload_digests": [
+        "6ecaa344065709b4b7763fee0c4216e256bbd90042a695ea22243a3ecf6ebf22",
+        "1e72c72c5db98ef7657fa712ad9b820ecfba1d7666c5060e7852389eea457b47",
+        "04f354edf7e349377361569b80ae13e80a1ef6bcce6e8488f1ebe491c4e57079",
+        "3a01a4db3876e0cc671c2d55b99f94f4f39686744ee8e52e49288f82d872c6f7"
+      ],
+      "segment_hashes": [
+        "09ed560d4a2b5d2ae5e40eb7c5bac83ee721046cf6d35624ccfef2b632b348d5",
+        "74dc36b3af2d95a958bb2a2fe15bb3504ac03a3739ffeeebcfc05b6004814384",
+        "73e428bc51ec3b2e27fba9985ec86f480fbd6e892b54bd576b8e9e21cad6348c",
+        "379015977e05c20a4d6102d68389cf9560be5915499780c576f67e46dbd4c07f"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.21755956900051387,
+      "measured_wall_seconds": 4.648966699999619,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 5088951,
+      "logical_decoded_bytes": 21780838,
+      "encoded_bytes": 10370447,
+      "encoded_to_payload_ratio": 2.0378358919156425,
+      "durable_write_seconds": 1.0493417730003785,
+      "durable_write_records_per_second": 15613.597420365053,
+      "durable_write_payload_bytes_per_second": 4849660.1688210545,
+      "verified_scan_seconds": 0.35348320299999614,
+      "verified_scan_records_per_second": 46350.151466745025,
+      "verified_scan_payload_bytes_per_second": 14396585.062063206,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.4222072739994474,
+        "median_seconds": 0.08664993500042328,
+        "p95_seconds": 0.09468271500008996,
+        "max_seconds": 0.09468271500008996
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.4323912580011893,
+        "median_seconds": 0.08727718099999038,
+        "p95_seconds": 0.09508580700003222,
+        "max_seconds": 0.09508580700003222
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 131211264,
+      "peak_process_rss_with_ingestion_bytes": 131211264,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 0.9764514790067551,
+        "committed_records_per_second": 524.3476107187687,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 0.9764514790067551,
+          "median_seconds": 0.0015212140001494845,
+          "p95_seconds": 0.003548900999703619,
+          "max_seconds": 0.00872233599966421
+        },
+        "records_after_seconds": 0.006529453000439389,
+        "records_after_records_per_second": 78413.91920051278,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 303104,
+          "wal": 4124152,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 360448,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 360448,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "trade",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 2,
+      "workload_digest": "b08d08d62a687155dcc748f62541b8d5a057d3d3a5a50f220f468ef64940642f",
+      "segment_workload_digests": [
+        "172efad61d9dcbc80fd2900f9da43ec798db00a7f87bd7508d42e350018bda88",
+        "a9292c67ab67fc98627845fcf1724b7eeb666e5fa0edf98856f53291c3a153f1",
+        "70f3b3232b90b560b114c4e7dfa4cd1cc9a0f19209da08c3a684bc7a3ac811d1",
+        "3fe5235cdfd9d4c366fe6e2dbb4fbda15e5b112f0d421de19f056a3d9f161cb7"
+      ],
+      "segment_hashes": [
+        "cdcd9f58ef9da78b5f5273dcbb940d6bef6b38565b586c45da30e324c8a0bbda",
+        "6b6dbc9b56cca319ad1d9ff00b23945e43fdcdb027f5620c5a07f8aba36b49fa",
+        "d7314ed8fa738345451b41e6ae17484d550832de9aa0668715fc142764a15849",
+        "3df2f14ffcf7bc4573a64c1050abf8014ae9603b8b711867dee013ebb8dc2653"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.22085930599951098,
+      "measured_wall_seconds": 4.632137770000554,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 5216759,
+      "logical_decoded_bytes": 22044646,
+      "encoded_bytes": 10506447,
+      "encoded_to_payload_ratio": 2.0139797525628462,
+      "durable_write_seconds": 1.0106113709989586,
+      "durable_write_records_per_second": 16211.968784603041,
+      "durable_write_payload_bytes_per_second": 5161983.280322081,
+      "verified_scan_seconds": 0.36596060400006536,
+      "verified_scan_records_per_second": 44769.84631929691,
+      "verified_scan_payload_bytes_per_second": 14254974.286792543,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.421006184998987,
+        "median_seconds": 0.08677648299999419,
+        "p95_seconds": 0.09455989300022338,
+        "max_seconds": 0.09455989300022338
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.4374727910008005,
+        "median_seconds": 0.08796883249988241,
+        "p95_seconds": 0.09488937700007227,
+        "max_seconds": 0.09488937700007227
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 135118848,
+      "peak_process_rss_with_ingestion_bytes": 135118848,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 0.7544185449996803,
+        "committed_records_per_second": 678.6683643894477,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 0.7544185449996803,
+          "median_seconds": 0.0013934294997852703,
+          "p95_seconds": 0.0021413259992186795,
+          "max_seconds": 0.003917338000064774
+        },
+        "records_after_seconds": 0.006253710999772011,
+        "records_after_records_per_second": 81871.38804761937,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 303104,
+          "wal": 4124152,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 356352,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 356352,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "trade",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 0,
+      "workload_digest": "a27b877316447d1d0c8e6c4f1425bdafb0a88d91eda4d07d2f83356157cdc1d5",
+      "segment_workload_digests": [
+        "30bf5e4c8e6375da775672f2b38731386bedfbab6098aec64c517f413963e36a",
+        "0070bd1fd186f6e111cf784ff6be26eeb5253bd5c707d32c6b201138821342bb",
+        "72b4d47fa23185ac026e741f47028902dc9a17b4ca2e433b71cb49348bac1375",
+        "6b2abb3c641e5dc6dabae5b148e3c33fb1bac91789c1633d2e3123423c5a0bdf"
+      ],
+      "segment_hashes": [
+        "348e2d0c4ed1e0fa81d74a7b1fbb69747bbc68c5ab1ba9fce07b68f982d29d03",
+        "4e9701dcdc3f37fe3182e160c846423763660ce5aa6993a408862b9298cf859f",
+        "589ab3974fa2828cd0f16ad7595599a202940f49968ff0f0b79c65303f25eefc",
+        "8c99d7304c7d4dc1fee9e5a74dee59191c7ae22425a5b2b6d7dcee30343d6bb4"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.2215371430002051,
+      "measured_wall_seconds": 6.704916614000467,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 5141784,
+      "logical_decoded_bytes": 21886504,
+      "encoded_bytes": 10279639,
+      "encoded_to_payload_ratio": 1.999235868328969,
+      "durable_write_seconds": 1.7952995289997489,
+      "durable_write_records_per_second": 9126.053750556235,
+      "durable_write_payload_bytes_per_second": 2864025.7054290795,
+      "verified_scan_seconds": 0.5245007470002747,
+      "verified_scan_records_per_second": 31237.324434146933,
+      "verified_scan_payload_bytes_per_second": 9803196.714984482,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.9945960570012176,
+        "median_seconds": 0.12455140650035901,
+        "p95_seconds": 0.1264186010002959,
+        "max_seconds": 0.1264186010002959
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.9974998620000406,
+        "median_seconds": 0.12460319650017482,
+        "p95_seconds": 0.12838651299989579,
+        "max_seconds": 0.12838651299989579
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 84258816,
+      "peak_process_rss_with_ingestion_bytes": 89079808,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "trade",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 1,
+      "workload_digest": "db67be66d70496892e9bfb617b97503943b877d833d58d25e7455de29f45636b",
+      "segment_workload_digests": [
+        "6ecaa344065709b4b7763fee0c4216e256bbd90042a695ea22243a3ecf6ebf22",
+        "1e72c72c5db98ef7657fa712ad9b820ecfba1d7666c5060e7852389eea457b47",
+        "04f354edf7e349377361569b80ae13e80a1ef6bcce6e8488f1ebe491c4e57079",
+        "3a01a4db3876e0cc671c2d55b99f94f4f39686744ee8e52e49288f82d872c6f7"
+      ],
+      "segment_hashes": [
+        "28c108b9e64040cfc82c21878c4a5d3c8ca36ebadc35401777bb83f7fb13428c",
+        "2a4688e1379a8a9598f0aa9bdfa6a32cd2308ce96808f16d2bf21c245a0016d0",
+        "4f8aa2c59bd7858860818d635216242c62660eb58a712c80c48d9f8c6d47c0bf",
+        "b5fbe97710ba3bbafa853b63670b231660772bb08e6e421ef98356add8bb5078"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.22125774799951614,
+      "measured_wall_seconds": 6.734117992999927,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 5088951,
+      "logical_decoded_bytes": 21780838,
+      "encoded_bytes": 10249520,
+      "encoded_to_payload_ratio": 2.014073234346332,
+      "durable_write_seconds": 1.814021234999018,
+      "durable_write_records_per_second": 9031.867810526965,
+      "durable_write_payload_bytes_per_second": 2805342.5736235967,
+      "verified_scan_seconds": 0.5395111099996939,
+      "verified_scan_records_per_second": 30368.234678261393,
+      "verified_scan_payload_bytes_per_second": 9432523.085581848,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.9960505910003121,
+        "median_seconds": 0.12483740449988545,
+        "p95_seconds": 0.12663053699998272,
+        "max_seconds": 0.12663053699998272
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.9891114539996124,
+        "median_seconds": 0.12399324100033482,
+        "p95_seconds": 0.12579525999990437,
+        "max_seconds": 0.12579525999990437
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 83013632,
+      "peak_process_rss_with_ingestion_bytes": 88887296,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "trade",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 2,
+      "workload_digest": "b08d08d62a687155dcc748f62541b8d5a057d3d3a5a50f220f468ef64940642f",
+      "segment_workload_digests": [
+        "172efad61d9dcbc80fd2900f9da43ec798db00a7f87bd7508d42e350018bda88",
+        "a9292c67ab67fc98627845fcf1724b7eeb666e5fa0edf98856f53291c3a153f1",
+        "70f3b3232b90b560b114c4e7dfa4cd1cc9a0f19209da08c3a684bc7a3ac811d1",
+        "3fe5235cdfd9d4c366fe6e2dbb4fbda15e5b112f0d421de19f056a3d9f161cb7"
+      ],
+      "segment_hashes": [
+        "6d18c8ab11002e2b0e7affd7048786a1c662a0fe253079c4a154e013126bb826",
+        "e2f8d6a617e2f63731ef7510d7932d2df276810708bdad1123f04281a4a5f97d",
+        "298d200208e7134eb6acc240ffc32defd978e3abded20850e6c947ee30c32955",
+        "6f81ed022a2c6d372485b9e68802520abafd37c553dc7499188ad28d3418a6a6"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.22292807499979972,
+      "measured_wall_seconds": 6.793868841000403,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 5216759,
+      "logical_decoded_bytes": 22044646,
+      "encoded_bytes": 10308106,
+      "encoded_to_payload_ratio": 1.9759597865264622,
+      "durable_write_seconds": 1.8328738769996562,
+      "durable_write_records_per_second": 8938.967490125386,
+      "durable_write_payload_bytes_per_second": 2846218.2070812387,
+      "verified_scan_seconds": 0.5325761969997984,
+      "verified_scan_records_per_second": 30763.673052414324,
+      "verified_scan_payload_bytes_per_second": 9795328.873854974,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 2.01669746099833,
+        "median_seconds": 0.1250710720000825,
+        "p95_seconds": 0.13196758499998396,
+        "max_seconds": 0.13196758499998396
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 2.016090238002107,
+        "median_seconds": 0.1254039314999318,
+        "p95_seconds": 0.13236449000032735,
+        "max_seconds": 0.13236449000032735
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 84312064,
+      "peak_process_rss_with_ingestion_bytes": 89423872,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "orderbook",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 0,
+      "workload_digest": "01cd77674ce4e6a9b321c8c835dec48fd6a1957f1a38fe64f8144ffd5b8312e5",
+      "segment_workload_digests": [
+        "5330d2cbc4dca1f6327b7ae741db59e1f98860204a4f914f1ab56a2924d4b491",
+        "3c28de5455157bdb5f829c0b8115d6f5a634f3fde9bba8422700d54cd155fbdc",
+        "c6be6bfa801c568cdab6ab612e9de32919ea798ed142957a8f4a8241e9569dc8",
+        "db1061957c2e4e8a7c3b91515086ed4d352bf8450825d9e30e8e500374998c8c"
+      ],
+      "segment_hashes": [
+        "8218346537413febe1f7a6db7ea77dd8083125a79895d7211e619f8c3d9dd915",
+        "0a32f8be72dffb85e5e661aed567d193ddf8541af1fb5c2793c7deddc65056e2",
+        "b4b6440f81a3e44f461ac4b0e0f92b0e06f19d0202429aae40233725a7a6a012",
+        "b9db7a2f42c96e3bbbb0c07975a2ffc5dbb520e135a6cb7148404ad04c185948"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.26838685200073087,
+      "measured_wall_seconds": 4.8251826590003475,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 6340694,
+      "logical_decoded_bytes": 24349860,
+      "encoded_bytes": 11687822,
+      "encoded_to_payload_ratio": 1.8433032724808989,
+      "durable_write_seconds": 1.0911085699999603,
+      "durable_write_records_per_second": 15015.920917934496,
+      "durable_write_payload_bytes_per_second": 5811240.2141614845,
+      "verified_scan_seconds": 0.363259013998686,
+      "verified_scan_records_per_second": 45102.80369824289,
+      "verified_scan_payload_bytes_per_second": 17455021.77689371,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.4657679719994121,
+        "median_seconds": 0.08997830950011121,
+        "p95_seconds": 0.09898037099992507,
+        "max_seconds": 0.09898037099992507
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.4601895690011588,
+        "median_seconds": 0.08888886350041503,
+        "p95_seconds": 0.0977812900000572,
+        "max_seconds": 0.0977812900000572
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 134639616,
+      "peak_process_rss_with_ingestion_bytes": 137023488,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 0.7193832079919957,
+        "committed_records_per_second": 711.7208107055187,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 0.7193832079919957,
+          "median_seconds": 0.0013200399998822832,
+          "p95_seconds": 0.0021286859991960227,
+          "max_seconds": 0.00396590800028207
+        },
+        "records_after_seconds": 0.00800811600038287,
+        "records_after_records_per_second": 63935.137799642405,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 376832,
+          "wal": 4132392,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 438272,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 438272,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "orderbook",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 1,
+      "workload_digest": "4e179bf393036d9c23b2d0dd6b5773b7cf2d3a834f2e26f9abe16339c3e110d1",
+      "segment_workload_digests": [
+        "0532a0df2a0e725ce86b41a1bc124f0abae741c33fa53552fb0553873ab684c2",
+        "c5330ea8caa609b110b869a2fc8dd3ec568700296ff614bcd1800f93b22bfa60",
+        "0a3662c05cd52f27d34741947ebb3d8f3e2e15c784c9538e047d903e89b95b4a",
+        "d589f9274b570e3e091a206180143b052e649b1cd4a89fb9f7b426fef608baff"
+      ],
+      "segment_hashes": [
+        "e73d918fda11eaa49ea2439733650e047b2089ac4c511805490c6f30c9236e05",
+        "f69b67391558341ed1283342917a3261cf09e11eab39b068c456240ffacc040a",
+        "373e3ea5f835980abe190bbf6fcd268e4a8d0c6cda9c8c178be8f9c166562965",
+        "ce9671a5fbf9ada2c58cc9bb3875fcf3a5ea8d77cdc42e5e325c518da1f5cf31"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.28101652399891464,
+      "measured_wall_seconds": 4.782381522999458,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 6348277,
+      "logical_decoded_bytes": 24365026,
+      "encoded_bytes": 11695405,
+      "encoded_to_payload_ratio": 1.8422959489637898,
+      "durable_write_seconds": 1.0585834809999142,
+      "durable_write_records_per_second": 15477.2866704136,
+      "durable_write_payload_bytes_per_second": 5996954.528332107,
+      "verified_scan_seconds": 0.3651377389996924,
+      "verified_scan_records_per_second": 44870.73849141023,
+      "verified_scan_payload_bytes_per_second": 17385978.829225726,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.4458068680005454,
+        "median_seconds": 0.0879722714998934,
+        "p95_seconds": 0.09813514999950712,
+        "max_seconds": 0.09813514999950712
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.4521718260002672,
+        "median_seconds": 0.08844317900002352,
+        "p95_seconds": 0.09570669200002158,
+        "max_seconds": 0.09570669200002158
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 134164480,
+      "peak_process_rss_with_ingestion_bytes": 134905856,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 1.0718994790040597,
+        "committed_records_per_second": 477.6567299722149,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 1.0718994790040597,
+          "median_seconds": 0.0019165235003129055,
+          "p95_seconds": 0.003408402999411919,
+          "max_seconds": 0.011026947000573273
+        },
+        "records_after_seconds": 0.006456563999563514,
+        "records_after_records_per_second": 79299.14425608,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 376832,
+          "wal": 4124152,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 438272,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 438272,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "parquet-pyarrow-v1",
+      "workload": {
+        "kind": "orderbook",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 2,
+      "workload_digest": "9a04a87800cf12a34cff4e81d7364c5326093cb723f6a256fb305acc700fe979",
+      "segment_workload_digests": [
+        "bddb986502523a67828d9cddb2460496300cc720da5c89fc9b32a7ba0db563c7",
+        "eddefa4990eb405889c80d16ecbddf7fd4e60c10a359442ca7959404f302c504",
+        "da1b6e466a13909f0b9c9e0c023a529d3ead3888fbea006a6e11f4508225c7f0",
+        "7d13ad092e1f01cebf3656252d16b46791c8ab3ed79c39e3525beb846830ccc1"
+      ],
+      "segment_hashes": [
+        "62ebb8d40752dd33ae04720a413ad9f5606f35501ffc15513663539d2c8ee55b",
+        "46a3a13538e1324eb7ab819d7bdaaa8cdf4c07581507492f684fd37f5162ddbd",
+        "0e335cc77d8baaa136c919e8b4c98c6544f48d37a863497a7f09ee8a46a6a221",
+        "8a2ac6c99f4d432940e2dad5158f3d46dcb69e5fcdd7941ccd3503bd1e6ae7c7"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.2721031030005179,
+      "measured_wall_seconds": 4.775262170000133,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 6318631,
+      "logical_decoded_bytes": 24313926,
+      "encoded_bytes": 11673951,
+      "encoded_to_payload_ratio": 1.8475443494010015,
+      "durable_write_seconds": 1.0467524709993086,
+      "durable_write_records_per_second": 15652.220036661201,
+      "durable_write_payload_bytes_per_second": 6036413.741605749,
+      "verified_scan_seconds": 0.3666582899986679,
+      "verified_scan_records_per_second": 44684.65720510376,
+      "verified_scan_payload_bytes_per_second": 17233023.696322143,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 1.4491879429997425,
+        "median_seconds": 0.08871464950016161,
+        "p95_seconds": 0.09694302199932281,
+        "max_seconds": 0.09694302199932281
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 1.45612441799949,
+        "median_seconds": 0.08828714899982515,
+        "p95_seconds": 0.09735715799979516,
+        "max_seconds": 0.09735715799979516
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 132497408,
+      "peak_process_rss_with_ingestion_bytes": 134279168,
+      "ingestion": {
+        "mode": "sequential synchronous accept; committed readback before acknowledgement; no batching",
+        "intake_capacity": 64,
+        "sample_limit": 512,
+        "sample_method": "first sample_limit envelopes of independently generated segments; raw codec benchmark uses every segment",
+        "committed_records": 512,
+        "verified_records_after": 512,
+        "commit_seconds": 0.9705769619922648,
+        "committed_records_per_second": 527.5212786310504,
+        "commit_latency": {
+          "count": 512,
+          "seconds": 0.9705769619922648,
+          "median_seconds": 0.0017202405001626175,
+          "p95_seconds": 0.003025083000466111,
+          "max_seconds": 0.010218093000730732
+        },
+        "records_after_seconds": 0.00638759800040134,
+        "records_after_records_per_second": 80155.32598761388,
+        "bytes_before": {
+          "sqlite": 4096,
+          "wal": 16512,
+          "shm": 32768
+        },
+        "bytes_while_open": {
+          "sqlite": 376832,
+          "wal": 4124152,
+          "shm": 32768
+        },
+        "bytes_after_close": {
+          "sqlite": 438272,
+          "wal": 0,
+          "shm": 0
+        },
+        "sqlite_bytes_after_close": 438272,
+        "status": {
+          "producer": "benchmark-spool",
+          "epoch": "benchmark-epoch",
+          "accepted_offset": 512,
+          "queue_capacity": 64,
+          "journal_mode": "wal",
+          "synchronous": "FULL",
+          "sqlite_version": "3.53.1"
+        },
+        "limit": "Opaque raw events only; excludes F06 normalization, F08/F09 publication and production queue policy"
+      },
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "orderbook",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 0,
+      "workload_digest": "01cd77674ce4e6a9b321c8c835dec48fd6a1957f1a38fe64f8144ffd5b8312e5",
+      "segment_workload_digests": [
+        "5330d2cbc4dca1f6327b7ae741db59e1f98860204a4f914f1ab56a2924d4b491",
+        "3c28de5455157bdb5f829c0b8115d6f5a634f3fde9bba8422700d54cd155fbdc",
+        "c6be6bfa801c568cdab6ab612e9de32919ea798ed142957a8f4a8241e9569dc8",
+        "db1061957c2e4e8a7c3b91515086ed4d352bf8450825d9e30e8e500374998c8c"
+      ],
+      "segment_hashes": [
+        "978b007469770d77783adaef3801d50c77128f33dd8e1cc981055322da9b6a2c",
+        "6441e07bf02c7a47710be5fc5f57c7657054240c43ff32da88804cf876ed6b57",
+        "c1ad3f63cacfb6d3c2f67f49571748f47f56c15224eb7f05a8a35179fd29fff2",
+        "f6e74670619d324c09d3d0a61424e4ed3f5fd5cc5152a977a89b5bf45452cd83"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.2694528780002656,
+      "measured_wall_seconds": 6.988518746000409,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 6340694,
+      "logical_decoded_bytes": 24349860,
+      "encoded_bytes": 11551559,
+      "encoded_to_payload_ratio": 1.8218130381311572,
+      "durable_write_seconds": 1.8734214620017156,
+      "durable_write_records_per_second": 8745.496052177177,
+      "durable_write_payload_bytes_per_second": 3384552.877506318,
+      "verified_scan_seconds": 0.5484972410013143,
+      "verified_scan_records_per_second": 29870.706314019077,
+      "verified_scan_payload_bytes_per_second": 11560120.13556292,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 2.059569921001639,
+        "median_seconds": 0.12914861750050477,
+        "p95_seconds": 0.130880869000066,
+        "max_seconds": 0.130880869000066
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 2.057126560997858,
+        "median_seconds": 0.12838143099997978,
+        "p95_seconds": 0.1332398810000086,
+        "max_seconds": 0.1332398810000086
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 86306816,
+      "peak_process_rss_with_ingestion_bytes": 92090368,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "orderbook",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 1,
+      "workload_digest": "4e179bf393036d9c23b2d0dd6b5773b7cf2d3a834f2e26f9abe16339c3e110d1",
+      "segment_workload_digests": [
+        "0532a0df2a0e725ce86b41a1bc124f0abae741c33fa53552fb0553873ab684c2",
+        "c5330ea8caa609b110b869a2fc8dd3ec568700296ff614bcd1800f93b22bfa60",
+        "0a3662c05cd52f27d34741947ebb3d8f3e2e15c784c9538e047d903e89b95b4a",
+        "d589f9274b570e3e091a206180143b052e649b1cd4a89fb9f7b426fef608baff"
+      ],
+      "segment_hashes": [
+        "cc09969e20740282b27432d56e463395307bc78601a70121a49bedca05975139",
+        "aad5fda6152eb0dfd9b8ba62526a59c3b2efd063cf3f2ee39df3df5dbade37fc",
+        "0073c24a8b2f4a737974cb263a74fc105e16cb61949e6aa641679d94783daeea",
+        "156ff16554cdda7508257a5c271b1bbd1c058b599125f947bb93a11d59d43080"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.2904198960004578,
+      "measured_wall_seconds": 7.147391086000425,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 6348277,
+      "logical_decoded_bytes": 24365026,
+      "encoded_bytes": 11543071,
+      "encoded_to_payload_ratio": 1.8182998315920997,
+      "durable_write_seconds": 1.9463618139998289,
+      "durable_write_records_per_second": 8417.756597027772,
+      "durable_write_payload_bytes_per_second": 3261611.9748846237,
+      "verified_scan_seconds": 0.5497909729992898,
+      "verified_scan_records_per_second": 29800.41653034046,
+      "verified_scan_payload_bytes_per_second": 11546710.134886483,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 2.095758379999097,
+        "median_seconds": 0.13121899699990536,
+        "p95_seconds": 0.1361594130003141,
+        "max_seconds": 0.1361594130003141
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 2.0788207260029594,
+        "median_seconds": 0.12993472449988985,
+        "p95_seconds": 0.13317524000012781,
+        "max_seconds": 0.13317524000012781
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 85590016,
+      "peak_process_rss_with_ingestion_bytes": 91365376,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    },
+    {
+      "codec": "framed-zlib-v1",
+      "workload": {
+        "kind": "orderbook",
+        "instruments": 20,
+        "records": 4096,
+        "seed": 14,
+        "levels": 100,
+        "max_trade_batch": 40,
+        "payload_limit": 262144,
+        "max_total_payload_bytes": 67108864,
+        "recorded_fixture_path": null
+      },
+      "repeat": 2,
+      "workload_digest": "9a04a87800cf12a34cff4e81d7364c5326093cb723f6a256fb305acc700fe979",
+      "segment_workload_digests": [
+        "bddb986502523a67828d9cddb2460496300cc720da5c89fc9b32a7ba0db563c7",
+        "eddefa4990eb405889c80d16ecbddf7fd4e60c10a359442ca7959404f302c504",
+        "da1b6e466a13909f0b9c9e0c023a529d3ead3888fbea006a6e11f4508225c7f0",
+        "7d13ad092e1f01cebf3656252d16b46791c8ab3ed79c39e3525beb846830ccc1"
+      ],
+      "segment_hashes": [
+        "aa5dfa51630391bb2836fabacb53c2b1d0f425da6301715449c6b7f2d729394e",
+        "e773188f374a73cda0c5d8b1eaa9a508f8dee61ee6ab048028a29e569fa4f23b",
+        "2bb0ac93f3d0a7d6d9f6820870213bd104aaf570e92ce3ad10ba75720f6eb656",
+        "3c2d295d3161c7b9aac9220e84ddeae01421b822c815df018be55db9df569d35"
+      ],
+      "segment_count": 4,
+      "record_count": 16384,
+      "generation_seconds": 0.2670558430008896,
+      "measured_wall_seconds": 7.104797058000258,
+      "point_read_sampling": "first and last segment only; ordered prefix and seeded random indices",
+      "recorded_fixture": null,
+      "payload_bytes": 6318631,
+      "logical_decoded_bytes": 24313926,
+      "encoded_bytes": 11545995,
+      "encoded_to_payload_ratio": 1.8272937603097885,
+      "durable_write_seconds": 1.9316813379982705,
+      "durable_write_records_per_second": 8481.730230400284,
+      "durable_write_payload_bytes_per_second": 3271052.4638332753,
+      "verified_scan_seconds": 0.5526207669990981,
+      "verified_scan_records_per_second": 29647.818139318566,
+      "verified_scan_payload_bytes_per_second": 11433936.937100867,
+      "public_sequential_point_reads": {
+        "count": 16,
+        "seconds": 2.089643219998834,
+        "median_seconds": 0.13002227249990028,
+        "p95_seconds": 0.14008848399953422,
+        "max_seconds": 0.14008848399953422
+      },
+      "public_random_point_reads": {
+        "count": 16,
+        "seconds": 2.086859567999454,
+        "median_seconds": 0.12977096350005013,
+        "p95_seconds": 0.14007607500025188,
+        "max_seconds": 0.14007607500025188
+      },
+      "baseline_process_rss_bytes": 60960768,
+      "peak_process_rss_bytes": 85733376,
+      "peak_process_rss_with_ingestion_bytes": 91508736,
+      "ingestion": null,
+      "truncated_reads": {
+        "header_original_hash_rejected": true,
+        "header_rehashed_rejected": true,
+        "middle_original_hash_rejected": true,
+        "middle_rehashed_rejected": true,
+        "tail_original_hash_rejected": true,
+        "tail_rehashed_rejected": true
+      },
+      "interruption": {
+        "method": "SIGTERM repeated full-read worker after one verified read",
+        "worker_exitcode": -15,
+        "healthy_reread": true,
+        "limit": "Signal position within a read is scheduler-dependent; no crash-recovery claim"
+      },
+      "archive_limits": {
+        "max_records": 4096,
+        "max_encoded_bytes": 268435456,
+        "max_decoded_bytes": 268435456
+      }
+    }
+  ]
+}

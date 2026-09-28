@@ -1,0 +1,145 @@
+{
+  "provenance": "Public Bybit V5 spot kline responses; one completed 2024-01-01 UTC minute per instrument. Replayed verbatim, not a live market chronology.",
+  "records": [
+    {
+      "captured_at_utc": "2026-09-28T12:31:42.248157+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"BTCUSDT\",\"list\":[[\"1704067200000\",\"42284\",\"42300\",\"42260.01\",\"42300\",\"15.059749\",\"636760.29544192\"]]},\"retExtInfo\":{},\"time\":1790598702155}",
+      "sha256": "f729d6e3226f022334fd5bfa1526683dae48d78e191f837820d11e6d08a91730",
+      "symbol": "BTCUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:42.762224+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"ETHUSDT\",\"list\":[[\"1704067200000\",\"2282\",\"2283\",\"2281.31\",\"2282.2\",\"55.3932\",\"126418.2670322\"]]},\"retExtInfo\":{},\"time\":1790598702669}",
+      "sha256": "4d2181ca1ace8a2fa96571ba5a5e4adb9786071cbbabb087263e8a59c6d36488",
+      "symbol": "ETHUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=ETHUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:43.213719+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"SOLUSDT\",\"list\":[[\"1704067200000\",\"101.73\",\"101.83\",\"101.58\",\"101.76\",\"7209.953\",\"733830.69785\"]]},\"retExtInfo\":{},\"time\":1790598703121}",
+      "sha256": "74d80cc0cc7166b62d7fe2a75f4d0af8a9713048d2974cbf01698c5bd1b3d9d9",
+      "symbol": "SOLUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=SOLUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:43.662740+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"XRPUSDT\",\"list\":[[\"1704067200000\",\"0.6156\",\"0.6156\",\"0.615\",\"0.6156\",\"369389.76\",\"227324.642417\"]]},\"retExtInfo\":{},\"time\":1790598703571}",
+      "sha256": "8b42c1dd14bbb837203854b29e06d27aecd2e19b1314362c53861404700322f2",
+      "symbol": "XRPUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=XRPUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:44.455605+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"DOGEUSDT\",\"list\":[[\"1704067200000\",\"0.08953\",\"0.08956\",\"0.08949\",\"0.08955\",\"139557.5\",\"12491.49641\"]]},\"retExtInfo\":{},\"time\":1790598704364}",
+      "sha256": "d11fae37e2cbb90a3a532f4e17c82e64878ede9736615ae396db2fdcda832ef9",
+      "symbol": "DOGEUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=DOGEUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:44.908542+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"ADAUSDT\",\"list\":[[\"1704067200000\",\"0.5937\",\"0.5941\",\"0.593\",\"0.5939\",\"15741.32\",\"9341.430131\"]]},\"retExtInfo\":{},\"time\":1790598704816}",
+      "sha256": "74b1e2decf9da66bbce83d5972d0e63786a8ee803d0cfc02b84978fe46c56e56",
+      "symbol": "ADAUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=ADAUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:45.771305+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"AVAXUSDT\",\"list\":[[\"1704067200000\",\"38.5457\",\"38.5827\",\"38.5005\",\"38.5656\",\"274.778\",\"10591.3510663\"]]},\"retExtInfo\":{},\"time\":1790598705679}",
+      "sha256": "29d072da08c76b19d4c08f78cec6fc81a5ba266c5ea7567e64ea08013742cd4d",
+      "symbol": "AVAXUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=AVAXUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:46.303659+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"LINKUSDT\",\"list\":[[\"1704067200000\",\"14.938\",\"14.9433\",\"14.9187\",\"14.9413\",\"720.813\",\"10759.9285329\"]]},\"retExtInfo\":{},\"time\":1790598706211}",
+      "sha256": "a1e0c2a6a088171070810690f3470aa43c50f00718898402c069a24b1a4e6178",
+      "symbol": "LINKUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=LINKUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:46.777719+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"DOTUSDT\",\"list\":[[\"1704067200000\",\"8.204\",\"8.21\",\"8.198\",\"8.204\",\"1838.237\",\"15080.140324\"]]},\"retExtInfo\":{},\"time\":1790598706685}",
+      "sha256": "c69599749e4d8a43d3576c453c5208d9589c31aac87fde2e261f294676e6cb60",
+      "symbol": "DOTUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=DOTUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:47.381287+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"LTCUSDT\",\"list\":[[\"1704067200000\",\"72.83\",\"72.84\",\"72.77\",\"72.82\",\"104.76268\",\"7624.7676042\"]]},\"retExtInfo\":{},\"time\":1790598707288}",
+      "sha256": "a6e408358faac164cb2bd565596d7de109d103ddcb469e52c07ef9f357771107",
+      "symbol": "LTCUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=LTCUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:47.829541+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"BCHUSDT\",\"list\":[[\"1704067200000\",\"259.6\",\"259.6\",\"259.2\",\"259.2\",\"1.377\",\"356.9184\"]]},\"retExtInfo\":{},\"time\":1790598707737}",
+      "sha256": "26647c8c8a57fa230f4a636f490d696bf19b4428248ee65a63a5fd971d440914",
+      "symbol": "BCHUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=BCHUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:48.279945+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"TRXUSDT\",\"list\":[[\"1704067200000\",\"0.10761\",\"0.10781\",\"0.10761\",\"0.10779\",\"22202.09\",\"2391.7022224\"]]},\"retExtInfo\":{},\"time\":1790598708186}",
+      "sha256": "e5a4b878d669d4f4a555e3cc1a8ff2f8abd2a8749f7e125524430f6fc95333cf",
+      "symbol": "TRXUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=TRXUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:48.815560+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"ATOMUSDT\",\"list\":[[\"1704067200000\",\"10.6057\",\"10.6092\",\"10.5952\",\"10.6085\",\"345.507\",\"3663.8120739\"]]},\"retExtInfo\":{},\"time\":1790598708723}",
+      "sha256": "152a4a0f153d99573d661ba312575706884c3f1f40ff0aec3da8654abd02a8be",
+      "symbol": "ATOMUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=ATOMUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:49.328469+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"SHIBUSDT\",\"list\":[[\"1704067200000\",\"0.0000103518\",\"0.0000103533\",\"0.0000103431\",\"0.0000103533\",\"22959324.8\",\"237.4853132322\"]]},\"retExtInfo\":{},\"time\":1790598709236}",
+      "sha256": "1eb72d970857267a1834ba4b70a3b0d5cf716faa6052f693e436c50c622c8d96",
+      "symbol": "SHIBUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=SHIBUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:50.195020+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"UNIUSDT\",\"list\":[[\"1704067200000\",\"7.2261\",\"7.2307\",\"7.2116\",\"7.2267\",\"1139.383\",\"8231.755919\"]]},\"retExtInfo\":{},\"time\":1790598710102}",
+      "sha256": "272d0c07149c70fa529cada64799fe0fefdbf70f9db57cb7c0b4fbfc8c7f10a1",
+      "symbol": "UNIUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=UNIUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:50.714583+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"AAVEUSDT\",\"list\":[[\"1704067200000\",\"108.6765\",\"108.9112\",\"108.5114\",\"108.8299\",\"81.336\",\"8832.3675723\"]]},\"retExtInfo\":{},\"time\":1790598710622}",
+      "sha256": "2a153bd384d9903cdf81fea17279a9a9fc6c10ebf62544b0bf7f217d0efd9876",
+      "symbol": "AAVEUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=AAVEUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:51.240954+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"XLMUSDT\",\"list\":[[\"1704067200000\",\"0.12902\",\"0.12922\",\"0.12867\",\"0.12882\",\"210099.3\",\"27082.315014\"]]},\"retExtInfo\":{},\"time\":1790598711148}",
+      "sha256": "452ea9de5a9cb0aa67478348ba003db889194ee24fc2997a0254e2b5c230ef2b",
+      "symbol": "XLMUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=XLMUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:51.740375+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"HBARUSDT\",\"list\":[[\"1704067200000\",\"0.08598\",\"0.08607\",\"0.08597\",\"0.08603\",\"21103.35\",\"1815.2020114\"]]},\"retExtInfo\":{},\"time\":1790598711648}",
+      "sha256": "c7410db1aeedb94fd643bd0b7d03a6c17accfe8f083b2d7993404bfda85f0195",
+      "symbol": "HBARUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=HBARUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:52.199909+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"SUIUSDT\",\"list\":[[\"1704067200000\",\"0.7761\",\"0.7761\",\"0.7748\",\"0.776\",\"5389.8\",\"4177.863332\"]]},\"retExtInfo\":{},\"time\":1790598712107}",
+      "sha256": "c1fd69519cd044f7dda531436bea0564c9d9498cceb9bc03f1d14393d403ac16",
+      "symbol": "SUIUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=SUIUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    },
+    {
+      "captured_at_utc": "2026-09-28T12:31:53.065029+00:00",
+      "payload": "{\"retCode\":0,\"retMsg\":\"OK\",\"result\":{\"category\":\"spot\",\"symbol\":\"NEARUSDT\",\"list\":[[\"1704067200000\",\"3.6494\",\"3.6523\",\"3.6464\",\"3.6501\",\"1028.02\",\"3753.14249\"]]},\"retExtInfo\":{},\"time\":1790598712973}",
+      "sha256": "f6013c8de630b344cd213d4134937619867be971738873443d27498761400533",
+      "symbol": "NEARUSDT",
+      "url": "https://api.bybit.com/v5/market/kline?category=spot&symbol=NEARUSDT&interval=1&limit=1&start=1704067200000&end=1704067259999"
+    }
+  ]
+}

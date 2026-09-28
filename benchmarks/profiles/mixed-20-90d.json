@@ -1,0 +1,47 @@
+{
+  "horizon_days": 90,
+  "spool_days": 90,
+  "peak_records_per_second": 64,
+  "burst_seconds": 3,
+  "measured_service_records_per_second": 130,
+  "service_fraction": 0.5,
+  "queue_seconds": 2,
+  "segment_records": 256,
+  "max_payload_bytes": 65536,
+  "max_encoded_segment_bytes": 4194304,
+  "max_decoded_segment_bytes": 8388608,
+  "queue_memory_multiplier": 3,
+  "manifest_catalog_bytes_per_segment": 24576,
+  "staging_segments": 2,
+  "fixed_reserve_bytes": 536870912,
+  "free_disk_fraction": 0.3,
+  "families": [
+    {
+      "name": "candle",
+      "instruments": 20,
+      "envelopes_per_instrument_second": 0.016666666666666666,
+      "encoded_record_bytes": 640,
+      "logical_record_bytes": 1280,
+      "spool_record_bytes": 768,
+      "derived_record_bytes": 2048
+    },
+    {
+      "name": "trade",
+      "instruments": 20,
+      "envelopes_per_instrument_second": 0.5,
+      "encoded_record_bytes": 768,
+      "logical_record_bytes": 1536,
+      "spool_record_bytes": 768,
+      "derived_record_bytes": 0
+    },
+    {
+      "name": "orderbook",
+      "instruments": 20,
+      "envelopes_per_instrument_second": 2,
+      "encoded_record_bytes": 1280,
+      "logical_record_bytes": 2560,
+      "spool_record_bytes": 1280,
+      "derived_record_bytes": 0
+    }
+  ]
+}
