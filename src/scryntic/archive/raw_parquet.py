@@ -2,6 +2,7 @@
 
 import os
 import stat
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal, cast
 
@@ -243,9 +244,11 @@ def _canonical_decimal_metadata(value: bytes | None) -> int:
 class ParquetRawArchive:
     """Locally trusted codec-v1 archive using generated immutable paths."""
 
-    def __init__(self, installation: Installation) -> None:
+    def __init__(
+        self, installation: Installation, *, fault: Callable[[str], None] | None = None
+    ) -> None:
         self._owner_uid = installation.owner_uid
-        self._storage = ImmutableArchiveStorage(installation)
+        self._storage = ImmutableArchiveStorage(installation, fault=fault)
         self.staging_path = self._storage.staging_path
 
     def object_path(self, object_sha256: str) -> Path:

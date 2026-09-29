@@ -2,6 +2,7 @@
 
 import os
 import stat
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, cast
@@ -394,9 +395,11 @@ def _metadata_integer(value: bytes | None) -> int:
 
 
 class NormalizedParquetArchive:
-    def __init__(self, installation: Installation) -> None:
+    def __init__(
+        self, installation: Installation, *, fault: Callable[[str], None] | None = None
+    ) -> None:
         self._owner_uid = installation.owner_uid
-        self._storage = ImmutableArchiveStorage(installation)
+        self._storage = ImmutableArchiveStorage(installation, fault=fault)
 
     async def seal(
         self, values: tuple[PublicationInput, ...], limits: ArchiveLimits
