@@ -75,7 +75,8 @@ error; queued records drain before reconnect, and the overflow record is not
 added to replay deduplication. A remote stream cannot promise lossless delivery
 during sustained backpressure.
 There is no separate live schema or normalization path. The existing
-`bybit_candle` payload carries the original kline row, source candle start in
+`bybit_candle` payload preserves the kline values in the historical row format,
+source candle start in
 milliseconds, and WebSocket publication `ts` with an explicit millisecond unit.
 The normalizer accepts that publication time in the same schema used by REST.
 
@@ -98,8 +99,8 @@ Run the bounded public live check with:
 rtk run '.venv/bin/python scripts/check_bybit_live.py'
 ```
 
-It discovers BTCUSDT metadata, captures at most eight live envelopes for at most
-75 seconds, then checks committed journal records, normalization, Parquet
+It discovers BTCUSDT metadata, accepts at most eight live envelopes within a
+75-second capture deadline, then checks committed journal records, normalization, Parquet
 publication, and a reopened dataset in a temporary installation. With poor
 host clock evidence, the dataset may contain an open candle but must not claim
 F12-qualified finality. This is an acceptance probe, not a long-running

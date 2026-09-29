@@ -199,11 +199,14 @@ def test_malformed_wrong_topic_and_reconnect_do_not_deliver_stale_data() -> None
     asyncio.run(with_server(handler, run))
 
 
-def test_stall_heartbeat_and_close_interrupt_reconnect() -> None:
+@pytest.mark.parametrize("responsive", [False, True])
+def test_stall_heartbeat_and_close_interrupt_reconnect(responsive: bool) -> None:
     async def handler(socket: web.WebSocketResponse) -> None:
         await subscribed(socket)
-        async for _message in socket:
-            pass  # Deliberately ignore application ping.
+        async for message in socket:
+            if responsive and message.type is aiohttp.WSMsgType.TEXT:
+                if json.loads(message.data).get("op") == "ping":
+                    await socket.send_json({"op": "pong", "args": [str(_START)]})
 
     async def run(client: LocalClient) -> None:
         source = BybitLiveSource(
@@ -223,7 +226,11 @@ def test_stall_heartbeat_and_close_interrupt_reconnect() -> None:
             async with asyncio.timeout(2):
                 while client.connections < 2:
                     await asyncio.sleep(0.01)
-            assert source.last_error == "Bybit heartbeat timed out"
+            assert source.last_error == (
+                "Bybit candle stream stalled"
+                if responsive
+                else "Bybit heartbeat timed out"
+            )
             await source.close()
             try:
                 await pending
