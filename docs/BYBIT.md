@@ -3,10 +3,13 @@
 F13 adds a read-only V5 adapter at `BybitHistoricalSource`. It calls only
 `https://api.bybit.com` and the public instrument and kline endpoints. The
 adapter does not accept, load, or send account credentials. HTTPS certificate
-and hostname verification stay enabled, redirects are rejected, requests have
-a five-second socket timeout and six-second overall deadline, response bodies
-are capped at 1 MiB, and one process-wide gate limits requests to two per
-second. Metadata discovery is bounded to 32 pages of 1,000 instruments.
+and hostname verification stay enabled, and redirects are rejected. A
+six-second asynchronous deadline covers rate waiting, connection, headers,
+and the complete response body; five-second connection and read-inactivity
+timeouts also apply. Cancelling an in-flight read closes its HTTP response.
+Response bodies are capped at 1 MiB, and one process-wide gate starts at most
+two requests per second. Metadata discovery is bounded to 32 pages of 1,000
+instruments.
 
 Instrument discovery supports spot, linear, inverse, and option metadata. The
 option request uses `baseCoin=All` so discovery includes more than Bybit's

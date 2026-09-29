@@ -9,13 +9,13 @@ import re
 import ssl
 import threading
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Protocol, cast
+
+import aiohttp
 
 from scryntic.application.sources import (
     BYBIT_CANDLE_SCHEMA,
@@ -75,19 +75,13 @@ class _JsonError(ValueError):
 
 
 class _Client(Protocol):
-    def get(self, path: str, params: dict[str, str | int]) -> dict[str, object]: ...
+    async def get(
+        self, path: str, params: dict[str, str | int]
+    ) -> dict[str, object]: ...
 
 
 class _Clock(Protocol):
     def sample(self) -> ClockSample: ...
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(
-        self, req: object, fp: object, code: int, msg: str, headers: object, newurl: str
-    ) -> None:
-        del req, fp, code, msg, headers, newurl
-        raise BybitError("Bybit redirect refused")
 
 
 class _RateGate:
@@ -97,13 +91,12 @@ class _RateGate:
         self._lock = threading.Lock()
         self._next = 0.0
 
-    def wait(self) -> None:
+    def reserve_delay(self) -> float:
         with self._lock:
             now = time.monotonic()
-            delay = max(0.0, self._next - now)
-            if delay:
-                time.sleep(delay)
-            self._next = time.monotonic() + _REQUEST_INTERVAL_S
+            start = max(now, self._next)
+            self._next = start + _REQUEST_INTERVAL_S
+            return start - now
 
 
 _PUBLIC_RATE_GATE = _RateGate()
@@ -121,39 +114,62 @@ def _pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
 class BybitPublicClient:
     """TLS-verified unauthenticated HTTP client pinned to api.bybit.com."""
 
-    def __init__(self) -> None:
-        context = ssl.create_default_context()
-        self._opener = urllib.request.build_opener(
-            _NoRedirect(), urllib.request.HTTPSHandler(context=context)
-        )
-
-    def get(self, path: str, params: dict[str, str | int]) -> dict[str, object]:
+    async def get(self, path: str, params: dict[str, str | int]) -> dict[str, object]:
         if path not in (_INSTRUMENTS_PATH, _KLINE_PATH):
             raise BybitError("Unsupported Bybit endpoint")
-        _PUBLIC_RATE_GATE.wait()
+        delay = _PUBLIC_RATE_GATE.reserve_delay()
+        if delay:
+            await asyncio.sleep(delay)
         query = urllib.parse.urlencode(params)
         url = f"{_BASE_URL}{path}?{query}"
-        request = urllib.request.Request(
-            url,
-            headers={"Accept": "application/json", "User-Agent": "Scryntic/1"},
-            method="GET",
+        expected = urllib.parse.urlsplit(_BASE_URL)
+        timeout = aiohttp.ClientTimeout(
+            total=_REQUEST_DEADLINE_S,
+            sock_connect=_REQUEST_TIMEOUT_S,
+            sock_read=_REQUEST_TIMEOUT_S,
         )
+        connector = aiohttp.TCPConnector(ssl=ssl.create_default_context())
         try:
-            with self._opener.open(request, timeout=_REQUEST_TIMEOUT_S) as response:
-                if response.geturl() != url:
-                    raise BybitError("Bybit response host changed")
-                length = response.headers.get("Content-Length")
-                if length is not None and (
-                    not _INTEGER.fullmatch(length) or int(length) > _MAX_RESPONSE_BYTES
-                ):
-                    raise BybitError("Bybit response exceeds configured limit")
-                body = response.read(_MAX_RESPONSE_BYTES + 1)
+            async with aiohttp.ClientSession(
+                connector=connector,
+                timeout=timeout,
+                trust_env=False,
+                auto_decompress=False,
+            ) as session:
+                async with session.get(
+                    url,
+                    headers={
+                        "Accept": "application/json",
+                        "Accept-Encoding": "identity",
+                        "User-Agent": "Scryntic/1",
+                    },
+                    allow_redirects=False,
+                ) as response:
+                    if (
+                        response.url.scheme != expected.scheme
+                        or response.url.host != expected.hostname
+                        or response.url.path != path
+                    ):
+                        raise BybitError("Bybit response host changed")
+                    if 300 <= response.status < 400:
+                        raise BybitError("Bybit redirect refused")
+                    if response.status != 200:
+                        raise BybitError("Bybit public request failed")
+                    length = response.headers.get("Content-Length")
+                    if length is not None and (
+                        not _INTEGER.fullmatch(length)
+                        or int(length) > _MAX_RESPONSE_BYTES
+                    ):
+                        raise BybitError("Bybit response exceeds configured limit")
+                    body = bytearray()
+                    async for chunk in response.content.iter_chunked(65_536):
+                        if len(body) + len(chunk) > _MAX_RESPONSE_BYTES:
+                            raise BybitError("Bybit response exceeds configured limit")
+                        body.extend(chunk)
         except BybitError:
             raise
-        except (OSError, TimeoutError, urllib.error.URLError, ValueError):
+        except (aiohttp.ClientError, OSError, ValueError):
             raise BybitError("Bybit public request failed") from None
-        if len(body) > _MAX_RESPONSE_BYTES:
-            raise BybitError("Bybit response exceeds configured limit")
         try:
             decoded = json.loads(
                 body.decode("utf-8", "strict"),
@@ -164,10 +180,10 @@ class BybitPublicClient:
             raise BybitError("Invalid Bybit response") from None
         if not isinstance(decoded, dict):
             raise BybitError("Invalid Bybit response")
-        response = cast(dict[str, object], decoded)
-        if type(response.get("retCode")) is not int or response["retCode"] != 0:
+        document = cast(dict[str, object], decoded)
+        if type(document.get("retCode")) is not int or document["retCode"] != 0:
             raise BybitError("Bybit rejected public request")
-        result = response.get("result")
+        result = document.get("result")
         if not isinstance(result, dict):
             raise BybitError("Invalid Bybit response")
         return cast(dict[str, object], result)
@@ -441,10 +457,8 @@ class BybitHistoricalSource:
 
     async def _get(self, path: str, params: dict[str, str | int]) -> dict[str, object]:
         try:
-            return await asyncio.wait_for(
-                asyncio.to_thread(self._client.get, path, params),
-                timeout=_REQUEST_DEADLINE_S,
-            )
+            async with asyncio.timeout(_REQUEST_DEADLINE_S):
+                return await self._client.get(path, params)
         except TimeoutError:
             raise BybitError("Bybit public request timed out") from None
 

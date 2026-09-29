@@ -4,13 +4,14 @@ import asyncio
 import json
 import ssl
 import time
-import urllib.request
 from collections import deque
-from email.message import Message
+from collections.abc import AsyncIterator
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Literal, cast
 from urllib.parse import urlsplit
 
+import aiohttp
 import pytest
 
 import scryntic.sources.bybit as bybit_module
@@ -28,7 +29,6 @@ from scryntic.sources.bybit import (
     BybitHistoricalSource,
     BybitPublicClient,
     _instrument,
-    _NoRedirect,
     _RateGate,
 )
 from scryntic.sources.bybit_checkpoint import BybitCursorStore
@@ -50,7 +50,7 @@ class FixtureClient:
         self.responses = {path: deque(values) for path, values in responses.items()}
         self.calls: list[tuple[str, dict[str, str | int]]] = []
 
-    def get(self, path: str, params: dict[str, str | int]) -> dict[str, Any]:
+    async def get(self, path: str, params: dict[str, str | int]) -> dict[str, Any]:
         self.calls.append((path, params))
         response = self.responses[path].popleft()
         return cast(dict[str, Any], response["result"])
@@ -227,118 +227,127 @@ def test_f12_boundary_uses_existing_interval_finality_policy() -> None:
     assert is_final(clock_sample, _BASE_NS + _INTERVAL_NS - 1_000_001, limits)
 
 
+def _stub_http_session(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    status: int = 200,
+    headers: dict[str, str] | None = None,
+    body: bytes = b'{"retCode":0,"result":{"category":"spot"}}',
+) -> dict[str, Any]:
+    captured: dict[str, Any] = {}
+
+    def connector(*, ssl: ssl.SSLContext) -> object:
+        captured["tls"] = ssl
+        return object()
+
+    class Content:
+        async def iter_chunked(self, size: int) -> AsyncIterator[bytes]:
+            assert size == 65_536
+            yield body
+
+    class Response:
+        def __init__(self, url: str) -> None:
+            parts = urlsplit(url)
+            self.url = SimpleNamespace(
+                scheme=parts.scheme, host=parts.hostname, path=parts.path
+            )
+            self.status = status
+            self.headers = headers or {}
+            self.content = Content()
+
+        async def __aenter__(self) -> Response:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            del args
+
+    class Session:
+        def __init__(self, **kwargs: object) -> None:
+            captured["session"] = kwargs
+
+        async def __aenter__(self) -> Session:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            del args
+
+        def get(self, url: str, **kwargs: object) -> Response:
+            captured["url"] = url
+            captured["request"] = kwargs
+            return Response(url)
+
+    monkeypatch.setattr(aiohttp, "TCPConnector", connector)
+    monkeypatch.setattr(aiohttp, "ClientSession", Session)
+    monkeypatch.setattr(bybit_module, "_REQUEST_INTERVAL_S", 0.0)
+    monkeypatch.setattr(bybit_module, "_PUBLIC_RATE_GATE", _RateGate())
+    return captured
+
+
 def test_public_http_client_pins_tls_host_and_sends_no_credentials(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-
-    class Response:
-        headers = Message()
-
-        def __init__(self, url: str) -> None:
-            self._url = url
-
-        def __enter__(self) -> Response:
-            return self
-
-        def __exit__(self, *args: object) -> None:
-            del args
-
-        def geturl(self) -> str:
-            return self._url
-
-        def read(self, limit: int) -> bytes:
-            assert limit == 1_048_577
-            return b'{"retCode":0,"result":{"category":"spot"}}'
-
-    class Opener:
-        request = None
-        timeout = None
-
-        def open(self, request: urllib.request.Request, *, timeout: float) -> Response:
-            self.request = request
-            self.timeout = timeout
-            return Response(request.full_url)
-
-    opener = Opener()
-    handlers: tuple[object, ...] = ()
-
-    def build_opener(*values: object) -> Opener:
-        nonlocal handlers
-        handlers = values
-        return opener
-
-    monkeypatch.setattr(urllib.request, "build_opener", build_opener)
-    client = BybitPublicClient()
-    result = client.get("/v5/market/kline", {"category": "spot", "symbol": "BTCUSDT"})
+    captured = _stub_http_session(monkeypatch)
+    result = asyncio.run(
+        BybitPublicClient().get(
+            "/v5/market/kline", {"category": "spot", "symbol": "BTCUSDT"}
+        )
+    )
 
     assert result == {"category": "spot"}
-    assert opener.request is not None
-    assert urlsplit(opener.request.full_url).scheme == "https"
-    assert urlsplit(opener.request.full_url).hostname == "api.bybit.com"
-    assert opener.timeout == 5.0
-    headers = {key.casefold() for key, _ in opener.request.header_items()}
-    assert not headers.intersection({"authorization", "x-bapi-api-key", "api-key"})
-    tls = next(
-        item for item in handlers if isinstance(item, urllib.request.HTTPSHandler)
+    assert urlsplit(captured["url"]).scheme == "https"
+    assert urlsplit(captured["url"]).hostname == "api.bybit.com"
+    assert captured["request"]["allow_redirects"] is False
+    request_headers = captured["request"]["headers"]
+    assert not {key.casefold() for key in request_headers}.intersection(
+        {"authorization", "x-bapi-api-key", "api-key"}
     )
-    tls_context = cast(ssl.SSLContext, getattr(tls, "_" + "context"))
+    tls_context = cast(ssl.SSLContext, captured["tls"])
     assert tls_context.verify_mode == ssl.CERT_REQUIRED
     assert tls_context.check_hostname
-    assert any(isinstance(item, _NoRedirect) for item in handlers)
+    assert captured["session"]["trust_env"] is False
+    assert captured["session"]["auto_decompress"] is False
+    timeout = captured["session"]["timeout"]
+    assert timeout.total == 6.0
+    assert timeout.sock_connect == 5.0
+    assert timeout.sock_read == 5.0
 
 
 def test_public_http_client_rejects_redirects_oversize_and_non_allowlisted_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-
-    class Response:
-        headers = {"Content-Length": "1048577"}
-
-        def __enter__(self) -> Response:
-            return self
-
-        def __exit__(self, *args: object) -> None:
-            del args
-
-        def geturl(self) -> str:
-            return "https://api.bybit.com/v5/market/kline?category=spot"
-
-        def read(self, limit: int) -> bytes:
-            del limit
-            return b"secret-response-body"
-
-    class Opener:
-        def open(self, request: object, *, timeout: float) -> Response:
-            del request, timeout
-            return Response()
-
-    monkeypatch.setattr(urllib.request, "build_opener", lambda *_: Opener())
+    _stub_http_session(
+        monkeypatch, status=302, headers={"Location": "https://evil.invalid"}
+    )
     client = BybitPublicClient()
-    with pytest.raises(BybitError, match="configured limit") as large:
-        client.get("/v5/market/kline", {"category": "spot"})
-    assert "secret-response-body" not in str(large.value)
-    with pytest.raises(BybitError, match="endpoint"):
-        client.get("https://example.invalid/private", {})
     with pytest.raises(BybitError, match="redirect"):
-        _NoRedirect().redirect_request(
-            None, None, 302, "found", None, "https://evil.invalid"
-        )
+        asyncio.run(client.get("/v5/market/kline", {"category": "spot"}))
+
+    _stub_http_session(monkeypatch, headers={"Content-Length": "1048577"})
+    with pytest.raises(BybitError, match="configured limit") as large:
+        asyncio.run(client.get("/v5/market/kline", {"category": "spot"}))
+    assert "secret-response-body" not in str(large.value)
+
+    _stub_http_session(monkeypatch, body=b"x" * 1_048_577)
+    with pytest.raises(BybitError, match="configured limit"):
+        asyncio.run(client.get("/v5/market/kline", {"category": "spot"}))
+
+    with pytest.raises(BybitError, match="endpoint"):
+        asyncio.run(client.get("https://example.invalid/private", {}))
 
 
 def test_rate_gate_enforces_conservative_two_requests_per_second(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
 
-    times = iter((10.0, 10.0, 10.1, 10.5))
-    sleeps: list[float] = []
+    times = iter((10.0, 10.1))
     monkeypatch.setattr(time, "monotonic", lambda: next(times))
-    monkeypatch.setattr(time, "sleep", sleeps.append)
     gate = _RateGate()
 
-    gate.wait()
-    gate.wait()
+    first = gate.reserve_delay()
+    second = gate.reserve_delay()
 
-    assert sleeps == [pytest.approx(0.4)]
+    assert first == 0
+    assert second == pytest.approx(0.4)
 
 
 def test_fixed_duration_contract_rejects_calendar_month_interval() -> None:
@@ -361,9 +370,11 @@ def test_history_page_size_cannot_exceed_one_api_response() -> None:
 def test_request_deadline_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
 
     class SlowClient:
-        def get(self, path: str, params: dict[str, str | int]) -> dict[str, object]:
+        async def get(
+            self, path: str, params: dict[str, str | int]
+        ) -> dict[str, object]:
             del path, params
-            time.sleep(0.1)
+            await asyncio.sleep(0.1)
             return {}
 
     monkeypatch.setattr(bybit_module, "_REQUEST_DEADLINE_S", 0.01)
@@ -373,3 +384,65 @@ def test_request_deadline_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(BybitError, match="timed out"):
         asyncio.run(source.discover("spot"))
+
+
+def test_request_deadline_closes_slowly_streaming_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def exercise() -> None:
+        client_closed = asyncio.Event()
+        body_started = asyncio.Event()
+        body_finished = asyncio.Event()
+        body = b'{"retCode":0,"result":{"category":"spot"}}'
+
+        async def stream(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        ) -> None:
+            try:
+                await reader.readuntil(b"\r\n\r\n")
+                writer.write(
+                    b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                    + f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
+                )
+                await writer.drain()
+
+                async def watch_disconnect() -> None:
+                    if await reader.read() == b"":
+                        client_closed.set()
+
+                watcher = asyncio.create_task(watch_disconnect())
+                for byte in body:
+                    if watcher.done():
+                        break
+                    writer.write(bytes((byte,)))
+                    await writer.drain()
+                    body_started.set()
+                    await asyncio.sleep(0.03)
+                else:
+                    body_finished.set()
+                await asyncio.wait_for(watcher, timeout=1.0)
+            except (ConnectionError, TimeoutError):
+                pass
+            finally:
+                writer.close()
+                await writer.wait_closed()
+
+        server = await asyncio.start_server(stream, "127.0.0.1", 0)
+        port = server.sockets[0].getsockname()[1]
+        monkeypatch.setattr(bybit_module, "_BASE_URL", f"http://127.0.0.1:{port}")
+        monkeypatch.setattr(bybit_module, "_REQUEST_DEADLINE_S", 0.2)
+        monkeypatch.setattr(bybit_module, "_PUBLIC_RATE_GATE", _RateGate())
+        source = BybitHistoricalSource(
+            client=BybitPublicClient(), clock=FixedClock(sample(wall_ns=_BASE_NS))
+        )
+        try:
+            with pytest.raises(BybitError, match="timed out"):
+                await source.discover("spot")
+            assert body_started.is_set()
+            assert not body_finished.is_set()
+            await asyncio.wait_for(client_closed.wait(), timeout=0.3)
+        finally:
+            server.close()
+            await server.wait_closed()
+
+    asyncio.run(exercise())
