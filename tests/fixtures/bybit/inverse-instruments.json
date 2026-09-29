@@ -1,0 +1,1 @@
+{"retCode":0,"retMsg":"OK","result":{"category":"inverse","list":[{"symbol":"BTCUSD","status":"Trading","contractType":"InversePerpetual","baseCoin":"BTC","quoteCoin":"USD","settleCoin":"BTC","launchTime":"1514764800000","deliveryTime":"0","priceFilter":{"tickSize":"0.5"},"lotSizeFilter":{"qtyStep":"1"}}],"nextPageCursor":""},"time":1700000000000}

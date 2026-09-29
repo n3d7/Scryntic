@@ -1,0 +1,1 @@
+{"retCode":0,"retMsg":"OK","result":{"category":"option","list":[{"symbol":"BTC-30JUN24-70000-C","status":"Trading","contractType":"Option","baseCoin":"BTC","quoteCoin":"USDC","settleCoin":"USDC","launchTime":"1514764800000","deliveryTime":"1719734400000","priceFilter":{"tickSize":"0.01"},"lotSizeFilter":{"qtyStep":"0.01"}}],"nextPageCursor":""},"time":1700000000000}

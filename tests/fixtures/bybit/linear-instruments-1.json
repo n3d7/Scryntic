@@ -1,0 +1,1 @@
+{"retCode":0,"retMsg":"OK","result":{"category":"linear","list":[{"symbol":"ETHUSDT","status":"Trading","contractType":"LinearPerpetual","baseCoin":"ETH","quoteCoin":"USDT","settleCoin":"USDT","launchTime":"1514764800000","deliveryTime":"0","priceFilter":{"tickSize":"0.01"},"lotSizeFilter":{"qtyStep":"0.001"}}],"nextPageCursor":"linear-page-2"},"time":1700000000000}

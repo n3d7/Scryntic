@@ -1,0 +1,1 @@
+{"retCode":0,"retMsg":"OK","result":{"category":"spot","list":[{"symbol":"BTCUSDT","status":"Trading","baseCoin":"BTC","quoteCoin":"USDT","launchTime":"1514764800000","deliveryTime":"0","priceFilter":{"tickSize":"0.01"},"lotSizeFilter":{"basePrecision":"0.000001"}}],"nextPageCursor":""},"time":1700000000000}
