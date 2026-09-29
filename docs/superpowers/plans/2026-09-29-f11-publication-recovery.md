@@ -39,7 +39,7 @@ Files: tests/publication/test_recovery.py, crash_publisher.py, helpers.py; tests
 - [x] Extend deterministic process-exit and exception matrix through object/manifest/SQLite boundaries, including repeated recovery failure and uncertain orphans.
 - [x] Commit an F07/main Parquet fixture with recorded hash, producer/identity/raw bytes and baseline provenance; verify exact reads using current codec without running fixture-controlled code.
 - [x] Run focused recovery/archive tests, fresh `bash scripts/check.sh`, review all diff/new files and one bounded independent branch review.
-- [ ] Repair attributable failures, commit/push branch, create PR with validation and limitations; leave parent/sub-issues In Review, no merge.
+- [x] Repair attributable failures, commit/push branch, create PR with validation and limitations; leave parent/sub-issues In Review, no merge.
 
 ## Execution evidence
 
@@ -49,3 +49,4 @@ Files: tests/publication/test_recovery.py, crash_publisher.py, helpers.py; tests
 - Review finding resolved: resynchronize existing validated directory parents after interrupted mkdir/fsync, including object-prefix and constructor roots; three isolated tests observed RED then GREEN.
 - Final state-machine check resolved: invalidate a prior successful cache before every full reconciliation so a detected conflict cannot be bypassed on the next publish; observed RED then GREEN and targeted independent review.
 - Final fresh complete gate: 949 tests passed in 45.76 s, Ruff/format, mypy112, packaging/profile/round-trip checks and dependency audits passed. No material review findings remain.
+- Review handoff: implementation commit `977b02a9e9a85b05a4632f0c20d73d8de1f8727f` is pushed in [PR #12](https://github.com/n3d7/Scryntic/pull/12); push and PR quality checks passed. KER-15 and KER-55–KER-57 are In Review. PR remains open and unmerged.
