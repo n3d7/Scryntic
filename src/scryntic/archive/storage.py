@@ -3,6 +3,7 @@
 import os
 import stat
 import tempfile
+from collections.abc import Callable
 from hashlib import sha256
 from pathlib import Path
 
@@ -18,7 +19,10 @@ class ArchiveStorageError(RuntimeError):
 class ImmutableArchiveStorage:
     """Own generated archive paths beneath an approved state directory."""
 
-    def __init__(self, installation: Installation) -> None:
+    def __init__(
+        self, installation: Installation, *, fault: Callable[[str], None] | None = None
+    ) -> None:
+        self._fault_callback = fault
         self._owner_uid = installation.owner_uid
         self.root = installation.state_dir / "archive"
         try:
@@ -46,10 +50,8 @@ class ImmutableArchiveStorage:
             raise
 
     def _ensure_directory(self, path: Path) -> None:
-        created = False
         try:
             path.mkdir(mode=0o700)
-            created = True
         except FileExistsError:
             pass
         info = path.stat(follow_symlinks=False)
@@ -59,8 +61,14 @@ class ImmutableArchiveStorage:
             or stat.S_IMODE(info.st_mode) != 0o700
         ):
             raise ArchiveStorageError("Unsafe archive directory")
-        if created:
-            self._fsync_directory(path.parent)
+        # A previous attempt may have created this entry without syncing its parent.
+        self._fault("before_archive_directory_fsync")
+        self._fsync_directory(path.parent)
+        self._fault("after_archive_directory_fsync")
+
+    def _fault(self, stage: str) -> None:
+        if self._fault_callback is not None:
+            self._fault_callback(stage)
 
     @staticmethod
     def _fsync_directory(path: Path) -> None:
@@ -87,13 +95,17 @@ class ImmutableArchiveStorage:
                 or stat.S_IMODE(info.st_mode) != 0o600
             ):
                 raise ArchiveStorageError("Unsafe archive staging file")
+            self._fault("before_object_file_fsync")
             os.fsync(fd)
+            self._fault("after_object_file_fsync")
         finally:
             os.close(fd)
         path.chmod(0o400, follow_symlinks=False)
         fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
         try:
+            self._fault("before_object_readonly_fsync")
             os.fsync(fd)
+            self._fault("after_object_readonly_fsync")
             size = os.fstat(fd).st_size
             hashed = sha256()
             while chunk := os.read(fd, 1024 * 1024):
@@ -109,6 +121,7 @@ class ImmutableArchiveStorage:
     def install_staging(self, staging: Path, object_sha256: str) -> Path:
         target = self.object_path(object_sha256)
         self._ensure_directory(target.parent)
+        self._fault("before_object_install")
         try:
             os.link(staging, target, follow_symlinks=False)
         except FileExistsError:
@@ -116,11 +129,16 @@ class ImmutableArchiveStorage:
                 raise ArchiveStorageError(
                     "Conflicting immutable archive object"
                 ) from None
+        self._fault("after_object_install")
+        self._fault("before_object_directory_fsync")
         self._fsync_directory(target.parent)
+        self._fault("after_object_directory_fsync")
         try:
             staging.unlink()
         finally:
+            self._fault("before_staging_directory_fsync")
             self._fsync_directory(self.staging_path)
+            self._fault("after_staging_directory_fsync")
         return target
 
     def file_sha256(self, path: Path) -> str:
@@ -158,6 +176,7 @@ class ImmutableArchiveStorage:
             self._ensure_directory(current)
         source = self.object_path(object_sha256)
         target = directory_path / f"{object_sha256}.parquet"
+        self._fault("before_partition_install")
         try:
             os.link(source, target, follow_symlinks=False)
         except FileExistsError:
@@ -170,5 +189,8 @@ class ImmutableArchiveStorage:
                 raise ArchiveStorageError(
                     "Conflicting archive partition view"
                 ) from None
+        self._fault("after_partition_install")
+        self._fault("before_partition_directory_fsync")
         self._fsync_directory(directory_path)
+        self._fault("after_partition_directory_fsync")
         return target

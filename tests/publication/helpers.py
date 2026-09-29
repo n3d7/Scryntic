@@ -84,6 +84,7 @@ def configured_coordinator(
     offsets: tuple[int, ...] = (2,),
     epochs: tuple[str, ...] = ("epoch-a",),
     fault: Callable[[str], None] | None = None,
+    batch_records: int = 10,
 ) -> CoordinatorBundle:
     records = tuple(
         raw_record(offset=offset, epoch=epoch)
@@ -92,16 +93,21 @@ def configured_coordinator(
     root = installation(tmp_path)
     raw_reader = FixedRawReader(records)
     normalized = FixedNormalizationReader(records)
-    store = PublicationStore(root, producer="collector-a")
+    store = PublicationStore(root, producer="collector-a", fault=fault)
     coordinator = PublicationCoordinator(
         raw_reader,
         normalized,
         store,
-        ParquetRawArchive(root),
-        NormalizedParquetArchive(root),
+        ParquetRawArchive(
+            root, fault=None if fault is None else lambda stage: fault(f"raw_{stage}")
+        ),
+        NormalizedParquetArchive(
+            root,
+            fault=None if fault is None else lambda stage: fault(f"normalized_{stage}"),
+        ),
         ManifestStorage(root, fault=fault),
         root,
-        limits(),
+        limits(batch_records),
         fault=fault,
     )
     return CoordinatorBundle(root, records, raw_reader, normalized, store, coordinator)
