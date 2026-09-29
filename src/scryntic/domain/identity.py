@@ -15,7 +15,7 @@ class Version:
         integer(self.minor, 0)
 
 
-CONTRACT_VERSION = Version(1, 0)
+CONTRACT_VERSION = Version(1, 1)
 
 
 @dataclass(frozen=True, slots=True)

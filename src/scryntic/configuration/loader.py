@@ -2,7 +2,10 @@
 
 import tomllib
 from collections.abc import Mapping
+from dataclasses import fields
+from typing import cast
 
+from scryntic.configuration.clock import ClockLimits
 from scryntic.configuration.paths import Installation, read_file, validate_directories
 from scryntic.configuration.values import (
     LOG_LEVELS,
@@ -28,7 +31,9 @@ def _table(value: object, keys: set[str]) -> dict[str, object]:
 def _configuration(
     data: dict[str, object], overrides: Mapping[str, object]
 ) -> Configuration:
-    settings = _table(data, {"profile", "log_level", "capabilities", "credentials"})
+    settings = _table(
+        data, {"profile", "log_level", "capabilities", "credentials", "clock"}
+    )
     override = _table(dict(overrides), {"profile", "log_level"})
     # Validate each layer before applying precedence, so overrides cannot mask errors.
     for layer in (settings, override):
@@ -75,11 +80,18 @@ def _configuration(
             else Capability.SYNCHRONIZATION
         )
         references.append(SecretReference(capability, spec["backend"], spec["name"]))
+    clock = _table(
+        settings.get("clock", {}), {field.name for field in fields(ClockLimits)}
+    )
+    if any(type(value) is not int for value in clock.values()):
+        raise BoundaryError(ErrorCode.INVALID_CONFIG)
+    clock_values = cast(dict[str, int], clock)
     return Configuration(
         profile,
         log_level,
         frozenset(enabled),
         tuple(sorted(references, key=lambda r: r.capability)),
+        ClockLimits(**clock_values),
     )
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from decimal import Decimal
 from typing import Any, cast
 
@@ -17,12 +18,15 @@ from scryntic.archive.canonical import (
 )
 from scryntic.archive.normalized_parquet import NORMALIZED_PARQUET_SCHEMA
 from scryntic.archive.raw_parquet import RAW_PARQUET_SCHEMA
+from scryntic.clock.policy import time_interval
+from scryntic.configuration.clock import ClockLimits
 from scryntic.configuration.paths import Installation
 from scryntic.dataset.selection import (
     SelectedCandle,
     SelectionError,
     SourceInput,
     select_candles,
+    strict_eligible,
 )
 from scryntic.dataset.storage import DatasetStorage, DatasetStorageError
 from scryntic.domain.dataset import DatasetRef
@@ -34,6 +38,9 @@ from scryntic.publication.manifest import prepare_manifest
 from scryntic.publication.reader import PublicationReader, PublicationReaderError
 
 CANDLE_RECIPE_SCHEMA = SchemaRef("scryntic.dataset.candle-recipe", Version(1, 0))
+AS_OBSERVED_CANDLE_RECIPE_SCHEMA = SchemaRef(
+    "scryntic.dataset.candle-recipe", Version(1, 1)
+)
 DATASET_SCHEMA = SchemaRef("scryntic.dataset.candle.parquet", Version(1, 0))
 MANIFEST_SCHEMA = SchemaRef("scryntic.dataset.manifest", Version(1, 0))
 MAX_PARQUET_BYTES = 512 * 1024 * 1024
@@ -158,6 +165,7 @@ class DatasetBuilder:
         *,
         code_revision: str,
         dependency_lock_sha256: str,
+        clock_limits: ClockLimits | None = None,
     ) -> None:
         if not isinstance(publications, PublicationReader):
             raise TypeError("Expected validated publication reader")
@@ -167,11 +175,21 @@ class DatasetBuilder:
         self._installation = installation
         self._code_revision = code_revision
         self._dependency_lock_sha256 = dependency_lock_sha256
+        self._clock_limits = ClockLimits() if clock_limits is None else clock_limits
+        if not isinstance(self._clock_limits, ClockLimits):
+            raise TypeError("Expected validated clock budgets")
 
     def build(self, request: BuildDatasetRequest) -> BuildDatasetResult:
         if not isinstance(request, BuildDatasetRequest):
             raise TypeError("Expected build request")
-        if request.recipe != CANDLE_RECIPE_SCHEMA:
+        cutoff = request.as_observed_cutoff
+        if request.recipe == CANDLE_RECIPE_SCHEMA:
+            if cutoff is not None:
+                raise DatasetBuildError("Historical recipe cannot claim strict timing")
+        elif request.recipe == AS_OBSERVED_CANDLE_RECIPE_SCHEMA:
+            if cutoff is None or time_interval(cutoff, self._clock_limits) is None:
+                raise DatasetBuildError("Strict selection requires a bounded cutoff")
+        else:
             raise DatasetBuildError("Unsupported dataset recipe")
         try:
             manifests = [
@@ -244,7 +262,12 @@ class DatasetBuilder:
                             value,
                         )
                     )
-            selected = select_candles(tuple(sources))
+            eligible, excluded = (
+                strict_eligible(tuple(sources), cutoff, self._clock_limits)
+                if cutoff is not None
+                else (tuple(sources), ())
+            )
+            selected = select_candles(eligible)
             rows = [_row(value) for value in selected]
             table = pa.Table.from_pylist(rows, schema=TABLE_SCHEMA)
             storage = DatasetStorage(self._installation)
@@ -258,6 +281,18 @@ class DatasetBuilder:
                 "code_revision": self._code_revision,
                 "dependency_lock_sha256": self._dependency_lock_sha256,
                 "selection": "latest accepted open revision or finalization per key; duplicates add evidence; conflicts fail",
+                "timing_policy": "historical-reconstruction"
+                if cutoff is None
+                else "strict-as-observed",
+                "as_observed_cutoff": None
+                if cutoff is None
+                else {
+                    "wall_time_ns": cutoff.wall_time_ns,
+                    "monotonic_ns": cutoff.monotonic_ns,
+                    "session_id": cutoff.session_id,
+                    "quality": asdict(cutoff.quality),
+                },
+                "clock_limits": None if cutoff is None else asdict(self._clock_limits),
                 "ordering": ["start_ns", "venue", "category", "symbol", "interval_ns"],
                 "inputs": inputs,
                 "rows": [
@@ -300,7 +335,7 @@ class DatasetBuilder:
                         for source in sources
                     }
                 ),
-                "exclusions": [],
+                "exclusions": list(excluded),
                 "transformations": {
                     "normalizer_versions": sorted(
                         {source.value.outcome.normalizer_version for source in sources}

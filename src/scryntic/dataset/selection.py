@@ -3,7 +3,10 @@
 from dataclasses import dataclass
 
 from scryntic.archive.canonical import PublicationInput
+from scryntic.clock.policy import observed_by
+from scryntic.configuration.clock import ClockLimits
 from scryntic.domain.market import CandleKey
+from scryntic.domain.time import ClockSample
 from scryntic.domain.validation import digest, integer
 from scryntic.normalization.sqlite_store import OutcomeKind
 
@@ -43,6 +46,30 @@ class _KeyState:
     selected: SourceInput
     evidence: list[SourceInput]
     revisions: set[str]
+
+
+def strict_eligible(
+    inputs: tuple[SourceInput, ...], cutoff: ClockSample, limits: ClockLimits
+) -> tuple[tuple[SourceInput, ...], tuple[dict[str, object], ...]]:
+    """Filter uncertain receipts without hiding known invalid publication inputs."""
+    eligible: list[SourceInput] = []
+    exclusions: list[dict[str, object]] = []
+    for source in inputs:
+        if source.value.outcome.kind in (OutcomeKind.CONFLICT, OutcomeKind.REJECTED):
+            raise SelectionError("Conflicting or rejected dataset input")
+        if not observed_by(source.value.raw.envelope.receipt, cutoff, limits):
+            identity = source.value.raw.identity
+            exclusions.append(
+                {
+                    "producer": identity.producer,
+                    "epoch": identity.epoch,
+                    "offset": identity.offset,
+                    "reason": "not_proven_before_cutoff",
+                }
+            )
+            continue
+        eligible.append(source)
+    return tuple(eligible), tuple(exclusions)
 
 
 def select_candles(inputs: tuple[SourceInput, ...]) -> tuple[SelectedCandle, ...]:

@@ -4,6 +4,14 @@ F03 implements the contract surface approved in `ARCHITECTURE.md`. It adds no
 integrations, state stores, job runner, deserializer, registry or financial
 operations. Python and dependency policies remain those of F01/F02.
 
+F12 extends the Python port to additive `CONTRACT_VERSION` 1.1: the existing
+`ClockSample`/`TimeQuality` values and serialized fields remain intact;
+`BuildDatasetRequest.as_observed_cutoff` is optional. Recipe 1.0 remains
+historical reconstruction, while recipe 1.1 requires the bounded cutoff and
+records exclusions. `application.clock` additionally declares immutable
+`ClockReading`/`SyncEvidence` and read-only status/reader ports. See
+[clock-quality monitoring](CLOCK.md).
+
 | Owner/module | Contract and responsibility |
 | --- | --- |
 | `domain.identity` | Namespaced instrument/entity identity; Python contract and external schema versions. |
