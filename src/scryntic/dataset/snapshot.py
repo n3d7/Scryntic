@@ -11,6 +11,7 @@ import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from scryntic.application.dto import BuildDatasetRequest, BuildDatasetResult
+from scryntic.application.sources import BYBIT_CANDLE_SCHEMA
 from scryntic.archive.canonical import (
     JsonValue,
     canonical_json_bytes,
@@ -248,7 +249,8 @@ class DatasetBuilder:
                     if value.raw != raw:
                         raise DatasetBuildError("Publication correspondence disagrees")
                     if (
-                        value.outcome.input_schema != FAKE_CANDLE_SCHEMA
+                        value.outcome.input_schema
+                        not in (FAKE_CANDLE_SCHEMA, BYBIT_CANDLE_SCHEMA)
                         or value.outcome.instrument_schema != INSTRUMENT_SCHEMA
                         or value.outcome.output_schema != CANDLE_SCHEMA
                     ):
