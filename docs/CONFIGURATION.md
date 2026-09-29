@@ -21,6 +21,14 @@ selects defaults. Input is bounded to 64 KiB.
 profile = "collector"
 log_level = "info"
 
+[clock]
+max_offset_ns = 50000000
+max_uncertainty_ns = 1000000000
+max_evidence_age_ns = 1800000000000
+max_step_ns = 50000000
+max_sample_gap_ns = 30000000000
+holdover_drift_ppb = 500000
+
 [capabilities]
 public_collection = true
 telegram_reports = false
@@ -34,6 +42,13 @@ configuration switches for later components, not implementations of them. Suppor
 log levels are `debug`, `info`, `warning`, `error`. Unknown keys, wrong types,
 unsupported backends, duplicate definitions and incompatible enabled capabilities
 fail. There are no exchange credential fields or financial capabilities.
+
+`[clock]` is optional. The values shown qualify an example chrony 4.9 host
+with long polling intervals; choose limits for each workload and supported host.
+All time limits are exact nonnegative integer nanoseconds, except age/step/gap
+must be positive. `holdover_drift_ppb` is an integer from 0 through 999999999.
+Unknown clock keys and booleans used as integers fail configuration loading.
+See [F12 clock policy](CLOCK.md) for status, epoch and finality behavior.
 
 Optional references use `[credentials.telegram]` or `[credentials.transfer]`, each
 with `backend = "file"` and `name = "bot-token"` or another approved leaf name.

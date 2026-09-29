@@ -6,6 +6,7 @@ from scryntic.application.sources import StreamRequest
 from scryntic.domain.dataset import DatasetRef
 from scryntic.domain.identity import SchemaRef
 from scryntic.domain.raw import IngestionId
+from scryntic.domain.time import ClockSample
 from scryntic.domain.validation import digest, identifier, immutable_tuple
 
 
@@ -31,6 +32,7 @@ class CollectResult:
 class BuildDatasetRequest:
     input_manifests: tuple[str, ...]
     recipe: SchemaRef
+    as_observed_cutoff: ClockSample | None = None
 
     def __post_init__(self) -> None:
         immutable_tuple(self.input_manifests, 4096)
@@ -38,6 +40,10 @@ class BuildDatasetRequest:
             raise ValueError("Dataset selection needs input manifests")
         for value in self.input_manifests:
             digest(value)
+        if self.as_observed_cutoff is not None and not isinstance(
+            self.as_observed_cutoff, ClockSample
+        ):
+            raise TypeError("Expected an explicit clock cutoff sample")
 
 
 @dataclass(frozen=True, slots=True)

@@ -8,13 +8,19 @@ from scryntic.archive.normalized_parquet import NormalizedParquetArchive
 from scryntic.archive.raw_parquet import ParquetRawArchive
 from scryntic.configuration.paths import Installation
 from scryntic.domain.raw import IngestionId, RawRecord
+from scryntic.domain.time import ClockSample
 from scryntic.normalization.candle import CandleNormalization, CandleSemantics
 from scryntic.normalization.sqlite_store import OutcomeKind, ProcessingOutcome
 from scryntic.publication.coordinator import PublicationCoordinator
 from scryntic.publication.manifest import ManifestStorage
 from scryntic.publication.sqlite_store import PublicationLimits, PublicationStore
 from tests.archive.helpers import installation
-from tests.normalization.helpers import FixedRawReader, normalization, raw_record
+from tests.normalization.helpers import (
+    DEFAULT_RECEIPT,
+    FixedRawReader,
+    normalization,
+    raw_record,
+)
 
 
 class FixedNormalizationReader:
@@ -85,10 +91,17 @@ def configured_coordinator(
     epochs: tuple[str, ...] = ("epoch-a",),
     fault: Callable[[str], None] | None = None,
     batch_records: int = 10,
+    receipts: tuple[ClockSample, ...] | None = None,
 ) -> CoordinatorBundle:
+    if receipts is not None and len(receipts) != len(offsets):
+        raise ValueError("Each fixture input needs a receipt")
     records = tuple(
-        raw_record(offset=offset, epoch=epoch)
-        for offset, epoch in zip(offsets, epochs, strict=True)
+        raw_record(
+            offset=offset,
+            epoch=epoch,
+            receipt=receipts[index] if receipts is not None else DEFAULT_RECEIPT,
+        )
+        for index, (offset, epoch) in enumerate(zip(offsets, epochs, strict=True))
     )
     root = installation(tmp_path)
     raw_reader = FixedRawReader(records)

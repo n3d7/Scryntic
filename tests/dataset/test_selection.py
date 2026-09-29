@@ -5,7 +5,10 @@ from dataclasses import replace
 import pytest
 
 from scryntic.archive.canonical import PublicationInput
+from scryntic.configuration.clock import ClockLimits
+from scryntic.dataset import selection
 from scryntic.dataset.selection import SelectionError, SourceInput, select_candles
+from scryntic.domain.time import ClockSample, TimeQuality
 from scryntic.normalization.candle import RejectionCode, RejectionField
 from scryntic.normalization.sqlite_store import OutcomeKind
 from tests.normalization.helpers import fake_candle_payload, raw_record
@@ -90,6 +93,19 @@ def test_conflict_or_rejection_fails_entire_selection(kind: OutcomeKind) -> None
 
     with pytest.raises(SelectionError):
         select_candles((accepted, bad))
+
+
+@pytest.mark.parametrize("kind", [OutcomeKind.CONFLICT, OutcomeKind.REJECTED])
+def test_strict_timing_cannot_hide_known_conflict_behind_unknown_receipt(
+    kind: OutcomeKind,
+) -> None:
+    accepted = _source(1)
+    bad = _source(2, close="100.40", finalized=True, kind=kind)
+    cutoff = ClockSample(
+        1_700_000_100_000_000_000, 1, "cutoff", TimeQuality("epoch", "healthy", 0, 5, 0)
+    )
+    with pytest.raises(SelectionError):
+        selection.strict_eligible((accepted, bad), cutoff, ClockLimits())
 
 
 def test_duplicate_requires_a_prior_identical_semantic_revision() -> None:

@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from scryntic.configuration.clock import ClockLimits
+
 
 class ErrorCode(StrEnum):
     INVALID_CONFIG = "invalid_configuration"
@@ -65,8 +67,11 @@ class Configuration:
     log_level: str
     enabled: frozenset[Capability]
     references: tuple[SecretReference, ...] = field(repr=False)
+    clock: ClockLimits = field(default_factory=ClockLimits)
 
     def __post_init__(self) -> None:
+        if not isinstance(self.clock, ClockLimits):
+            raise BoundaryError(ErrorCode.INVALID_CONFIG)
         if not isinstance(self.profile, Profile) or self.log_level not in LOG_LEVELS:
             raise BoundaryError(ErrorCode.INVALID_CONFIG)
         if type(self.enabled) is not frozenset or any(
