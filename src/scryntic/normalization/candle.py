@@ -8,6 +8,7 @@ from enum import StrEnum
 from hashlib import sha256
 from typing import Any
 
+from scryntic.application.sources import BYBIT_CANDLE_SCHEMA
 from scryntic.domain.identity import InstrumentId, SchemaRef, Version
 from scryntic.domain.market import CANDLE_SCHEMA, Candle, CandleKey, Instrument
 from scryntic.domain.raw import IngestionId, RawRecord
@@ -16,6 +17,7 @@ from scryntic.domain.validation import digest, identifier, immutable_tuple, inte
 
 FAKE_CANDLE_SCHEMA = SchemaRef("fake_candle", Version(1, 0))
 NORMALIZER_VERSION = "f06.fake_candle.v1"
+BYBIT_NORMALIZER_VERSION = "f13.bybit-v5-kline.v1"
 PAYLOAD_LIMIT = 4096
 
 _INT64_MIN = -(2**63)
@@ -40,6 +42,14 @@ _DECIMAL_PATTERN = re.compile(r"[0-9]+(?:\.[0-9]+)?", flags=re.ASCII)
 _CANONICAL_DECIMAL_PATTERN = re.compile(
     r"(?:0|[1-9][0-9]*|(?:0|[1-9][0-9]*)\.[0-9]*[1-9])", flags=re.ASCII
 )
+
+
+def _normalizer_version(schema: SchemaRef) -> str:
+    if schema == FAKE_CANDLE_SCHEMA:
+        return NORMALIZER_VERSION
+    if schema == BYBIT_CANDLE_SCHEMA:
+        return BYBIT_NORMALIZER_VERSION
+    raise ValueError("Unsupported candle schema")
 
 
 class RejectionCode(StrEnum):
@@ -107,7 +117,10 @@ class NormalizationRejection:
 
     def __post_init__(self) -> None:
         digest(self.raw_sha256)
-        if self.normalizer_version != NORMALIZER_VERSION:
+        if self.normalizer_version not in (
+            NORMALIZER_VERSION,
+            BYBIT_NORMALIZER_VERSION,
+        ):
             raise ValueError("Unexpected normalizer version")
         instrument_values = (self.instrument_schema, self.instrument_revision)
         if (instrument_values[0] is None) != (instrument_values[1] is None):
@@ -308,11 +321,12 @@ def _rejection(
     field: RejectionField | None = None,
     *,
     input_schema: SchemaRef | None = None,
+    normalizer_version: str = NORMALIZER_VERSION,
 ) -> NormalizationRejection:
     return NormalizationRejection(
         raw_record=record.identity,
         raw_sha256=record.envelope.content_sha256,
-        normalizer_version=NORMALIZER_VERSION,
+        normalizer_version=normalizer_version,
         code=code,
         field=field,
         input_schema=input_schema,
@@ -477,7 +491,7 @@ def _domain_rejection(
     return NormalizationRejection(
         raw_record=record.identity,
         raw_sha256=record.envelope.content_sha256,
-        normalizer_version=NORMALIZER_VERSION,
+        normalizer_version=_normalizer_version(parsed.schema),
         code=RejectionCode.INVALID_DOMAIN_VALUE,
         field=None,
         input_schema=parsed.schema,
@@ -519,7 +533,7 @@ def normalize_parsed_candle(
     subject = record.envelope.subject
     if not isinstance(subject, InstrumentId) or subject != instrument.identity:
         raise ValueError("Raw and instrument identity mismatch")
-    if parsed.schema != FAKE_CANDLE_SCHEMA:
+    if parsed.schema not in (FAKE_CANDLE_SCHEMA, BYBIT_CANDLE_SCHEMA):
         raise ValueError("Parsed candle schema mismatch")
 
     try:
@@ -552,7 +566,7 @@ def normalize_parsed_candle(
             volume_unit=instrument.volume_unit,
             finalized=parsed.finalized,
             revision=revision,
-            normalizer_version=NORMALIZER_VERSION,
+            normalizer_version=_normalizer_version(parsed.schema),
             raw_record=record.identity,
             receipt=record.envelope.receipt,
             normalized_at_ns=normalized_at_ns,

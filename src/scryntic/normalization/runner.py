@@ -8,6 +8,7 @@ from scryntic.domain.identity import InstrumentId
 from scryntic.domain.market import Instrument
 from scryntic.domain.raw import IngestionId, RawRecord
 from scryntic.domain.validation import integer
+from scryntic.normalization.bybit_candle import inspect_bybit_candle
 from scryntic.normalization.candle import (
     NormalizationRejection,
     UnsupportedSchema,
@@ -81,7 +82,11 @@ def process_next(
     if not records:
         return NoWork(checkpoint)
     record = records[0]
-    inspected = inspect_fake_candle(record)
+    inspected = (
+        inspect_bybit_candle(record)
+        if record.envelope.source == "bybit-public"
+        else inspect_fake_candle(record)
+    )
     if isinstance(inspected, NormalizationRejection):
         return Processed(
             store.process(record, inspected, expected_predecessor=checkpoint)

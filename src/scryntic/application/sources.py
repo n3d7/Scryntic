@@ -15,6 +15,8 @@ from scryntic.domain.identity import (
 from scryntic.domain.raw import RawEnvelope
 from scryntic.domain.validation import identifier, immutable_tuple, integer
 
+BYBIT_CANDLE_SCHEMA = SchemaRef("bybit_candle", Version(1, 0))
+
 
 class SourceOperation(StrEnum):
     STREAM = "stream"
