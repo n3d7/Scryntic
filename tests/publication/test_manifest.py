@@ -1,5 +1,10 @@
 """Canonical manifest bytes, validation, and durable installation."""
 
+import fcntl
+import json
+import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
@@ -163,3 +168,129 @@ def test_parser_enforces_limit_and_supported_schema() -> None:
     with pytest.raises(ManifestError, match="limit"):
         parse_manifest(data, len(data) - 1)
     assert parse_manifest(data, len(data)).body.schema == MANIFEST_SCHEMA
+
+
+def test_sequence_owned_by_competing_publisher_fails_without_install(
+    tmp_path: Path,
+) -> None:
+    storage = ManifestStorage(installation(tmp_path))
+    data = prepare_manifest(body())
+    ref = parse_manifest(data, len(data)).ref
+    slot = storage._ensure_sequence_directory(ref)
+    fd = os.open(slot, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(ManifestError, match="owned"):
+            storage.install_exact(data, ref)
+        assert not tuple(slot.iterdir())
+    finally:
+        os.close(fd)
+    storage.install_exact(data, ref)
+    assert storage.read_exact(ref, len(data)) == data
+
+
+def test_manifest_initial_directories_are_parent_synced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    synced: list[Path] = []
+    monkeypatch.setattr(
+        ManifestStorage, "_fsync_directory", staticmethod(synced.append)
+    )
+    root = installation(tmp_path)
+    ManifestStorage(root)
+    assert root.state_dir in synced
+    assert synced.count(root.state_dir / "archive") == 2
+
+
+@pytest.mark.parametrize("change", ["after_epoch", "overlap"])
+def test_manifest_rejects_inconsistent_global_input_coverage(change: str) -> None:
+    value = body(before=IngestionId("producer-a", "epoch-a", 3))
+    with pytest.raises(ValueError):
+        if change == "after_epoch":
+            replace(
+                value, checkpoint_after=replace(value.checkpoint_after, epoch="epoch-b")
+            )
+        else:
+            replace(value, first_ingestion=IngestionId("producer-a", "epoch-a", 2))
+
+
+def test_two_publishers_cannot_install_different_bytes_at_one_slot(
+    tmp_path: Path,
+) -> None:
+    ready = threading.Event()
+    release = threading.Event()
+
+    def pause(stage: str) -> None:
+        if stage == "before_manifest_install":
+            ready.set()
+            if not release.wait(10):
+                raise RuntimeError("test publisher synchronization failed")
+
+    root = installation(tmp_path)
+    first = ManifestStorage(root, fault=pause)
+    other = ManifestStorage(root)
+    data = prepare_manifest(body())
+    ref = parse_manifest(data, len(data)).ref
+    conflicting = prepare_manifest(replace(body(), ordered_input_digest="d" * 64))
+    other_ref = parse_manifest(conflicting, len(conflicting)).ref
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(first.install_exact, data, ref)
+        try:
+            assert ready.wait(10)
+            with pytest.raises(ManifestError, match="owned"):
+                other.install_exact(conflicting, other_ref)
+        finally:
+            release.set()
+        future.result(timeout=10)
+    with pytest.raises(ManifestError, match="conflict"):
+        other.install_exact(conflicting, other_ref)
+    assert first.read_exact(ref, len(data)) == data
+
+
+@pytest.mark.parametrize(
+    "encoding",
+    [
+        "space",
+        "newline",
+        "bom",
+        "utf8",
+        "duplicate",
+        "float",
+        "boolean",
+        "algorithm",
+        "schema",
+        "hash",
+        "upper_hash",
+    ],
+)
+def test_real_manifest_rejects_malformed_or_conflicting_encoding(encoding: str) -> None:
+    data = prepare_manifest(body())
+    wrapper = json.loads(data)
+    if encoding == "space":
+        data = json.dumps(wrapper).encode()
+    elif encoding == "newline":
+        data += b"\n"
+    elif encoding == "bom":
+        data = b"\xef\xbb\xbf" + data
+    elif encoding == "utf8":
+        data = b"\xff" + data
+    elif encoding == "duplicate":
+        data = data.replace(b'"sequence":1', b'"sequence":1,"sequence":1')
+    elif encoding == "float":
+        data = data.replace(b'"sequence":1', b'"sequence":1e0')
+    elif encoding == "boolean":
+        data = data.replace(b'"sequence":1', b'"sequence":true')
+    elif encoding == "algorithm":
+        data = data.replace(b"canonical-json-v1", b"unknown-json-v1")
+    elif encoding == "schema":
+        data = data.replace(
+            b'"name":"scryntic.publication-manifest"', b'"name":"unknown.manifest"'
+        )
+    elif encoding == "hash":
+        data = data.replace(b'"record_count":1', b'"record_count":2')
+    else:
+        data = data.replace(
+            wrapper["manifest_hash"].encode(), wrapper["manifest_hash"].upper().encode()
+        )
+    with pytest.raises(ManifestError):
+        parse_manifest(data, 100000)

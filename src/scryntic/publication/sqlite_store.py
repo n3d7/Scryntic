@@ -399,6 +399,14 @@ class PublicationStore:
             raise PublicationError("Publication producer does not own this state")
 
     def _validate_rows(self) -> None:
+        if (
+            self._row(
+                "SELECT 1 FROM publication_catalog WHERE producer<>? LIMIT 1",
+                (self._producer,),
+            )
+            is not None
+        ):
+            raise PublicationError("Foreign publication catalog history")
         previous = 0
         previous_checkpoint: IngestionId | None = None
         epoch_heads: dict[str, tuple[int, str]] = {}
@@ -422,6 +430,8 @@ class PublicationStore:
             previous = entry.checkpoint_after.offset
             previous_checkpoint = entry.checkpoint_after
         checkpoint = self._checkpoint_entry()
+        if previous_checkpoint is not None and checkpoint is None:
+            raise PublicationError("Missing publication checkpoint")
         if checkpoint is not None:
             latest = self._row(
                 "SELECT manifest_hash FROM publication_catalog "
@@ -508,14 +518,21 @@ class PublicationStore:
         )
 
     def _decode_pending(self, row: sqlite3.Row) -> PendingPublication:
+        input_rows = tuple(
+            self._rows(
+                "SELECT * FROM pending_inputs WHERE singleton=1 ORDER BY ordinal"
+            )
+        )
+        if tuple(item["ordinal"] for item in input_rows) != tuple(
+            range(len(input_rows))
+        ):
+            raise PublicationError("Invalid pending input ordinals")
         inputs = tuple(
             (
                 IngestionId(item["producer"], item["epoch"], item["offset"]),
                 item["input_fingerprint"],
             )
-            for item in self._rows(
-                "SELECT * FROM pending_inputs WHERE singleton=1 ORDER BY ordinal"
-            )
+            for item in input_rows
         )
         reservation = PublicationReservation(
             self._identity(row, "before"),
@@ -533,6 +550,8 @@ class PublicationStore:
             row["ordered_input_algorithm"],
             row["ordered_input_digest"],
         )
+        if reservation.checkpoint_after.producer != self._producer:
+            raise PublicationError("Foreign pending publication")
         state = PendingState(row["state"])
         manifest_bytes = row["manifest_bytes"]
         manifest_hash = row["manifest_hash"]
@@ -550,7 +569,9 @@ class PublicationStore:
         if (state is PendingState.RESERVED) != (manifest_bytes is None and ref is None):
             raise PublicationError("Invalid pending publication")
         if manifest_bytes is not None:
-            self._validate_prepared(reservation, manifest_bytes)
+            document = self._validate_prepared(reservation, manifest_bytes)
+            if document.ref != ref:
+                raise PublicationError("Prepared manifest identity mismatch")
         return pending
 
     def pending(self) -> PendingPublication | None:

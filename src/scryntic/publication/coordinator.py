@@ -18,7 +18,12 @@ from scryntic.archive.canonical import (
     semantics_projection,
 )
 from scryntic.archive.model import ArchiveObject, ArchiveRole, Partition
-from scryntic.archive.normalized_parquet import NormalizedParquetArchive
+from scryntic.archive.normalized_parquet import (
+    NORMALIZED_PARQUET_SCHEMA,
+    NormalizedParquetArchive,
+    archived_normalization,
+)
+from scryntic.archive.raw_parquet import PARQUET_CODEC, RAW_PARQUET_SCHEMA
 from scryntic.archive.storage import ImmutableArchiveStorage
 from scryntic.configuration.paths import Installation
 from scryntic.domain.raw import IngestionId, RawRecord
@@ -108,9 +113,13 @@ class PublicationCoordinator:
         self._raw_archive = raw_archive
         self._normalized_archive = normalized_archive
         self._manifests = manifests
-        self._storage = ImmutableArchiveStorage(installation)
+        self._storage = ImmutableArchiveStorage(
+            installation,
+            fault=None if fault is None else lambda stage: fault(f"views_{stage}"),
+        )
         self._limits = limits
         self._fault_callback = fault
+        self._history_checked = False
 
     def _fault(self, stage: str) -> None:
         if self._fault_callback is not None:
@@ -352,6 +361,24 @@ class PublicationCoordinator:
             pending.manifest_bytes, self._limits.max_manifest_bytes
         )
         raw_object, normalized_object = document.body.objects
+        raw_bytes = sum(self._logical_sizes(value)[0] for value in values)
+        try:
+            encoded_bytes = (
+                self._storage.object_path(raw_object.sha256)
+                .stat(follow_symlinks=False)
+                .st_size
+            )
+        except OSError:
+            raise PublicationError("Prepared raw archive is unavailable") from None
+        if (
+            raw_object.format != RAW_PARQUET_SCHEMA
+            or raw_object.codec != PARQUET_CODEC
+            or raw_object.record_count != len(values)
+            or raw_object.decoded_bytes != raw_bytes
+            or raw_object.encoded_bytes > self._limits.raw.max_encoded_bytes
+            or encoded_bytes != raw_object.encoded_bytes
+        ):
+            raise PublicationError("Prepared raw archive descriptor mismatch")
         for index, value in enumerate(values):
             record = asyncio.run(
                 self._raw_archive.read(
@@ -364,9 +391,7 @@ class PublicationCoordinator:
         normalized = asyncio.run(
             self._normalized_archive.read(normalized_object, self._limits.normalized)
         )
-        if tuple(item.identity for item in normalized) != tuple(
-            value.raw.identity for value in values
-        ):
+        if normalized != tuple(archived_normalization(value) for value in values):
             raise PublicationError("Prepared normalized archive evidence changed")
         for descriptor in document.body.objects:
             self._storage.install_partition_view(
@@ -390,6 +415,7 @@ class PublicationCoordinator:
         )
 
     def publish_next(self) -> PublishResult:
+        self._reconcile_history()
         if self._store.pending() is not None:
             recovered = self.recover()
             if isinstance(recovered, Recovered):
@@ -404,6 +430,7 @@ class PublicationCoordinator:
         return self._install_and_commit(prepared, values)
 
     def recover(self) -> RecoveryResult:
+        self._reconcile_history(force=True)
         pending = self._store.pending()
         if pending is None:
             return NoRecovery(self._store.status().checkpoint)
@@ -411,6 +438,74 @@ class PublicationCoordinator:
         if pending.state is PendingState.RESERVED:
             pending = self._seal_and_prepare(pending, values)
         return Recovered(self._install_and_commit(pending, values))
+
+    def _reconcile_history(self, *, force: bool = False) -> None:
+        """Validate both authorities; never synthesize a missing reservation."""
+        if self._history_checked and not force:
+            checkpoint = self._store.status().checkpoint
+            if checkpoint is not None:
+                entry = self._store.catalog_by_checkpoint(checkpoint)
+                if entry is None:
+                    raise PublicationError("Missing committed publication history")
+                self._validate_committed(entry.ref, entry.manifest_bytes)
+            return
+        # A failed full reconciliation must not leave an earlier successful cache.
+        self._history_checked = False
+        pending = self._store.pending()
+        producer = self._store.status().producer
+        for document, data in self._manifests.iter_committed(
+            self._limits.max_manifest_bytes
+        ):
+            if document.ref.producer != producer:
+                continue
+            entry = self._store.catalog_by_epoch_sequence(
+                document.ref.epoch, document.ref.sequence
+            )
+            if entry is not None:
+                if entry.ref != document.ref or entry.manifest_bytes != data:
+                    raise PublicationError("Conflicting committed publication history")
+            elif (
+                pending is None
+                or pending.state is not PendingState.PREPARED
+                or pending.manifest_ref != document.ref
+                or pending.manifest_bytes != data
+            ):
+                raise PublicationError("Unreconciled committed publication history")
+        after: IngestionId | None = None
+        while entries := self._store.catalog_page(
+            after, self._limits.max_manifests_per_read
+        ):
+            for entry in entries:
+                self._validate_committed(entry.ref, entry.manifest_bytes)
+            after = entries[-1].checkpoint_after
+        self._history_checked = True
+
+    def _validate_committed(self, ref: ManifestRef, expected: bytes) -> None:
+        data = self._manifests.read_exact(ref, self._limits.max_manifest_bytes)
+        if data != expected:
+            raise PublicationError("Conflicting committed publication history")
+        document = parse_manifest(data, self._limits.max_manifest_bytes)
+        for descriptor, schema, limits in zip(
+            document.body.objects,
+            (RAW_PARQUET_SCHEMA, NORMALIZED_PARQUET_SCHEMA),
+            (self._limits.raw, self._limits.normalized),
+            strict=True,
+        ):
+            try:
+                path = self._storage.object_path(descriptor.sha256)
+                if (
+                    descriptor.format != schema
+                    or descriptor.codec != PARQUET_CODEC
+                    or descriptor.encoded_bytes > limits.max_encoded_bytes
+                    or descriptor.decoded_bytes > limits.max_decoded_bytes
+                    or descriptor.record_count > limits.max_records
+                    or path.stat(follow_symlinks=False).st_size
+                    != descriptor.encoded_bytes
+                    or self._storage.file_sha256(path) != descriptor.sha256
+                ):
+                    raise PublicationError("Invalid committed publication object")
+            except Exception:
+                raise PublicationError("Invalid committed publication object") from None
 
 
 __all__ = [

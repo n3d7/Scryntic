@@ -1,0 +1,48 @@
+{
+  "baseline_revision": "aa5ad353afb37eeef815259eb45d2772482134e4",
+  "python": "3.12.14",
+  "pyarrow": "25.0.1",
+  "codec": "parquet-pyarrow-v1",
+  "sha256": "f7d43f0b6eededc7cdea5b8c4c656904595eb59d4eab1f9c79c650677eccc883",
+  "encoded_bytes": 5529,
+  "decoded_bytes": 706,
+  "records": [
+    {
+      "identity": {
+        "producer": "collector-a",
+        "epoch": "epoch-a",
+        "offset": 7
+      },
+      "source": "fake-source",
+      "stream": "candles",
+      "channel": "public",
+      "adapter_version": "1.0",
+      "receipt": {
+        "wall_time_ns": 1700000001000000000,
+        "monotonic_ns": 42,
+        "session_id": "session-a",
+        "quality": {
+          "epoch": "clock-a",
+          "status": "unknown",
+          "offset_ns": null,
+          "uncertainty_ns": null,
+          "evidence_age_ns": null
+        }
+      },
+      "subject": {
+        "type": "instrument",
+        "venue": "fake-venue",
+        "category": "spot",
+        "symbol": "BTC-USDT"
+      },
+      "source_time": {
+        "value": 1700000000000,
+        "unit": "ms"
+      },
+      "source_event_id": null,
+      "source_sequence": null,
+      "payload_hex": "00ff7072696f722d636f6465630a7b226578616374223a747275657d",
+      "content_sha256": "672673f75e6f11d0adda6793e88d92a94723b1a4181fcd4ae5be7d613529514c"
+    }
+  ]
+}

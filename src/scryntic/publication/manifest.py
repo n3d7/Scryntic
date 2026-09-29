@@ -1,10 +1,12 @@
 """Canonical v1 publication manifests and durable no-replace installation."""
 
+import fcntl
 import json
 import os
 import stat
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
@@ -104,14 +106,13 @@ class ManifestBody:
         ):
             raise ValueError("Manifest epoch mismatch")
         if not (
-            self.first_ingestion.offset
-            <= self.last_ingestion.offset
-            == self.checkpoint_after.offset
+            self.first_ingestion.offset <= self.last_ingestion.offset
+            and self.last_ingestion == self.checkpoint_after
         ):
             raise ValueError("Invalid manifest input coverage")
         if (
             self.checkpoint_before is not None
-            and self.checkpoint_before.offset >= self.checkpoint_after.offset
+            and self.checkpoint_before.offset >= self.first_ingestion.offset
         ):
             raise ValueError("Manifest checkpoint did not advance")
         if type(self.objects) is not tuple or len(self.objects) != 2:
@@ -424,6 +425,26 @@ class ManifestStorage:
             or stat.S_IMODE(info.st_mode) != 0o700
         ):
             raise ManifestError("Unsafe manifest directory")
+        # Existence alone does not establish durability after an interrupted mkdir.
+        self._notify("before_manifest_parent_directory_fsync")
+        self._fsync_directory(path.parent)
+        self._notify("after_manifest_parent_directory_fsync")
+
+    def _notify(self, stage: str) -> None:
+        if self._fault is not None:
+            self._fault(stage)
+
+    @contextmanager
+    def _sequence_lock(self, path: Path) -> Iterator[None]:
+        fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC | os.O_NOFOLLOW)
+        try:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                raise ManifestError("Publication sequence is already owned") from None
+            yield
+        finally:
+            os.close(fd)
 
     @staticmethod
     def _fsync_directory(path: Path) -> None:
@@ -458,7 +479,9 @@ class ManifestStorage:
         ):
             current = current / component
             self._ensure_directory(current)
+            self._notify("before_manifest_parent_directory_fsync")
             self._fsync_directory(current.parent)
+            self._notify("after_manifest_parent_directory_fsync")
         return current
 
     @staticmethod
@@ -500,6 +523,19 @@ class ManifestStorage:
             if document.ref != ref:
                 raise ManifestError("Manifest identity conflict")
             sequence_dir = self._ensure_sequence_directory(ref)
+            with self._sequence_lock(sequence_dir):
+                self._install_locked(data, ref, sequence_dir)
+        except BaseException as error:
+            if isinstance(error, ManifestError):
+                raise
+            if isinstance(error, Exception):
+                raise ManifestError("Unable to install publication manifest") from None
+            raise
+
+    def _install_locked(
+        self, data: bytes, ref: ManifestRef, sequence_dir: Path
+    ) -> None:
+        try:
             target = self.manifest_path(ref)
             entries = self._entries(sequence_dir)
             if entries and entries != (target.name,):
@@ -512,6 +548,7 @@ class ManifestStorage:
                 with os.fdopen(fd, "wb", closefd=True) as stream:
                     stream.write(data)
                     stream.flush()
+                    self._notify("before_manifest_file_fsync")
                     os.fsync(stream.fileno())
                 if self._fault is not None:
                     self._fault("after_manifest_file_fsync")
@@ -520,23 +557,29 @@ class ManifestStorage:
                     staging, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW
                 )
                 try:
+                    self._notify("before_manifest_readonly_fsync")
                     os.fsync(readonly_fd)
+                    self._notify("after_manifest_readonly_fsync")
                 finally:
                     os.close(readonly_fd)
                 try:
+                    self._notify("before_manifest_install")
                     os.link(staging, target, follow_symlinks=False)
                 except FileExistsError:
                     if self._read_file(target, len(data)) != data:
                         raise ManifestError("Manifest identity conflict") from None
                 if self._fault is not None:
                     self._fault("after_manifest_install")
+                self._notify("before_manifest_directory_fsync")
                 self._fsync_directory(sequence_dir)
                 if self._fault is not None:
                     self._fault("after_manifest_directory_fsync")
             finally:
                 if staging.exists():
                     staging.unlink()
+                self._notify("before_manifest_staging_directory_fsync")
                 self._fsync_directory(self._staging)
+                self._notify("after_manifest_staging_directory_fsync")
         except BaseException as error:
             if isinstance(error, ManifestError):
                 raise
@@ -561,3 +604,50 @@ class ManifestStorage:
             if isinstance(error, Exception):
                 raise ManifestError("Unable to read publication manifest") from None
             raise
+
+    def iter_committed(
+        self, max_bytes: int
+    ) -> Iterator[tuple[ManifestDocument, bytes]]:
+        """Walk only committed manifests; empty crash-created slots are harmless."""
+        try:
+            with os.scandir(self._manifests) as epochs:
+                for epoch in epochs:
+                    digest(epoch.name)
+                    epoch_path = Path(epoch.path)
+                    self._validate_directory(epoch_path)
+                    with os.scandir(epoch_path) as sequences:
+                        for sequence in sequences:
+                            if (
+                                len(sequence.name) != _SEQUENCE_WIDTH
+                                or not sequence.name.isascii()
+                                or not sequence.name.isdecimal()
+                                or int(sequence.name) < 1
+                            ):
+                                raise ManifestError("Invalid committed manifest slot")
+                            path = Path(sequence.path)
+                            self._validate_directory(path)
+                            names = self._entries(path)
+                            if not names:
+                                continue
+                            if len(names) != 1:
+                                raise ManifestError("Manifest sequence conflict")
+                            data = self._read_file(path / names[0], max_bytes)
+                            document = parse_manifest(data, max_bytes)
+                            if self.manifest_path(document.ref) != path / names[0]:
+                                raise ManifestError("Manifest namespace conflict")
+                            yield document, data
+        except BaseException as error:
+            if isinstance(error, ManifestError):
+                raise
+            if isinstance(error, Exception):
+                raise ManifestError("Unable to reconcile committed manifests") from None
+            raise
+
+    def _validate_directory(self, path: Path) -> None:
+        info = path.stat(follow_symlinks=False)
+        if (
+            not stat.S_ISDIR(info.st_mode)
+            or info.st_uid != self._owner_uid
+            or stat.S_IMODE(info.st_mode) != 0o700
+        ):
+            raise ManifestError("Unsafe manifest directory")
