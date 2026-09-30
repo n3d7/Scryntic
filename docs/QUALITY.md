@@ -5,6 +5,13 @@ Run these commands from a clean checkout with the F01 **uv 0.12.13** tool on
 range and **uv_build 0.12.13** pin are unchanged. Provisioning is an explicit
 developer/operator step, never application startup behavior.
 
+F16 additionally requires operator-provisioned Bubblewrap/libseccomp and available
+unprivileged Linux namespaces. `scripts/check_import_boundary.py` explicitly
+qualifies the fixed parser profile; unavailable controls fail instead of skipping
+tests. CI provisions these mechanisms on an ephemeral Ubuntu runner. The `analysis`
+profile includes pinned PyArrow for restricted workstation decoding; the base
+profile remains free of native archive decoders. See [IMPORTS.md](IMPORTS.md).
+
 ```sh
 uv python install --no-bin
 bash scripts/check.sh

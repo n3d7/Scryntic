@@ -3,9 +3,10 @@
 ## Current scope and versions
 
 Scryntic is a Linux/Python market-data and analysis project under development.
-The current implementation covers F01–F11, including a deterministic fake-source /
-fake-provider demonstration, local ingestion, normalization, publication and
-dataset/forecast artifacts. It is not the completed Foundation v1 deployment.
+The current implementation includes a deterministic fake-source / fake-provider
+demonstration, local ingestion, normalization, publication, dataset/forecast
+artifacts and F16 restricted hostile imports. It is not the completed Foundation
+v1 deployment.
 There are no published GitHub releases or established supported-release/backport
 matrix. Please identify the affected commit and reproduce against current `main`
 where possible. Runtime and dependency profiles are documented in
@@ -36,6 +37,11 @@ locally selected fakes; provider descriptors do not authorize downloaded code,
 real model loading or cloud disclosure. See [CONTRACTS.md](docs/CONTRACTS.md).
 
 ## Implemented controls
+
+- **Hostile imports:** bounded sealed snapshots, restricted native decoder and
+  independently validated primitive IPC; transactional conformance catalog and
+  repeat restricted inspection. See [IMPORTS.md](docs/IMPORTS.md) for the qualified
+  profile, probes, retention/recovery behavior and remaining limits.
 
 - **Configuration and credentials:** bounded, strict configuration validation;
   allowlisted capabilities and file-backed credential references; descriptor-relative
@@ -85,12 +91,14 @@ their owner, and retained metadata cannot reconstruct missing objects.
 
 ## Important limits and unfinished controls
 
-Hostile-import/native-decoder isolation (F16), authenticated workstation
+Authenticated workstation
 synchronization and retained trust anchors (F17), real-model admission/worker
 isolation (F20–F21), and least-privilege deployment profiles (F27) are not current
-guarantees. Configuration switches do not implement these services. Native
-Parquet decoding currently runs in-process; do not treat arbitrary imported files
-as safely sandboxed inputs.
+guarantees. Configuration switches do not implement these services. F16 imports
+use the restricted boundary in [IMPORTS.md](docs/IMPORTS.md). Trusted collector-side
+Parquet readers still run in-process and must not be used as an import API.
+Catalog acceptance never authorizes later in-process native decoding. F16 host
+qualification is separate from F21 model qualification.
 
 F11 tests cover deterministic process crashes and injected I/O failures, not
 physical power loss, dishonest storage caches or backup restoration. Recovery

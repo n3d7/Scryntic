@@ -87,7 +87,7 @@ def main() -> None:
                 check=True,
             )
             forbidden = ["pytest", "ruff", "mypy", "pip_audit"]
-            if profile != "collector":
+            if profile == "base":
                 forbidden += ["pyarrow"]
             if profile != "analysis":
                 forbidden += ["torch", "transformers", "timesfm", "huggingface_hub"]
@@ -110,7 +110,7 @@ def main() -> None:
                 cwd=temp,
                 check=True,
             )
-            if profile == "collector":
+            if profile in ("collector", "analysis"):
                 subprocess.run(
                     [python, "-I", str(ROOT / "scripts/verify_archive_install.py")],
                     cwd=temp,

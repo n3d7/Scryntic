@@ -660,6 +660,9 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+analysis = [
+    { name = "pyarrow" },
+]
 collector = [
     { name = "pyarrow" },
 ]
@@ -675,7 +678,7 @@ dev = [
 requires-dist = [{ name = "aiohttp", specifier = "==3.14.3" }]
 
 [package.metadata.requires-dev]
-analysis = []
+analysis = [{ name = "pyarrow", specifier = "==25.0.1" }]
 collector = [{ name = "pyarrow", specifier = "==25.0.1" }]
 dev = [
     { name = "mypy", specifier = "==2.3.1" },
