@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from scryntic.application.dto import BuildDatasetRequest
+from scryntic.application.sources import BYBIT_CANDLE_SCHEMA
 from scryntic.archive.canonical import PublicationInput
 from scryntic.archive.normalized_parquet import NORMALIZED_PARQUET_SCHEMA
 from scryntic.dataset.snapshot import (
@@ -183,6 +184,36 @@ def test_unsupported_normalized_semantic_schema_fails(
                 )
             )
         assert not (bundle.root.state_dir / "datasets" / "manifests").exists()
+    finally:
+        bundle.close()
+
+
+def test_bybit_candle_uses_existing_dataset_recipe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle, published, builder = _fixture(tmp_path)
+    try:
+        validated = builder._publications.resolve_exact(
+            published.manifest.manifest_hash
+        )
+        inputs = tuple(
+            replace(
+                value,
+                outcome=replace(value.outcome, input_schema=BYBIT_CANDLE_SCHEMA),
+            )
+            for value in validated.inputs
+        )
+        monkeypatch.setattr(
+            builder._publications,
+            "resolve_exact",
+            lambda _: replace(validated, inputs=inputs),
+        )
+        result = builder.build(
+            BuildDatasetRequest(
+                (published.manifest.manifest_hash,), CANDLE_RECIPE_SCHEMA
+            )
+        )
+        assert result.dataset.row_count == 1
     finally:
         bundle.close()
 

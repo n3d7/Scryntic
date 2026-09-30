@@ -10,7 +10,7 @@ from typing import cast
 from scryntic.application.sources import BYBIT_CANDLE_SCHEMA
 from scryntic.domain.identity import InstrumentId, SchemaRef, Version
 from scryntic.domain.raw import RawRecord
-from scryntic.domain.time import TimeUnit
+from scryntic.domain.time import SourceTime, TimeUnit
 from scryntic.normalization.candle import (
     BYBIT_NORMALIZER_VERSION,
     NormalizationRejection,
@@ -193,13 +193,24 @@ def inspect_bybit_candle(
     open_value, high, low, close, volume = (decimals[name] for name in names)
     if not low <= min(open_value, close) <= max(open_value, close) <= high:
         return _reject(record, RejectionCode.INCONSISTENT_OHLC)
-    if (
-        type(document["finalized"]) is not bool
-        or document["publication_time"] is not None
-    ):
+    if type(document["finalized"]) is not bool:
         return _reject(
             record, RejectionCode.INVALID_FIELD_TYPE, RejectionField.FINALIZED
         )
+    publication_value = document["publication_time"]
+    publication_time = None
+    if publication_value is not None:
+        if (
+            type(publication_value) is not dict
+            or set(publication_value) != {"value", "unit"}
+            or type(publication_value["value"]) is not int
+            or not 0 <= publication_value["value"] < (2**63 - 1) // _MS_NS
+            or publication_value["unit"] != TimeUnit.MILLISECOND.value
+        ):
+            return _reject(
+                record, RejectionCode.INVALID_TIME, RejectionField.PUBLICATION_TIME
+            )
+        publication_time = SourceTime(publication_value["value"], TimeUnit.MILLISECOND)
     return ParsedFakeCandle(
         schema=BYBIT_CANDLE_SCHEMA,
         start_ns=document["start_ns"],
@@ -210,5 +221,5 @@ def inspect_bybit_candle(
         close=close,
         volume=volume,
         finalized=document["finalized"],
-        publication_time=None,
+        publication_time=publication_time,
     )
