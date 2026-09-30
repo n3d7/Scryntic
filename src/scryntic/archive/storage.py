@@ -142,21 +142,7 @@ class ImmutableArchiveStorage:
         return target
 
     def file_sha256(self, path: Path) -> str:
-        fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
-        try:
-            info = os.fstat(fd)
-            if (
-                not stat.S_ISREG(info.st_mode)
-                or info.st_uid != self._owner_uid
-                or stat.S_IMODE(info.st_mode) != 0o400
-            ):
-                raise ArchiveStorageError("Unsafe immutable archive object")
-            hashed = sha256()
-            while chunk := os.read(fd, 1024 * 1024):
-                hashed.update(chunk)
-            return hashed.hexdigest()
-        finally:
-            os.close(fd)
+        return file_sha256(path, self._owner_uid)
 
     def install_partition_view(
         self, role: ArchiveRole, partition: Partition, object_sha256: str
@@ -194,3 +180,21 @@ class ImmutableArchiveStorage:
         self._fsync_directory(directory_path)
         self._fault("after_partition_directory_fsync")
         return target
+
+
+def file_sha256(path: Path, owner_uid: int) -> str:
+    fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    try:
+        info = os.fstat(fd)
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_uid != owner_uid
+            or stat.S_IMODE(info.st_mode) != 0o400
+        ):
+            raise ArchiveStorageError("Unsafe immutable archive object")
+        hashed = sha256()
+        while chunk := os.read(fd, 1024 * 1024):
+            hashed.update(chunk)
+        return hashed.hexdigest()
+    finally:
+        os.close(fd)

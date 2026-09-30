@@ -23,6 +23,15 @@ jobs:
           enable-cache: false
       - name: Provision pinned Python
         run: uv python install --no-bin
+      - name: Provision decoder host controls
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes bubblewrap libseccomp2
+          # The ephemeral runner must permit the fixed unprivileged namespace
+          # launcher. Worker restrictions remain enforced and probed in tests.
+          if sysctl kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
       - name: Run local quality, packaging and audit gates
         run: bash scripts/check.sh
       - name: Prove failure detection with disposable negative controls
