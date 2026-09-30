@@ -24,6 +24,7 @@ from scryntic.application.sources import (
     SourceCapability,
     SourceDescriptor,
     SourceOperation,
+    SourceTransientError,
 )
 from scryntic.clock.policy import is_final
 from scryntic.configuration.clock import ClockLimits
@@ -68,6 +69,10 @@ _INTEGER = re.compile(r"[0-9]+", re.ASCII)
 
 class BybitError(ValueError):
     """Sanitized public-data failure; never includes response text or URLs."""
+
+
+class BybitTransientError(BybitError, SourceTransientError):
+    """Retryable public network/rate/server failure with fixed metadata."""
 
 
 class _JsonError(ValueError):
@@ -153,6 +158,10 @@ class BybitPublicClient:
                         raise BybitError("Bybit response host changed")
                     if 300 <= response.status < 400:
                         raise BybitError("Bybit redirect refused")
+                    if response.status == 429 or 500 <= response.status < 600:
+                        raise BybitTransientError(
+                            "Bybit public request temporarily failed"
+                        )
                     if response.status != 200:
                         raise BybitError("Bybit public request failed")
                     length = response.headers.get("Content-Length")
@@ -168,7 +177,9 @@ class BybitPublicClient:
                         body.extend(chunk)
         except BybitError:
             raise
-        except (aiohttp.ClientError, OSError, ValueError):
+        except (aiohttp.ClientError, OSError):
+            raise BybitTransientError("Bybit public request failed") from None
+        except ValueError:
             raise BybitError("Bybit public request failed") from None
         try:
             decoded = json.loads(
@@ -181,6 +192,8 @@ class BybitPublicClient:
         if not isinstance(decoded, dict):
             raise BybitError("Invalid Bybit response")
         document = cast(dict[str, object], decoded)
+        if type(document.get("retCode")) is int and document["retCode"] == 10006:
+            raise BybitTransientError("Bybit public rate limit reached")
         if type(document.get("retCode")) is not int or document["retCode"] != 0:
             raise BybitError("Bybit rejected public request")
         result = document.get("result")
@@ -460,7 +473,7 @@ class BybitHistoricalSource:
             async with asyncio.timeout(_REQUEST_DEADLINE_S):
                 return await self._client.get(path, params)
         except TimeoutError:
-            raise BybitError("Bybit public request timed out") from None
+            raise BybitTransientError("Bybit public request timed out") from None
 
     async def close(self) -> None:
         self._closed = True

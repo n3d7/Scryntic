@@ -1,9 +1,9 @@
 """Optional source capabilities; no source is required to imitate an exchange."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import InitVar, dataclass, field
 from enum import StrEnum
-from typing import Literal, Protocol
+from typing import Literal, Protocol, runtime_checkable
 
 from scryntic.domain.identity import (
     CONTRACT_VERSION,
@@ -13,6 +13,7 @@ from scryntic.domain.identity import (
     Version,
 )
 from scryntic.domain.raw import RawEnvelope
+from scryntic.domain.time import ClockSample
 from scryntic.domain.validation import identifier, immutable_tuple, integer
 
 BYBIT_CANDLE_SCHEMA = SchemaRef("bybit_candle", Version(1, 0))
@@ -158,3 +159,47 @@ class StreamingSource(SourceAdapter, Protocol):
 
 class HistoricalSource(SourceAdapter, Protocol):
     async def fetch(self, request: HistoryRequest) -> RawPage: ...
+
+
+@dataclass(frozen=True, slots=True)
+class SourceLoss:
+    reason: Literal["disconnect", "overflow", "malformed", "stall"]
+    detected: ClockSample
+
+    def __post_init__(self) -> None:
+        if self.reason not in ("disconnect", "overflow", "malformed", "stall"):
+            raise ValueError("Invalid source loss reason")
+
+
+class SourceBufferLease(Protocol):
+    def release(self) -> None: ...
+
+
+@runtime_checkable
+class LossReportingSource(StreamingSource, Protocol):
+    """Optional notification before retry; failure to record loss stops intake."""
+
+    def set_loss_handler(
+        self, handler: Callable[[SourceLoss], Awaitable[None]]
+    ) -> None: ...
+
+    def set_start_gate(self, gate: Callable[[], bool]) -> None: ...
+
+    def set_buffer_admission(
+        self, acquire: Callable[[int], SourceBufferLease | None]
+    ) -> None: ...
+
+
+class SourceTransientError(RuntimeError):
+    """Safe retryable public failure; configuration/schema errors are separate."""
+
+
+class SourceConfigurationError(ValueError):
+    """Retry needs local configuration correction, not a reconnect loop."""
+
+
+@runtime_checkable
+class ResnapshotSource(StreamingSource, Protocol):
+    """Optional family action; the adapter must document its continuity proof."""
+
+    async def request_snapshot(self) -> None: ...

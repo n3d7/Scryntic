@@ -21,7 +21,10 @@ from scryntic.domain.validation import identifier, integer
 
 _DATABASE_NAME = "ingestion.sqlite3"
 _LOCK_NAME = "ingestion.lock"
-_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
+_METADATA_CAPACITY = 32
+_METADATA_BYTES = 65_536
+_METADATA_STREAMS = 64
 
 
 class IngestionError(RuntimeError):
@@ -69,7 +72,22 @@ class _ReadRequest:
     result: Future[tuple[RawRecord, ...]]
 
 
-type _Request = _StatusRequest | _AcceptRequest | _ReadRequest
+@dataclass(slots=True)
+class _RecoveryRequest:
+    key: str
+    value: bytes | None
+    expected: bytes | None
+    result: Future[bytes | None]
+
+
+type _Request = _StatusRequest | _AcceptRequest | _ReadRequest | _RecoveryRequest
+
+_CREATE_RECOVERY = """
+CREATE TABLE recovery_state (
+    key TEXT PRIMARY KEY,
+    value BLOB NOT NULL CHECK (length(value) <= 65536)
+) STRICT
+""".strip()
 
 _RECORD_COLUMNS = """
 offset, producer, epoch, source, stream, channel, adapter_version,
@@ -131,16 +149,20 @@ class DurableIngestor:
         epoch: str,
         capacity: int,
         max_payload_bytes: int,
+        metadata_headroom_bytes: int = 16 * 1024 * 1024,
     ) -> None:
         identifier(producer)
         identifier(epoch)
         integer(capacity, 1)
         integer(max_payload_bytes, 1)
+        integer(metadata_headroom_bytes, 1)
+        self._metadata_headroom_bytes = metadata_headroom_bytes
         self._producer = producer
         self._epoch = epoch
         self._capacity = capacity
         self._max_payload_bytes = max_payload_bytes
         self._requests: queue.Queue[_Request] = queue.Queue(maxsize=capacity)
+        self._metadata: queue.Queue[_Request] = queue.Queue(maxsize=_METADATA_CAPACITY)
         self._lifecycle_lock = threading.Lock()
         self._close_lock = threading.Lock()
         self._shutdown = threading.Event()
@@ -225,12 +247,21 @@ class DurableIngestor:
             self._initialize(connection)
             self._ready.set_result(None)
             while True:
-                if self._shutdown.is_set() and self._requests.empty():
+                if (
+                    self._shutdown.is_set()
+                    and self._requests.empty()
+                    and self._metadata.empty()
+                ):
                     return
+                lane = self._metadata
                 try:
-                    request = self._requests.get(timeout=0.05)
+                    request = lane.get_nowait()
                 except queue.Empty:
-                    continue
+                    lane = self._requests
+                    try:
+                        request = lane.get(timeout=0.05)
+                    except queue.Empty:
+                        continue
                 try:
                     if isinstance(request, _StatusRequest):
                         request.result.set_result(self._status(connection))
@@ -238,6 +269,8 @@ class DurableIngestor:
                         request.result.set_result(
                             self._accept(connection, request.envelope)
                         )
+                    elif isinstance(request, _RecoveryRequest):
+                        request.result.set_result(self._recovery(connection, request))
                     else:
                         request.result.set_result(
                             self._read(connection, request.offset, request.limit)
@@ -249,7 +282,7 @@ class DurableIngestor:
                 except BaseException as error:
                     request.result.set_exception(error)
                 finally:
-                    self._requests.task_done()
+                    lane.task_done()
         except BaseException as error:
             if not self._ready.done():
                 startup_error = (
@@ -267,13 +300,14 @@ class DurableIngestor:
         with self._lifecycle_lock:
             self._fatal = failure
         self._shutdown.set()
-        while True:
-            try:
-                request = self._requests.get_nowait()
-            except queue.Empty:
-                return
-            request.result.set_exception(failure)
-            self._requests.task_done()
+        for lane in (self._metadata, self._requests):
+            while True:
+                try:
+                    request = lane.get_nowait()
+                except queue.Empty:
+                    break
+                request.result.set_exception(failure)
+                lane.task_done()
 
     @staticmethod
     def _normalized_sql(statement: object) -> str:
@@ -281,12 +315,14 @@ class DurableIngestor:
             raise IngestionError("Invalid ingestion schema")
         return " ".join(statement.split())
 
-    def _validate_schema(self, connection: sqlite3.Connection) -> None:
+    def _validate_schema(
+        self, connection: sqlite3.Connection, *, legacy: bool = False
+    ) -> None:
         objects = connection.execute(
             "SELECT type, name, tbl_name, sql FROM sqlite_schema "
             "WHERE name NOT LIKE 'sqlite_%' ORDER BY name"
         ).fetchall()
-        expected = (
+        expected: tuple[tuple[str, str, str, str], ...] = (
             (
                 "table",
                 "raw_records",
@@ -300,6 +336,17 @@ class DurableIngestor:
                 self._normalized_sql(_CREATE_METADATA),
             ),
         )
+        if not legacy:
+            expected = (
+                expected[0],
+                (
+                    "table",
+                    "recovery_state",
+                    "recovery_state",
+                    self._normalized_sql(_CREATE_RECOVERY),
+                ),
+                expected[1],
+            )
         actual = tuple(
             (row[0], row[1], row[2], self._normalized_sql(row[3])) for row in objects
         )
@@ -334,10 +381,22 @@ class DurableIngestor:
             try:
                 connection.execute(_CREATE_METADATA)
                 connection.execute(_CREATE_RAW_RECORDS)
+                connection.execute(_CREATE_RECOVERY)
                 connection.execute(
                     "INSERT INTO spool_metadata (singleton, producer) VALUES (1, ?)",
                     (self._producer,),
                 )
+                connection.execute(f"PRAGMA user_version={_SCHEMA_VERSION}")
+                connection.execute("COMMIT")
+            except BaseException:
+                if connection.in_transaction:
+                    connection.execute("ROLLBACK")
+                raise
+        elif version == 1:
+            self._validate_schema(connection, legacy=True)
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                connection.execute(_CREATE_RECOVERY)
                 connection.execute(f"PRAGMA user_version={_SCHEMA_VERSION}")
                 connection.execute("COMMIT")
             except BaseException:
@@ -395,6 +454,11 @@ class DurableIngestor:
             None if envelope.source_time is None else envelope.source_time.unit.value
         )
         quality = envelope.receipt.quality
+        disk = os.fstatvfs(self._lock_fd)
+        if disk.f_bavail * disk.f_frsize < self._metadata_headroom_bytes + len(
+            envelope.payload
+        ):
+            raise IngestionError("Payload intake stopped for metadata headroom")
         try:
             connection.execute("BEGIN IMMEDIATE")
             cursor = connection.execute(
@@ -564,6 +628,63 @@ class DurableIngestor:
         self._submit(request)
         return request.result.result()
 
+    def recovery_get(self, key: str) -> bytes | None:
+        identifier(key)
+        request = _RecoveryRequest(key, None, None, Future())
+        self._submit(request)
+        return request.result.result()
+
+    def recovery_put(self, key: str, value: bytes, *, expected: bytes | None) -> None:
+        identifier(key)
+        if type(value) is not bytes or not 1 <= len(value) <= _METADATA_BYTES:
+            raise ValueError("Recovery metadata exceeds limit")
+        if expected is not None and (
+            type(expected) is not bytes or len(expected) > _METADATA_BYTES
+        ):
+            raise ValueError("Invalid recovery compare value")
+        request = _RecoveryRequest(key, value, expected, Future())
+        self._submit(request)
+        request.result.result()
+
+    @staticmethod
+    def _recovery(
+        connection: sqlite3.Connection, request: _RecoveryRequest
+    ) -> bytes | None:
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT value FROM recovery_state WHERE key=?", (request.key,)
+            ).fetchone()
+            prior = None if row is None else bytes(row[0])
+            if request.value is not None:
+                if prior != request.expected:
+                    raise IngestionError("Recovery metadata changed")
+                count = connection.execute(
+                    "SELECT count(*) FROM recovery_state"
+                ).fetchone()
+                if prior is None and (count is None or count[0] >= _METADATA_STREAMS):
+                    raise IngestionError("Recovery metadata stream quota reached")
+                connection.execute(
+                    "INSERT INTO recovery_state VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    (request.key, request.value),
+                )
+                stored = connection.execute(
+                    "SELECT value FROM recovery_state WHERE key=?", (request.key,)
+                ).fetchone()
+                if stored is None or bytes(stored[0]) != request.value:
+                    raise IngestionError("Recovery metadata readback failed")
+            connection.execute("COMMIT")
+            return prior
+        except BaseException:
+            try:
+                if connection.in_transaction:
+                    connection.execute("ROLLBACK")
+            except BaseException:
+                raise _WriterFatal("Unable to roll back recovery metadata") from None
+            raise IngestionError(
+                "Recovery metadata changed or could not commit"
+            ) from None
+
     def accept(self, envelope: RawEnvelope) -> RawRecord:
         if len(envelope.payload) > self._max_payload_bytes:
             raise IngestionError("Raw envelope exceeds ingestion payload limit")
@@ -587,7 +708,12 @@ class DurableIngestor:
             if self._closed:
                 raise IngestionError("Durable ingestion is closed")
             try:
-                self._requests.put_nowait(request)
+                lane = (
+                    self._metadata
+                    if isinstance(request, _RecoveryRequest)
+                    else self._requests
+                )
+                lane.put_nowait(request)
             except queue.Full:
                 raise IntakeFull("Durable ingestion intake is full") from None
 
