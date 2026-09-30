@@ -7,8 +7,10 @@ import hashlib
 import json
 import tempfile
 import time
+from collections.abc import Callable, Coroutine
 from contextlib import ExitStack, aclosing
 from pathlib import Path
+from typing import Any
 
 from scryntic.application.dto import BuildDatasetRequest
 from scryntic.application.sources import BYBIT_CANDLE_SCHEMA, StreamRequest
@@ -100,7 +102,15 @@ async def _capture(
         await historical.close()
 
 
-def main() -> None:
+def main(
+    *,
+    capture: Callable[
+        [DurableIngestor, ClockMonitor],
+        Coroutine[Any, Any, tuple[int, bool, Instrument]],
+    ]
+    | None = None,
+    code_revision: str = "f14-public-live-check",
+) -> None:
     with tempfile.TemporaryDirectory(prefix="scryntic-f14-") as temporary:
         installation = _installation(Path(temporary))
         limits = _publication_limits()
@@ -118,7 +128,9 @@ def main() -> None:
             stack.callback(normalization.close)
             publication = PublicationStore(installation, producer=_PRODUCER)
             stack.callback(publication.close)
-            accepted, final_seen, instrument = asyncio.run(_capture(ingestor, clock))
+            accepted, final_seen, instrument = asyncio.run(
+                (capture or _capture)(ingestor, clock)
+            )
             normalized = 0
             for _ in range(accepted + 1):
                 outcome = process_next(
@@ -159,7 +171,7 @@ def main() -> None:
                 DatasetBuilder(
                     reader,
                     installation,
-                    code_revision="f14-public-live-check",
+                    code_revision=code_revision,
                     dependency_lock_sha256=lock_hash,
                 )
                 .build(BuildDatasetRequest(hashes, CANDLE_RECIPE_SCHEMA))

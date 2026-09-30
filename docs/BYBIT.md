@@ -104,5 +104,6 @@ It discovers BTCUSDT metadata, accepts at most eight live envelopes within a
 publication, and a reopened dataset in a temporary installation. With poor
 host clock evidence, the dataset may contain an open candle but must not claim
 F12-qualified finality. This is an acceptance probe, not a long-running
-collector service; daemon lifecycle and explicit loss/coverage recovery belong
-to F15 and F23.
+collector service. F15 supervision, shared live/backfill admission and explicit
+loss/coverage recovery are described in [RECOVERY.md](RECOVERY.md); daemon
+composition and health remain F23.

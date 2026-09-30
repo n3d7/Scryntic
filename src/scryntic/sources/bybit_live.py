@@ -9,18 +9,21 @@ import ssl
 import threading
 import time
 from collections import OrderedDict
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import aclosing
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 
 import aiohttp
 
 from scryntic.application.sources import (
     BYBIT_CANDLE_SCHEMA,
+    SourceBufferLease,
     SourceCapability,
+    SourceConfigurationError,
     SourceDescriptor,
+    SourceLoss,
     SourceOperation,
     StreamRequest,
 )
@@ -67,6 +70,10 @@ class BybitLiveError(ValueError):
 
 class _Clock(Protocol):
     def sample(self) -> ClockSample: ...
+
+
+class BybitLiveConfigurationError(BybitLiveError, SourceConfigurationError):
+    """Rejected public subscription requires configuration correction."""
 
 
 class _Socket(Protocol):
@@ -212,6 +219,18 @@ def _millis(value: object) -> int:
     return value
 
 
+def _loss_reason(
+    error: Exception, detail: str
+) -> Literal["overflow", "stall", "malformed", "disconnect"]:
+    if "overflow" in detail:
+        return "overflow"
+    if "timed out" in detail or "stalled" in detail:
+        return "stall"
+    if "closed" in detail:
+        return "disconnect"
+    return "malformed" if isinstance(error, BybitLiveError) else "disconnect"
+
+
 class BybitLiveSource:
     """One fixed topic per stream, with one reader and bounded replay deduplication."""
 
@@ -238,6 +257,9 @@ class BybitLiveSource:
         self._reader_task: asyncio.Task[None] | None = None
         self._running = False
         self.last_error: str | None = None
+        self._loss_handler: Callable[[SourceLoss], Awaitable[None]] | None = None
+        self._start_gate: Callable[[], bool] | None = None
+        self._buffer_admission: Callable[[int], SourceBufferLease | None] | None = None
         self.descriptor = SourceDescriptor(
             source_id="bybit-public",
             adapter_version="1.0",
@@ -256,6 +278,18 @@ class BybitLiveSource:
             max_page_records=1,
         )
 
+    def set_loss_handler(
+        self, handler: Callable[[SourceLoss], Awaitable[None]]
+    ) -> None:
+        if self._running:
+            raise ValueError("Cannot replace active loss handler")
+        self._loss_handler = handler
+
+    def set_start_gate(self, gate: Callable[[], bool]) -> None:
+        if self._running:
+            raise ValueError("Cannot replace active start gate")
+        self._start_gate = gate
+
     async def close(self) -> None:
         self._closed.set()
         if self._connecting is not None:
@@ -267,6 +301,13 @@ class BybitLiveSource:
         if self._socket is not None:
             await self._socket.close()
         await self._client.close()
+
+    def set_buffer_admission(
+        self, acquire: Callable[[int], SourceBufferLease | None]
+    ) -> None:
+        if self._running:
+            raise ValueError("Cannot replace active buffer admission")
+        self._buffer_admission = acquire
 
     async def _connect(self, category: str) -> _Socket:
         task = asyncio.create_task(self._client.connect(category))
@@ -386,11 +427,13 @@ class BybitLiveSource:
             )
         except TimeoutError:
             raise BybitLiveError("Bybit subscription timed out") from None
-        if ack.get("op") != "subscribe" or ack.get("success") is not True:
-            raise BybitLiveError("Bybit subscription rejected")
+        if ack.get("op") != "subscribe":
+            raise BybitLiveError("Invalid Bybit subscription acknowledgement")
+        if ack.get("success") is not True:
+            raise BybitLiveConfigurationError("Bybit subscription rejected")
         data = ack.get("data")
         if isinstance(data, dict) and data.get("failTopics"):
-            raise BybitLiveError("Bybit subscription rejected")
+            raise BybitLiveConfigurationError("Bybit subscription rejected")
         next_ping = time.monotonic() + self._limits.ping_interval_s
         last_data = time.monotonic()
         pong_deadline: float | None = None
@@ -453,7 +496,9 @@ class BybitLiveSource:
     ) -> AsyncGenerator[RawEnvelope, None]:
         # Count and bytes are bounded: 32 records, each at most 8,192 bytes.
         # A slow journal must not leave aiohttp accumulating tiny messages.
-        queue: asyncio.Queue[RawEnvelope] = asyncio.Queue(_INTAKE_RECORD_LIMIT)
+        queue: asyncio.Queue[tuple[RawEnvelope, SourceBufferLease | None]] = (
+            asyncio.Queue(_INTAKE_RECORD_LIMIT)
+        )
         wake = asyncio.Event()
 
         async def pump() -> None:
@@ -464,9 +509,18 @@ class BybitLiveSource:
                     if key in seen:
                         seen.move_to_end(key)
                         continue
+                    lease = (
+                        self._buffer_admission(len(envelope.payload))
+                        if self._buffer_admission is not None
+                        else None
+                    )
+                    if self._buffer_admission is not None and lease is None:
+                        raise BybitLiveError("Bybit shared intake overflow")
                     try:
-                        queue.put_nowait(envelope)
+                        queue.put_nowait((envelope, lease))
                     except asyncio.QueueFull:
+                        if lease is not None:
+                            lease.release()
                         raise BybitLiveError("Bybit bounded intake overflow") from None
                     # Never suppress a reconnect replay of the overflow record.
                     seen[key] = None
@@ -487,7 +541,12 @@ class BybitLiveSource:
         try:
             while not self._closed.is_set():
                 if not queue.empty():
-                    yield queue.get_nowait()
+                    envelope, lease = queue.get_nowait()
+                    try:
+                        yield envelope
+                    finally:
+                        if lease is not None:
+                            lease.release()
                     continue
                 if reader.done():
                     reader.result()
@@ -498,6 +557,10 @@ class BybitLiveSource:
             reader.cancel()
             await asyncio.gather(reader, return_exceptions=True)
             self._reader_task = None
+            while not queue.empty():
+                _, lease = queue.get_nowait()
+                if lease is not None:
+                    lease.release()
 
     async def stream(self, request: StreamRequest) -> AsyncGenerator[RawEnvelope, None]:
         if self._closed.is_set():
@@ -514,6 +577,12 @@ class BybitLiveSource:
         delay = self._limits.reconnect_initial_s
         try:
             while not self._closed.is_set():
+                if self._start_gate is not None and not self._start_gate():
+                    try:
+                        await asyncio.wait_for(self._closed.wait(), timeout=0.05)
+                    except TimeoutError:
+                        pass
+                    continue
                 try:
                     socket = await self._connect(subject.category)
                     self._socket = socket
@@ -530,6 +599,9 @@ class BybitLiveSource:
                         await socket.close()
                         self._socket = None
                     self.last_error = "Bybit WebSocket disconnected"
+                except BybitLiveConfigurationError:
+                    self.last_error = "Bybit subscription rejected"
+                    raise
                 except asyncio.CancelledError:
                     owner = asyncio.current_task()
                     if (
@@ -550,6 +622,11 @@ class BybitLiveSource:
                         if isinstance(exc, BybitLiveError)
                         else "Bybit WebSocket transport failed"
                     )
+                    if self._loss_handler is not None and not self._closed.is_set():
+                        reason = _loss_reason(exc, self.last_error)
+                        await self._loss_handler(
+                            SourceLoss(reason, self._clock.sample())
+                        )
                 if self._closed.is_set():
                     break
                 try:

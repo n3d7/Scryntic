@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 from typing import cast
 
 from scryntic.application.sources import BYBIT_CANDLE_SCHEMA
 from scryntic.domain.identity import InstrumentId, SchemaRef, Version
-from scryntic.domain.raw import RawRecord
+from scryntic.domain.raw import RawEnvelope, RawRecord
 from scryntic.domain.time import SourceTime, TimeUnit
 from scryntic.normalization.candle import (
     BYBIT_NORMALIZER_VERSION,
@@ -103,10 +104,23 @@ def _decimal(value: object) -> Decimal:
 def inspect_bybit_candle(
     record: RawRecord,
 ) -> ParsedFakeCandle | NormalizationRejection | UnsupportedSchema:
+    return _inspect(
+        record.envelope, lambda code, field=None: _reject(record, code, field)
+    )
+
+
+def inspect_bybit_envelope(envelope: RawEnvelope) -> ParsedFakeCandle | None:
+    result = _inspect(envelope, lambda code, field=None: None)
+    return result if isinstance(result, ParsedFakeCandle) else None
+
+
+def _inspect[Result](
+    envelope: RawEnvelope, reject: Callable[..., Result]
+) -> ParsedFakeCandle | UnsupportedSchema | Result:
     """Validate source bytes without metadata lookup, host clock, or network access."""
-    payload = record.envelope.payload
+    payload = envelope.payload
     if len(payload) > _PAYLOAD_LIMIT:
-        return _reject(record, RejectionCode.PAYLOAD_TOO_LARGE)
+        return reject(RejectionCode.PAYLOAD_TOO_LARGE)
     try:
         document = json.loads(
             payload.decode("utf-8", "strict"),
@@ -114,24 +128,24 @@ def inspect_bybit_candle(
             parse_constant=lambda _: (_ for _ in ()).throw(ValueError()),
         )
     except _DuplicateKey:
-        return _reject(record, RejectionCode.DUPLICATE_JSON_KEY)
+        return reject(RejectionCode.DUPLICATE_JSON_KEY)
     except (UnicodeError, json.JSONDecodeError, ValueError, RecursionError):
-        return _reject(record, RejectionCode.INVALID_JSON)
+        return reject(RejectionCode.INVALID_JSON)
     if not isinstance(document, dict):
-        return _reject(record, RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
+        return reject(RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
     schema_value = document.get("schema")
     if not isinstance(schema_value, dict) or set(schema_value) != {
         "name",
         "major",
         "minor",
     }:
-        return _reject(record, RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
+        return reject(RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
     if (
         schema_value.get("name") != BYBIT_CANDLE_SCHEMA.name
         or type(schema_value.get("major")) is not int
         or type(schema_value.get("minor")) is not int
     ):
-        return _reject(record, RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
+        return reject(RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
     schema = SchemaRef(
         cast(str, schema_value["name"]),
         Version(cast(int, schema_value["major"]), cast(int, schema_value["minor"])),
@@ -141,10 +155,10 @@ def inspect_bybit_candle(
     except ValueError:
         return UnsupportedSchema(schema)
     if set(document) != _FIELDS:
-        return _reject(record, RejectionCode.FIELD_SET_MISMATCH)
-    subject = record.envelope.subject
+        return reject(RejectionCode.FIELD_SET_MISMATCH)
+    subject = envelope.subject
     if not isinstance(subject, InstrumentId):
-        return _reject(record, RejectionCode.INVALID_SUBJECT, RejectionField.SUBJECT)
+        return reject(RejectionCode.INVALID_SUBJECT, RejectionField.SUBJECT)
     category = document["category"]
     symbol = document["symbol"]
     interval = document["interval"]
@@ -156,13 +170,13 @@ def inspect_bybit_candle(
         or symbol != subject.symbol
         or type(interval) is not str
         or interval not in _INTERVAL_NS
-        or record.envelope.channel != f"kline-{interval}"
+        or envelope.channel != f"kline-{interval}"
         or document["interval_ns"] != _INTERVAL_NS.get(interval)
         or type(document["interval_ns"]) is not int
     ):
-        return _reject(record, RejectionCode.INVALID_SUBJECT, RejectionField.SUBJECT)
+        return reject(RejectionCode.INVALID_SUBJECT, RejectionField.SUBJECT)
     row = document["row"]
-    source_time = record.envelope.source_time
+    source_time = envelope.source_time
     if (
         type(row) is not list
         or len(row) != 7
@@ -174,7 +188,7 @@ def inspect_bybit_candle(
         or type(document["start_ns"]) is not int
         or document["start_ns"] != source_time.value * _MS_NS
     ):
-        return _reject(record, RejectionCode.INVALID_TIME, RejectionField.START_NS)
+        return reject(RejectionCode.INVALID_TIME, RejectionField.START_NS)
     names = ("open", "high", "low", "close", "volume")
     decimals: dict[str, Decimal] = {}
     for index, name in enumerate(names, start=1):
@@ -182,21 +196,19 @@ def inspect_bybit_candle(
             value = _decimal(document[name])
             raw_value = _decimal(row[index])
         except ValueError:
-            return _reject(record, RejectionCode.INVALID_DECIMAL, RejectionField(name))
+            return reject(RejectionCode.INVALID_DECIMAL, RejectionField(name))
         if value != raw_value or (name == "volume" and value < 0):
-            return _reject(record, RejectionCode.INVALID_DECIMAL, RejectionField(name))
+            return reject(RejectionCode.INVALID_DECIMAL, RejectionField(name))
         decimals[name] = value
     try:
         _decimal(row[6])
     except ValueError:
-        return _reject(record, RejectionCode.INVALID_DECIMAL, RejectionField.VOLUME)
+        return reject(RejectionCode.INVALID_DECIMAL, RejectionField.VOLUME)
     open_value, high, low, close, volume = (decimals[name] for name in names)
     if not low <= min(open_value, close) <= max(open_value, close) <= high:
-        return _reject(record, RejectionCode.INCONSISTENT_OHLC)
+        return reject(RejectionCode.INCONSISTENT_OHLC)
     if type(document["finalized"]) is not bool:
-        return _reject(
-            record, RejectionCode.INVALID_FIELD_TYPE, RejectionField.FINALIZED
-        )
+        return reject(RejectionCode.INVALID_FIELD_TYPE, RejectionField.FINALIZED)
     publication_value = document["publication_time"]
     publication_time = None
     if publication_value is not None:
@@ -207,9 +219,7 @@ def inspect_bybit_candle(
             or not 0 <= publication_value["value"] < (2**63 - 1) // _MS_NS
             or publication_value["unit"] != TimeUnit.MILLISECOND.value
         ):
-            return _reject(
-                record, RejectionCode.INVALID_TIME, RejectionField.PUBLICATION_TIME
-            )
+            return reject(RejectionCode.INVALID_TIME, RejectionField.PUBLICATION_TIME)
         publication_time = SourceTime(publication_value["value"], TimeUnit.MILLISECOND)
     return ParsedFakeCandle(
         schema=BYBIT_CANDLE_SCHEMA,
