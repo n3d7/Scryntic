@@ -6,6 +6,7 @@ import queue
 import sqlite3
 import stat
 import threading
+from collections.abc import Callable
 from concurrent.futures import Future
 from contextlib import ExitStack
 from dataclasses import dataclass
@@ -18,6 +19,8 @@ from scryntic.domain.identity import EntityId, InstrumentId, SubjectId
 from scryntic.domain.raw import IngestionId, RawEnvelope, RawRecord
 from scryntic.domain.time import ClockSample, SourceTime, TimeQuality, TimeUnit
 from scryntic.domain.validation import identifier, integer
+
+_BEGIN_IMMEDIATE = "BEGIN IMMEDIATE"
 
 _DATABASE_NAME = "ingestion.sqlite3"
 _LOCK_NAME = "ingestion.lock"
@@ -138,6 +141,29 @@ CREATE TABLE raw_records (
 """.strip()
 
 
+def _stored_subject(
+    row: tuple[object, ...], text: Callable[[int], str]
+) -> SubjectId | None:
+    subject_type = row[15]
+    if subject_type is None:
+        if any(row[index] is not None for index in (16, 17, 18)):
+            raise ValueError("Incomplete stored subject")
+        return None
+    if subject_type == "instrument":
+        return InstrumentId(text(16), text(17), text(18))
+    if subject_type == "entity":
+        return EntityId(text(16), text(17), text(18))
+    raise ValueError("Unknown stored subject")
+
+
+def _stored_source_time(value: int | None, unit: object) -> SourceTime | None:
+    if value is None and unit is None:
+        return None
+    if value is not None and type(unit) is str:
+        return SourceTime(value, TimeUnit(unit))
+    raise ValueError("Incomplete stored source time")
+
+
 class DurableIngestor:
     """Own one cooperative lock, worker thread and SQLite connection."""
 
@@ -240,6 +266,18 @@ class DurableIngestor:
             os.close(database_fd)
         return Path(f"/proc/self/fd/{state_fd}/{_DATABASE_NAME}")
 
+    def _dispatch(self, connection: sqlite3.Connection, request: _Request) -> None:
+        if isinstance(request, _StatusRequest):
+            request.result.set_result(self._status(connection))
+        elif isinstance(request, _AcceptRequest):
+            request.result.set_result(self._accept(connection, request.envelope))
+        elif isinstance(request, _RecoveryRequest):
+            request.result.set_result(self._recovery(connection, request))
+        else:
+            request.result.set_result(
+                self._read(connection, request.offset, request.limit)
+            )
+
     def _run(self, database: Path) -> None:
         connection: sqlite3.Connection | None = None
         try:
@@ -263,18 +301,7 @@ class DurableIngestor:
                     except queue.Empty:
                         continue
                 try:
-                    if isinstance(request, _StatusRequest):
-                        request.result.set_result(self._status(connection))
-                    elif isinstance(request, _AcceptRequest):
-                        request.result.set_result(
-                            self._accept(connection, request.envelope)
-                        )
-                    elif isinstance(request, _RecoveryRequest):
-                        request.result.set_result(self._recovery(connection, request))
-                    else:
-                        request.result.set_result(
-                            self._read(connection, request.offset, request.limit)
-                        )
+                    self._dispatch(connection, request)
                 except _WriterFatal as error:
                     request.result.set_exception(error)
                     self._fail_writer()
@@ -377,7 +404,7 @@ class DurableIngestor:
         version_row = connection.execute("PRAGMA user_version").fetchone()
         version = 0 if version_row is None else int(version_row[0])
         if version == 0:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             try:
                 connection.execute(_CREATE_METADATA)
                 connection.execute(_CREATE_RAW_RECORDS)
@@ -394,7 +421,7 @@ class DurableIngestor:
                 raise
         elif version == 1:
             self._validate_schema(connection, legacy=True)
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             try:
                 connection.execute(_CREATE_RECOVERY)
                 connection.execute(f"PRAGMA user_version={_SCHEMA_VERSION}")
@@ -460,7 +487,7 @@ class DurableIngestor:
         ):
             raise IngestionError("Payload intake stopped for metadata headroom")
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             cursor = connection.execute(
                 """
                 INSERT INTO raw_records (
@@ -517,11 +544,11 @@ class DurableIngestor:
             if stored_row is None or self._decode_record(tuple(stored_row)) != expected:
                 raise IngestionError("SQLite did not store the accepted envelope")
             connection.execute("COMMIT")
-        except BaseException:
+        except BaseException as error:
             if connection.in_transaction:
                 try:
                     connection.execute("ROLLBACK")
-                except sqlite3.Error:
+                except BaseException:
                     raise _WriterFatal(
                         "Durable ingestion transaction recovery failed"
                     ) from None
@@ -529,6 +556,8 @@ class DurableIngestor:
                     raise _WriterFatal(
                         "Durable ingestion transaction recovery failed"
                     ) from None
+            if not isinstance(error, Exception):
+                raise
             raise IngestionError("Unable to commit raw envelope") from None
         return expected
 
@@ -566,27 +595,8 @@ class DurableIngestor:
                 raise TypeError("Expected optional stored integer")
             return value
 
-        subject_type = row[15]
-        subject: SubjectId | None
-        if subject_type is None:
-            if any(row[index] is not None for index in (16, 17, 18)):
-                raise ValueError("Incomplete stored subject")
-            subject = None
-        elif subject_type == "instrument":
-            subject = InstrumentId(text(16), text(17), text(18))
-        elif subject_type == "entity":
-            subject = EntityId(text(16), text(17), text(18))
-        else:
-            raise ValueError("Unknown stored subject")
-
-        source_value = optional_number(19)
-        source_unit = row[20]
-        if source_value is None and source_unit is None:
-            source_time = None
-        elif source_value is not None and type(source_unit) is str:
-            source_time = SourceTime(source_value, TimeUnit(source_unit))
-        else:
-            raise ValueError("Incomplete stored source time")
+        subject = _stored_subject(row, text)
+        source_time = _stored_source_time(optional_number(19), row[20])
 
         status = text(11)
         if status not in ("unknown", "degraded", "healthy"):
@@ -651,7 +661,7 @@ class DurableIngestor:
         connection: sqlite3.Connection, request: _RecoveryRequest
     ) -> bytes | None:
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             row = connection.execute(
                 "SELECT value FROM recovery_state WHERE key=?", (request.key,)
             ).fetchone()
@@ -675,12 +685,14 @@ class DurableIngestor:
                     raise IngestionError("Recovery metadata readback failed")
             connection.execute("COMMIT")
             return prior
-        except BaseException:
+        except BaseException as error:
             try:
                 if connection.in_transaction:
                     connection.execute("ROLLBACK")
             except BaseException:
                 raise _WriterFatal("Unable to roll back recovery metadata") from None
+            if not isinstance(error, Exception):
+                raise
             raise IngestionError(
                 "Recovery metadata changed or could not commit"
             ) from None

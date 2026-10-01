@@ -144,14 +144,13 @@ def test_unsupported_publication_schema_fails_before_snapshot_write(
             ),
         )
         monkeypatch.setattr(builder._publications, "resolve_exact", lambda _: changed)
+        prepared_build_dataset_request = BuildDatasetRequest(
+            (published.manifest.manifest_hash,), CANDLE_RECIPE_SCHEMA
+        )
         with pytest.raises(
             DatasetBuildError, match="Publication object roles disagree"
         ):
-            builder.build(
-                BuildDatasetRequest(
-                    (published.manifest.manifest_hash,), CANDLE_RECIPE_SCHEMA
-                )
-            )
+            builder.build(prepared_build_dataset_request)
         assert not (bundle.root.state_dir / "datasets" / "manifests").exists()
     finally:
         bundle.close()
@@ -175,14 +174,13 @@ def test_unsupported_normalized_semantic_schema_fails(
         )
         changed = replace(validated, inputs=(changed_value, *validated.inputs[1:]))
         monkeypatch.setattr(builder._publications, "resolve_exact", lambda _: changed)
+        prepared_build_dataset_request = BuildDatasetRequest(
+            (published.manifest.manifest_hash,), CANDLE_RECIPE_SCHEMA
+        )
         with pytest.raises(
             DatasetBuildError, match="Unsupported normalized candle schema"
         ):
-            builder.build(
-                BuildDatasetRequest(
-                    (published.manifest.manifest_hash,), CANDLE_RECIPE_SCHEMA
-                )
-            )
+            builder.build(prepared_build_dataset_request)
         assert not (bundle.root.state_dir / "datasets" / "manifests").exists()
     finally:
         bundle.close()
@@ -233,12 +231,11 @@ def test_missing_normalized_object_fails_without_dataset_manifest(
             / f"{descriptor.sha256}.parquet"
         )
         object_path.unlink()
+        prepared_build_dataset_request = BuildDatasetRequest(
+            (published.manifest.manifest_hash,), CANDLE_RECIPE_SCHEMA
+        )
         with pytest.raises(DatasetBuildError):
-            builder.build(
-                BuildDatasetRequest(
-                    (published.manifest.manifest_hash,), CANDLE_RECIPE_SCHEMA
-                )
-            )
+            builder.build(prepared_build_dataset_request)
         assert not (bundle.root.state_dir / "datasets" / "manifests").exists()
     finally:
         bundle.close()
@@ -247,13 +244,12 @@ def test_missing_normalized_object_fails_without_dataset_manifest(
 def test_unsupported_recipe_schema_fails_before_writing(tmp_path: Path) -> None:
     bundle, published, builder = _fixture(tmp_path)
     try:
+        prepared_build_dataset_request = BuildDatasetRequest(
+            (published.manifest.manifest_hash,),
+            SchemaRef("unsupported.recipe", Version(1, 0)),
+        )
         with pytest.raises(DatasetBuildError):
-            builder.build(
-                BuildDatasetRequest(
-                    (published.manifest.manifest_hash,),
-                    SchemaRef("unsupported.recipe", Version(1, 0)),
-                )
-            )
+            builder.build(prepared_build_dataset_request)
         assert not (bundle.root.state_dir / "datasets" / "manifests").exists()
     finally:
         bundle.close()

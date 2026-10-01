@@ -239,6 +239,7 @@ def test_uncertain_orphans_survive_repeated_recovery_failure(tmp_path: Path) -> 
             assert uncertain_manifest.read_bytes() == b"incomplete manifest input"
         bundle.raw_reader.records = original
         bundle.coordinator.recover()
-        assert orphan.exists() and uncertain_manifest.exists()
+        assert orphan.exists()
+        assert uncertain_manifest.exists()
     finally:
         bundle.close()

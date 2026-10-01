@@ -112,8 +112,9 @@ def test_provider_limits_capabilities_and_remote_intent_fail_explicitly() -> Non
         with pytest.raises(ValueError, match="Unsupported provider request"):
             provider.require(job)
     replace(local, execution="remote").require(replace(request(), allow_remote=True))
+    prepared_capabilities = cast(frozenset[str], {"forecast"})
     with pytest.raises(TypeError):
-        replace(local, capabilities=cast(frozenset[str], {"forecast"}))
+        replace(local, capabilities=prepared_capabilities)
 
 
 def test_forecast_result_correlation_and_bounds() -> None:
@@ -134,8 +135,10 @@ def test_forecast_result_correlation_and_bounds() -> None:
         replace(result, model_revision="mutable-latest"),
         replace(result, dataset=replace(result.dataset, manifest_sha256="b" * 64)),
     ):
+        prepared_request = request()
+        prepared_descriptor = descriptor()
         with pytest.raises(ValueError):
-            bad.validate_for(request(), descriptor())
+            bad.validate_for(prepared_request, prepared_descriptor)
     with pytest.raises(ValueError):
         ForecastPoint(0, float("nan"))
     with pytest.raises(ValueError):
@@ -143,14 +146,16 @@ def test_forecast_result_correlation_and_bounds() -> None:
 
 
 def test_dataset_and_archive_refs_are_hashes_not_paths_or_codecs_to_load() -> None:
+    prepared_request = request().dataset
     with pytest.raises(ValueError):
-        replace(request().dataset, manifest_sha256="../../etc/passwd")
+        replace(prepared_request, manifest_sha256="../../etc/passwd")
     segment = RawSegment(
         "b" * 64, SchemaRef("raw", Version(1, 0)), "opaque-codec", 50, 70, 2
     )
     segment.require_within(ArchiveLimits(2, 50, 70))
+    prepared_archive_limits = ArchiveLimits(2, 50, 69)
     with pytest.raises(ValueError):
-        segment.require_within(ArchiveLimits(2, 50, 69))
+        segment.require_within(prepared_archive_limits)
     dataset_request = BuildDatasetRequest(
         ("a" * 64,), SchemaRef("recipe", Version(1, 0))
     )
@@ -175,8 +180,9 @@ def test_provider_rejects_unsupported_input_schema_and_covariates() -> None:
             dataset=replace(request().dataset, schema=SchemaRef("news", Version(1, 0))),
         ),
     ):
+        prepared_descriptor = descriptor()
         with pytest.raises(ValueError, match="Unsupported provider request"):
-            descriptor().require(job)
+            prepared_descriptor.require(job)
 
 
 def test_history_pages_and_archive_references_preserve_opaque_identity() -> None:
@@ -193,8 +199,9 @@ def test_history_pages_and_archive_references_preserve_opaque_identity() -> None
     )
     page = RawPage((envelope(),), history.cursor, record_limit=1)
     assert page.next_cursor == b"opaque=cursor"
+    prepared_envelope = (envelope(), envelope())
     with pytest.raises(ValueError):
-        RawPage((envelope(), envelope()), None, record_limit=1)
+        RawPage(prepared_envelope, None, record_limit=1)
     with pytest.raises(ValueError):
         replace(history, end_ns=0)
     ref = RawRecordRef("b" * 64, 0, candle().raw_record)

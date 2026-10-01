@@ -83,13 +83,12 @@ class SourceDescriptor:
     def require(
         self, schema: SchemaRef, operation: SourceOperation, subject: SubjectId | None
     ) -> SourceCapability:
-        kind = (
-            "instrument"
-            if isinstance(subject, InstrumentId)
-            else subject.kind
-            if subject
-            else "none"
-        )
+        if isinstance(subject, InstrumentId):
+            kind = "instrument"
+        elif subject:
+            kind = subject.kind
+        else:
+            kind = "none"
         category = subject.category if isinstance(subject, InstrumentId) else None
         for capability in self.capabilities:
             if (

@@ -114,6 +114,35 @@ def inspect_bybit_envelope(envelope: RawEnvelope) -> ParsedFakeCandle | None:
     return result if isinstance(result, ParsedFakeCandle) else None
 
 
+def _schema_declaration(value: object) -> SchemaRef | None:
+    if not isinstance(value, dict) or set(value) != {"name", "major", "minor"}:
+        return None
+    if (
+        value.get("name") != BYBIT_CANDLE_SCHEMA.name
+        or type(value.get("major")) is not int
+        or type(value.get("minor")) is not int
+    ):
+        return None
+    return SchemaRef(
+        cast(str, value["name"]),
+        Version(cast(int, value["major"]), cast(int, value["minor"])),
+    )
+
+
+def _publication_time(value: object) -> SourceTime | None:
+    if value is None:
+        return None
+    if (
+        type(value) is not dict
+        or set(value) != {"value", "unit"}
+        or type(value["value"]) is not int
+        or not 0 <= value["value"] < (2**63 - 1) // _MS_NS
+        or value["unit"] != TimeUnit.MILLISECOND.value
+    ):
+        raise ValueError("Invalid publication time")
+    return SourceTime(value["value"], TimeUnit.MILLISECOND)
+
+
 def _inspect[Result](
     envelope: RawEnvelope, reject: Callable[..., Result]
 ) -> ParsedFakeCandle | UnsupportedSchema | Result:
@@ -129,27 +158,13 @@ def _inspect[Result](
         )
     except _DuplicateKey:
         return reject(RejectionCode.DUPLICATE_JSON_KEY)
-    except (UnicodeError, json.JSONDecodeError, ValueError, RecursionError):
+    except (ValueError, RecursionError):
         return reject(RejectionCode.INVALID_JSON)
     if not isinstance(document, dict):
         return reject(RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
-    schema_value = document.get("schema")
-    if not isinstance(schema_value, dict) or set(schema_value) != {
-        "name",
-        "major",
-        "minor",
-    }:
+    schema = _schema_declaration(document.get("schema"))
+    if schema is None:
         return reject(RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
-    if (
-        schema_value.get("name") != BYBIT_CANDLE_SCHEMA.name
-        or type(schema_value.get("major")) is not int
-        or type(schema_value.get("minor")) is not int
-    ):
-        return reject(RejectionCode.INVALID_SCHEMA, RejectionField.SCHEMA)
-    schema = SchemaRef(
-        cast(str, schema_value["name"]),
-        Version(cast(int, schema_value["major"]), cast(int, schema_value["minor"])),
-    )
     try:
         BYBIT_CANDLE_SCHEMA.require_readable(schema)
     except ValueError:
@@ -209,18 +224,10 @@ def _inspect[Result](
         return reject(RejectionCode.INCONSISTENT_OHLC)
     if type(document["finalized"]) is not bool:
         return reject(RejectionCode.INVALID_FIELD_TYPE, RejectionField.FINALIZED)
-    publication_value = document["publication_time"]
-    publication_time = None
-    if publication_value is not None:
-        if (
-            type(publication_value) is not dict
-            or set(publication_value) != {"value", "unit"}
-            or type(publication_value["value"]) is not int
-            or not 0 <= publication_value["value"] < (2**63 - 1) // _MS_NS
-            or publication_value["unit"] != TimeUnit.MILLISECOND.value
-        ):
-            return reject(RejectionCode.INVALID_TIME, RejectionField.PUBLICATION_TIME)
-        publication_time = SourceTime(publication_value["value"], TimeUnit.MILLISECOND)
+    try:
+        publication_time = _publication_time(document["publication_time"])
+    except ValueError:
+        return reject(RejectionCode.INVALID_TIME, RejectionField.PUBLICATION_TIME)
     return ParsedFakeCandle(
         schema=BYBIT_CANDLE_SCHEMA,
         start_ns=document["start_ns"],

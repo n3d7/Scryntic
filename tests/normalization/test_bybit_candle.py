@@ -131,7 +131,8 @@ def test_normalization_runner_dispatches_persisted_bybit_envelopes() -> None:
 
     class Reader:
         def records_after(self, offset: int, *, limit: int) -> tuple[RawRecord, ...]:
-            assert offset == 0 and limit == 1
+            assert offset == 0
+            assert limit == 1
             return (record,)
 
     class Store:

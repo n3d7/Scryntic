@@ -73,10 +73,11 @@ def test_framed_limits_order_and_reference(tmp_path: Path) -> None:
     ):
         with pytest.raises(ArchiveError):
             asyncio.run(archive.seal(records, small))
+        prepared_operation = archive.read(
+            RawRecordRef(segment.sha256, 0, record.identity), small
+        )
         with pytest.raises(ArchiveError):
-            asyncio.run(
-                archive.read(RawRecordRef(segment.sha256, 0, record.identity), small)
-            )
+            asyncio.run(prepared_operation)
     for invalid in ((), records[::-1], (record, record)):
         with pytest.raises(ArchiveError):
             asyncio.run(archive.seal(invalid, LIMITS))
@@ -100,13 +101,15 @@ def test_framed_truncated_objects_never_return_partial_success(
     path.chmod(0o600)
     path.write_bytes(data)
     path.chmod(0o400)
+    prepared_operation = archive.read(
+        RawRecordRef(segment.sha256, 0, record.identity), LIMITS
+    )
     with pytest.raises(ArchiveError):
-        asyncio.run(
-            archive.read(RawRecordRef(segment.sha256, 0, record.identity), LIMITS)
-        )
+        asyncio.run(prepared_operation)
     # Rehashing cannot convert a malformed stream to valid archived evidence.
+    prepared_hexdigest = sha256(data).hexdigest()
     with pytest.raises(ArchiveError):
-        archive._read_all(path, sha256(data).hexdigest(), LIMITS)
+        archive._read_all(path, prepared_hexdigest, LIMITS)
 
 
 def test_framed_rejects_bounded_decompression_bomb_and_trailing_data(
@@ -124,8 +127,9 @@ def test_framed_rejects_bounded_decompression_bomb_and_trailing_data(
         path.chmod(0o600)
         path.write_bytes(data)
         path.chmod(0o400)
+        prepared_hexdigest = sha256(data).hexdigest()
         with pytest.raises(ArchiveError):
-            archive._read_all(path, sha256(data).hexdigest(), LIMITS)
+            archive._read_all(path, prepared_hexdigest, LIMITS)
 
 
 def test_framed_corruption_does_not_change_committed_object(tmp_path: Path) -> None:
@@ -139,7 +143,8 @@ def test_framed_corruption_does_not_change_committed_object(tmp_path: Path) -> N
     with path.open("rb") as stream:
         os.fsync(stream.fileno())
     path.chmod(0o400)
+    prepared_operation = archive.read(
+        RawRecordRef(segment.sha256, 0, record.identity), LIMITS
+    )
     with pytest.raises(ArchiveError):
-        asyncio.run(
-            archive.read(RawRecordRef(segment.sha256, 0, record.identity), LIMITS)
-        )
+        asyncio.run(prepared_operation)

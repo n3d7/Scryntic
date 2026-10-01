@@ -35,14 +35,22 @@ from scryntic.normalization.candle import (
 )
 from scryntic.normalization.sqlite_store import OutcomeKind, ProcessingOutcome
 
+_FORMAT_KEY = b"scryntic.format"
+_VERSION_KEY = b"scryntic.version"
+_CODEC_KEY = b"scryntic.codec"
+_RECORD_COUNT_KEY = b"scryntic.record_count"
+_LOGICAL_BYTES_KEY = b"scryntic.logical_decoded_bytes"
+_LIMITS_EXCEEDED = "Normalized archive limits exceeded"
+_DESCRIPTOR_MISMATCH = "Normalized descriptor mismatch"
+
 _BATCH_ROWS = 1024
 _METADATA_KEYS = frozenset(
     {
-        b"scryntic.format",
-        b"scryntic.version",
-        b"scryntic.codec",
-        b"scryntic.record_count",
-        b"scryntic.logical_decoded_bytes",
+        _FORMAT_KEY,
+        _VERSION_KEY,
+        _CODEC_KEY,
+        _RECORD_COUNT_KEY,
+        _LOGICAL_BYTES_KEY,
     }
 )
 
@@ -134,11 +142,11 @@ def _schema(record_count: int, logical_bytes: int) -> pa.Schema:
     return pa.schema(
         fields,
         metadata={
-            b"scryntic.format": NORMALIZED_PARQUET_SCHEMA.name.encode("ascii"),
-            b"scryntic.version": b"1.0",
-            b"scryntic.codec": PARQUET_CODEC.encode("ascii"),
-            b"scryntic.record_count": str(record_count).encode("ascii"),
-            b"scryntic.logical_decoded_bytes": str(logical_bytes).encode("ascii"),
+            _FORMAT_KEY: NORMALIZED_PARQUET_SCHEMA.name.encode("ascii"),
+            _VERSION_KEY: b"1.0",
+            _CODEC_KEY: PARQUET_CODEC.encode("ascii"),
+            _RECORD_COUNT_KEY: str(record_count).encode("ascii"),
+            _LOGICAL_BYTES_KEY: str(logical_bytes).encode("ascii"),
         },
     )
 
@@ -377,7 +385,7 @@ def _logical(value: PublicationInput | ArchivedNormalization) -> int:
     return len(
         canonical_json_bytes(
             {
-                "outcome": normalized_projection(outcome, semantics),
+                "outcome": normalized_projection(outcome),
                 "semantics": semantics_projection(semantics),
             }
         )
@@ -408,7 +416,7 @@ class NormalizedParquetArchive:
             if type(values) is not tuple or not values:
                 raise NormalizedArchiveError("Normalized archive inputs are empty")
             if len(values) > limits.max_records:
-                raise NormalizedArchiveError("Normalized archive limits exceeded")
+                raise NormalizedArchiveError(_LIMITS_EXCEEDED)
             producer = values[0].raw.identity.producer
             previous = 0
             logical_bytes = 0
@@ -422,7 +430,7 @@ class NormalizedParquetArchive:
                 previous = value.raw.identity.offset
                 logical_bytes += _logical(value)
                 if logical_bytes > limits.max_decoded_bytes:
-                    raise NormalizedArchiveError("Normalized archive limits exceeded")
+                    raise NormalizedArchiveError(_LIMITS_EXCEEDED)
             table = pa.Table.from_pylist(
                 [_row(value) for value in values],
                 schema=_schema(len(values), logical_bytes),
@@ -441,7 +449,7 @@ class NormalizedParquetArchive:
                 )
                 encoded_bytes, object_sha256 = self._storage.prepare_staging(staging)
                 if encoded_bytes > limits.max_encoded_bytes:
-                    raise NormalizedArchiveError("Normalized archive limits exceeded")
+                    raise NormalizedArchiveError(_LIMITS_EXCEEDED)
                 descriptor = ArchiveObject(
                     ArchiveRole.NORMALIZED,
                     object_sha256,
@@ -478,7 +486,7 @@ class NormalizedParquetArchive:
     ) -> tuple[ArchivedNormalization, ...]:
         try:
             if descriptor.role is not ArchiveRole.NORMALIZED:
-                raise NormalizedArchiveError("Normalized descriptor mismatch")
+                raise NormalizedArchiveError(_DESCRIPTOR_MISMATCH)
             path = self._storage.object_path(descriptor.sha256)
             if not path.exists():
                 raise NormalizedArchiveError("Normalized object hash mismatch")
@@ -498,9 +506,9 @@ class NormalizedParquetArchive:
         return decode_normalized_path(path, descriptor, limits, self._owner_uid)
 
 
-def decode_normalized_path(
+def _validate_normalized_file(
     path: Path, descriptor: ArchiveObject, limits: ArchiveLimits, owner_uid: int
-) -> tuple[ArchivedNormalization, ...]:
+) -> None:
     fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
     try:
         info = os.fstat(fd)
@@ -511,9 +519,9 @@ def decode_normalized_path(
         ):
             raise NormalizedArchiveError("Unsafe normalized archive object")
         if info.st_size > limits.max_encoded_bytes:
-            raise NormalizedArchiveError("Normalized archive limits exceeded")
+            raise NormalizedArchiveError(_LIMITS_EXCEEDED)
         if info.st_size != descriptor.encoded_bytes:
-            raise NormalizedArchiveError("Normalized descriptor mismatch")
+            raise NormalizedArchiveError(_DESCRIPTOR_MISMATCH)
         if info.st_size < 12:
             raise NormalizedArchiveError("Invalid normalized archive footer")
         trailer = os.pread(fd, 8, info.st_size - 8)
@@ -522,44 +530,11 @@ def decode_normalized_path(
             raise NormalizedArchiveError("Invalid normalized archive footer")
     finally:
         os.close(fd)
-    if file_sha256(path, owner_uid) != descriptor.sha256:
-        raise NormalizedArchiveError("Normalized object hash mismatch")
-    if (
-        descriptor.format != NORMALIZED_PARQUET_SCHEMA
-        or descriptor.codec != PARQUET_CODEC
-    ):
-        raise NormalizedArchiveError("Normalized descriptor mismatch")
-    if (
-        descriptor.record_count > limits.max_records
-        or descriptor.decoded_bytes > limits.max_decoded_bytes
-    ):
-        raise NormalizedArchiveError("Normalized archive limits exceeded")
-    parquet = pq.ParquetFile(path, memory_map=False, pre_buffer=False)
-    metadata = parquet.metadata
-    schema_metadata = parquet.schema_arrow.metadata or {}
-    if frozenset(schema_metadata) != _METADATA_KEYS:
-        raise NormalizedArchiveError("Invalid normalized archive schema")
-    record_count = _metadata_integer(schema_metadata.get(b"scryntic.record_count"))
-    logical_bytes = _metadata_integer(
-        schema_metadata.get(b"scryntic.logical_decoded_bytes")
-    )
-    if record_count > limits.max_records or logical_bytes > limits.max_decoded_bytes:
-        raise NormalizedArchiveError("Normalized archive limits exceeded")
-    if (
-        record_count != descriptor.record_count
-        or logical_bytes != descriptor.decoded_bytes
-        or schema_metadata.get(b"scryntic.format")
-        != NORMALIZED_PARQUET_SCHEMA.name.encode("ascii")
-        or schema_metadata.get(b"scryntic.version") != b"1.0"
-        or schema_metadata.get(b"scryntic.codec") != PARQUET_CODEC.encode("ascii")
-        or not parquet.schema_arrow.equals(
-            _schema(record_count, logical_bytes), check_metadata=True
-        )
-        or metadata.num_row_groups != 1
-        or metadata.num_rows != record_count
-    ):
-        raise NormalizedArchiveError("Normalized descriptor mismatch")
-    row_group = metadata.row_group(0)
+
+
+def _validate_normalized_columns(
+    row_group: pq.RowGroupMetaData, encoded_size: int
+) -> None:
     for index in range(row_group.num_columns):
         column = row_group.column(index)
         if (
@@ -567,9 +542,60 @@ def decode_normalized_path(
             or column.total_compressed_size < 0
             or column.total_uncompressed_size < 0
             or "RLE_DICTIONARY" in column.encodings
-            or column.total_compressed_size > descriptor.encoded_bytes
+            or column.total_compressed_size > encoded_size
         ):
             raise NormalizedArchiveError("Invalid normalized archive encoding")
+
+
+def _validate_normalized_metadata(
+    parquet: pq.ParquetFile, descriptor: ArchiveObject, limits: ArchiveLimits
+) -> tuple[int, int]:
+    metadata = parquet.metadata
+    schema_metadata = parquet.schema_arrow.metadata or {}
+    if frozenset(schema_metadata) != _METADATA_KEYS:
+        raise NormalizedArchiveError("Invalid normalized archive schema")
+    record_count = _metadata_integer(schema_metadata.get(_RECORD_COUNT_KEY))
+    logical_bytes = _metadata_integer(schema_metadata.get(_LOGICAL_BYTES_KEY))
+    if record_count > limits.max_records or logical_bytes > limits.max_decoded_bytes:
+        raise NormalizedArchiveError(_LIMITS_EXCEEDED)
+    if (
+        record_count != descriptor.record_count
+        or logical_bytes != descriptor.decoded_bytes
+        or schema_metadata.get(_FORMAT_KEY)
+        != NORMALIZED_PARQUET_SCHEMA.name.encode("ascii")
+        or schema_metadata.get(_VERSION_KEY) != b"1.0"
+        or schema_metadata.get(_CODEC_KEY) != PARQUET_CODEC.encode("ascii")
+        or not parquet.schema_arrow.equals(
+            _schema(record_count, logical_bytes), check_metadata=True
+        )
+        or metadata.num_row_groups != 1
+        or metadata.num_rows != record_count
+    ):
+        raise NormalizedArchiveError(_DESCRIPTOR_MISMATCH)
+    _validate_normalized_columns(metadata.row_group(0), descriptor.encoded_bytes)
+    return record_count, logical_bytes
+
+
+def decode_normalized_path(
+    path: Path, descriptor: ArchiveObject, limits: ArchiveLimits, owner_uid: int
+) -> tuple[ArchivedNormalization, ...]:
+    _validate_normalized_file(path, descriptor, limits, owner_uid)
+    if file_sha256(path, owner_uid) != descriptor.sha256:
+        raise NormalizedArchiveError("Normalized object hash mismatch")
+    if (
+        descriptor.format != NORMALIZED_PARQUET_SCHEMA
+        or descriptor.codec != PARQUET_CODEC
+    ):
+        raise NormalizedArchiveError(_DESCRIPTOR_MISMATCH)
+    if (
+        descriptor.record_count > limits.max_records
+        or descriptor.decoded_bytes > limits.max_decoded_bytes
+    ):
+        raise NormalizedArchiveError(_LIMITS_EXCEEDED)
+    parquet = pq.ParquetFile(path, memory_map=False, pre_buffer=False)
+    record_count, logical_bytes = _validate_normalized_metadata(
+        parquet, descriptor, limits
+    )
     values: list[ArchivedNormalization] = []
     observed_logical = 0
     for batch in parquet.iter_batches(
@@ -577,11 +603,11 @@ def decode_normalized_path(
     ):
         for row in batch.to_pylist():
             if len(values) >= limits.max_records:
-                raise NormalizedArchiveError("Normalized archive limits exceeded")
+                raise NormalizedArchiveError(_LIMITS_EXCEEDED)
             value = _decode(row)
             size = _logical(value)
             if observed_logical + size > limits.max_decoded_bytes:
-                raise NormalizedArchiveError("Normalized archive limits exceeded")
+                raise NormalizedArchiveError(_LIMITS_EXCEEDED)
             observed_logical += size
             values.append(value)
     if len(values) != record_count or observed_logical != logical_bytes:

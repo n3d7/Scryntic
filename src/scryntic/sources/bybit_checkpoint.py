@@ -15,6 +15,8 @@ from scryntic.application.sources import BYBIT_CANDLE_SCHEMA, HistoryRequest
 from scryntic.domain.identity import InstrumentId
 from scryntic.sources.bybit import _INTERVAL_NS, BybitError, _decode_cursor
 
+_INVALID_CHECKPOINT = "Invalid Bybit checkpoint"
+
 _MAX_FILE_BYTES = 8_192
 
 
@@ -74,17 +76,17 @@ class BybitCursorStore:
             return None
         try:
             if not stat.S_ISREG(os.fstat(descriptor).st_mode):
-                raise BybitError("Invalid Bybit checkpoint")
+                raise BybitError(_INVALID_CHECKPOINT)
             with os.fdopen(descriptor, "rb", closefd=False) as checkpoint:
                 raw = checkpoint.read(_MAX_FILE_BYTES + 1)
         finally:
             os.close(descriptor)
         if len(raw) > _MAX_FILE_BYTES:
-            raise BybitError("Invalid Bybit checkpoint")
+            raise BybitError(_INVALID_CHECKPOINT)
         try:
             document = json.loads(raw.decode("ascii"), object_pairs_hook=_unique_pairs)
-        except (UnicodeError, ValueError, RecursionError):
-            raise BybitError("Invalid Bybit checkpoint") from None
+        except (ValueError, RecursionError):
+            raise BybitError(_INVALID_CHECKPOINT) from None
         if (
             type(document) is not dict
             or set(document) != {"version", "query", "complete", "cursor"}
@@ -97,15 +99,15 @@ class BybitCursorStore:
             raise BybitError("Bybit checkpoint does not match request")
         if document["complete"]:
             if document["cursor"] is not None:
-                raise BybitError("Invalid Bybit checkpoint")
+                raise BybitError(_INVALID_CHECKPOINT)
             return BybitProgress(None, True)
         if type(document["cursor"]) is not str:
-            raise BybitError("Invalid Bybit checkpoint")
+            raise BybitError(_INVALID_CHECKPOINT)
         try:
             cursor = base64.b64decode(document["cursor"], validate=True)
             _decode_cursor(cursor, request, self._interval)
-        except (ValueError, UnicodeError):
-            raise BybitError("Invalid Bybit checkpoint") from None
+        except ValueError:
+            raise BybitError(_INVALID_CHECKPOINT) from None
         return BybitProgress(cursor, False)
 
     def save(self, request: HistoryRequest, cursor: bytes | None) -> None:

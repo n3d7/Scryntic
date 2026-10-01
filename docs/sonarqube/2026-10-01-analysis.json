@@ -1,0 +1,138 @@
+{
+  "analyzed_commit": "7bc39434073be11f9c6d7bef9518fa4cf5e66eb8",
+  "analysis_context": "default main context; local feature commit, not published main or PR analysis",
+  "snapshot_at": "2026-10-01T00:11:09.223848+00:00",
+  "branches": {
+    "branches": [
+      {
+        "name": "main",
+        "isMain": true,
+        "type": "BRANCH",
+        "status": {
+          "qualityGateStatus": "ERROR"
+        },
+        "analysisDate": "2026-10-01T00:10:48+0000",
+        "excludedFromPurge": true,
+        "branchId": "3da9e0fa-61f6-47f0-be99-0a80e0c757a5"
+      }
+    ]
+  },
+  "quality_gate": {
+    "projectStatus": {
+      "status": "ERROR",
+      "conditions": [
+        {
+          "status": "ERROR",
+          "metricKey": "new_coverage",
+          "comparator": "LT",
+          "errorThreshold": "80",
+          "actualValue": "75.5"
+        },
+        {
+          "status": "OK",
+          "metricKey": "new_duplicated_lines_density",
+          "comparator": "GT",
+          "errorThreshold": "3",
+          "actualValue": "0.0"
+        },
+        {
+          "status": "ERROR",
+          "metricKey": "new_violations",
+          "comparator": "GT",
+          "errorThreshold": "0",
+          "actualValue": "56"
+        }
+      ],
+      "ignoredConditions": false,
+      "period": {
+        "mode": "PREVIOUS_VERSION",
+        "date": "2026-09-28T22:37:06+0000",
+        "parameter": "not provided"
+      },
+      "caycStatus": "compliant"
+    }
+  },
+  "measures": {
+    "component": {
+      "key": "Scryntic",
+      "name": "Scryntic",
+      "qualifier": "TRK",
+      "measures": [
+        {
+          "metric": "coverage",
+          "value": "78.4",
+          "bestValue": false
+        },
+        {
+          "metric": "lines_to_cover",
+          "value": "8666"
+        },
+        {
+          "metric": "uncovered_conditions",
+          "value": "747",
+          "bestValue": false
+        },
+        {
+          "metric": "branch_coverage",
+          "value": "71.8",
+          "bestValue": false
+        },
+        {
+          "metric": "new_violations",
+          "period": {
+            "index": 1,
+            "value": "56",
+            "bestValue": false
+          }
+        },
+        {
+          "metric": "uncovered_lines",
+          "value": "1694",
+          "bestValue": false
+        },
+        {
+          "metric": "new_coverage",
+          "period": {
+            "index": 1,
+            "value": "75.5",
+            "bestValue": false
+          }
+        },
+        {
+          "metric": "conditions_to_cover",
+          "value": "2652"
+        },
+        {
+          "metric": "line_coverage",
+          "value": "80.5",
+          "bestValue": false
+        }
+      ]
+    }
+  },
+  "access_checks": {
+    "analysis_history": {
+      "status": 403
+    },
+    "security_hotspots": {
+      "status": 403
+    }
+  },
+  "unresolved_issues": 119,
+  "rule_counts": {
+    "python:S108": 1,
+    "python:S2245": 2,
+    "python:S3776": 42,
+    "python:S4830": 2,
+    "python:S5655": 9,
+    "python:S5754": 6,
+    "python:S5778": 13,
+    "python:S5863": 1,
+    "python:S5864": 4,
+    "python:S6353": 20,
+    "python:S7497": 1,
+    "python:S7500": 3,
+    "python:S7503": 11,
+    "python:S930": 4
+  }
+}

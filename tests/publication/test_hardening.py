@@ -122,7 +122,8 @@ def test_unknown_external_history_cannot_be_adopted_or_skipped(tmp_path: Path) -
     assert isinstance(values, tuple)
     pending = bundle.coordinator._reserve(values)
     prepared = bundle.coordinator._seal_and_prepare(pending, values)
-    assert prepared.manifest_bytes is not None and prepared.manifest_ref is not None
+    assert prepared.manifest_bytes is not None
+    assert prepared.manifest_ref is not None
     body = parse_manifest(prepared.manifest_bytes, limits().max_manifest_bytes).body
     unrelated = prepare_manifest(
         replace(
@@ -197,7 +198,8 @@ def test_rolled_back_local_catalog_cannot_reset_external_history(
         )
         with pytest.raises(PublicationError, match="history"):
             restarted.publish_next()
-        assert store.pending() is None and store.status().checkpoint is None
+        assert store.pending() is None
+        assert store.status().checkpoint is None
     assert (
         ManifestStorage(bundle.root).read_exact(
             result.manifest, limits().max_manifest_bytes

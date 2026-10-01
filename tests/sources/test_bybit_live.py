@@ -542,8 +542,9 @@ def test_write_deadline_cancels_stalled_send(monkeypatch: pytest.MonkeyPatch) ->
             async def close(self) -> None:
                 pass
 
+        prepared_socket = Socket()
         with pytest.raises(BybitLiveError, match="write timed out"):
-            await BybitLiveSource._send(Socket(), {"op": "ping"})
+            await BybitLiveSource._send(prepared_socket, {"op": "ping"})
         assert cleaned.is_set()
 
     monkeypatch.setattr(live_module, "_WRITE_TIMEOUT_S", 0.02)

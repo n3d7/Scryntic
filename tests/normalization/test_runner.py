@@ -277,9 +277,10 @@ def test_mismatched_metadata_identity_is_fatal_without_progress(tmp_path: Path) 
     )
     target = installation(tmp_path)
     with NormalizationStore(target, producer="collector-a") as store:
+        prepared_recording_reader = RecordingReader((raw_record(),))
         with pytest.raises(NormalizationError):
             process_next(
-                RecordingReader((raw_record(),)),
+                prepared_recording_reader,
                 store,
                 metadata,
                 normalized_at_ns=NORMALIZED_AT_NS,
@@ -302,12 +303,14 @@ def test_invalid_normalization_time_cannot_write_any_result(
 ) -> None:
     target = installation(tmp_path)
     with NormalizationStore(target, producer="collector-a") as store:
+        prepared_recording_reader = RecordingReader((raw_record(payload=payload),))
+        prepared_normalized_at_ns = cast(int, timestamp)
         with pytest.raises((TypeError, ValueError, NormalizationError)):
             process_next(
-                RecordingReader((raw_record(payload=payload),)),
+                prepared_recording_reader,
                 store,
                 {},
-                normalized_at_ns=cast(int, timestamp),
+                normalized_at_ns=prepared_normalized_at_ns,
             )
         assert counts(target.state_dir) == (0, 0, 0, 0)
 
@@ -429,12 +432,10 @@ def test_barrier_delete_failure_rolls_back_entire_process_and_preserves_retry(
             db.ignored = "DELETE FROM processing_barrier"
         else:
             db.failure = "DELETE FROM processing_barrier"
+        prepared_instrument = {INSTRUMENT_ID: instrument()}
         with pytest.raises(NormalizationError):
             process_next(
-                reader,
-                store,
-                {INSTRUMENT_ID: instrument()},
-                normalized_at_ns=NORMALIZED_AT_NS,
+                reader, store, prepared_instrument, normalized_at_ns=NORMALIZED_AT_NS
             )
         assert not db.in_transaction
         assert store.barrier() == blocked.barrier
@@ -580,9 +581,10 @@ def test_incomplete_barrier_details_cannot_be_persisted(
 ) -> None:
     target = installation(tmp_path)
     with NormalizationStore(target, producer="collector-a") as store:
+        prepared_raw_record = raw_record()
         with pytest.raises(NormalizationError):
             store.block(
-                raw_record(),
+                prepared_raw_record,
                 expected_predecessor=None,
                 reason=reason,
                 schema=schema,
@@ -598,9 +600,10 @@ def test_barrier_readback_detects_missing_insert(
     connections = fault_connections(monkeypatch)
     with NormalizationStore(target, producer="collector-a") as store:
         connections[0].ignored = "INSERT INTO processing_barrier"
+        prepared_raw_record = raw_record()
         with pytest.raises(NormalizationError):
             store.block(
-                raw_record(),
+                prepared_raw_record,
                 expected_predecessor=None,
                 reason=BarrierReason.METADATA_UNAVAILABLE,
                 schema=FAKE_CANDLE_SCHEMA,
@@ -635,7 +638,8 @@ def test_real_f05_reader_preserves_duplicate_delivery_provenance_in_separate_sto
             assert all(isinstance(result, Processed) for result in results)
             accepted = store.outcome(first.identity)
             repeated = store.outcome(duplicate.identity)
-            assert accepted is not None and repeated is not None
+            assert accepted is not None
+            assert repeated is not None
             assert accepted.kind is OutcomeKind.ACCEPTED
             assert repeated.kind is OutcomeKind.DUPLICATE
             assert accepted.semantic_revision == repeated.semantic_revision

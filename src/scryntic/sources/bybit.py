@@ -33,6 +33,11 @@ from scryntic.domain.market import INSTRUMENT_SCHEMA, Instrument
 from scryntic.domain.raw import RawEnvelope
 from scryntic.domain.time import ClockSample, SourceTime, TimeUnit
 
+_PUBLIC_REQUEST_FAILED = "Bybit public request failed"
+_INVALID_RESPONSE = "Invalid Bybit response"
+_INVALID_DECIMAL = "Invalid Bybit decimal"
+_INVALID_CURSOR = "Invalid Bybit cursor"
+
 _BASE_URL = "https://api.bybit.com"
 _INSTRUMENTS_PATH = "/v5/market/instruments-info"
 _KLINE_PATH = "/v5/market/kline"
@@ -163,7 +168,7 @@ class BybitPublicClient:
                             "Bybit public request temporarily failed"
                         )
                     if response.status != 200:
-                        raise BybitError("Bybit public request failed")
+                        raise BybitError(_PUBLIC_REQUEST_FAILED)
                     length = response.headers.get("Content-Length")
                     if length is not None and (
                         not _INTEGER.fullmatch(length)
@@ -178,65 +183,47 @@ class BybitPublicClient:
         except BybitError:
             raise
         except (aiohttp.ClientError, OSError):
-            raise BybitTransientError("Bybit public request failed") from None
+            raise BybitTransientError(_PUBLIC_REQUEST_FAILED) from None
         except ValueError:
-            raise BybitError("Bybit public request failed") from None
-        try:
-            decoded = json.loads(
-                body.decode("utf-8", "strict"),
-                object_pairs_hook=_pairs,
-                parse_constant=lambda _: (_ for _ in ()).throw(_JsonError()),
-            )
-        except (UnicodeError, json.JSONDecodeError, _JsonError, RecursionError):
-            raise BybitError("Invalid Bybit response") from None
-        if not isinstance(decoded, dict):
-            raise BybitError("Invalid Bybit response")
-        document = cast(dict[str, object], decoded)
-        if type(document.get("retCode")) is int and document["retCode"] == 10006:
-            raise BybitTransientError("Bybit public rate limit reached")
-        if type(document.get("retCode")) is not int or document["retCode"] != 0:
-            raise BybitError("Bybit rejected public request")
-        result = document.get("result")
-        if not isinstance(result, dict):
-            raise BybitError("Invalid Bybit response")
-        return cast(dict[str, object], result)
+            raise BybitError(_PUBLIC_REQUEST_FAILED) from None
+        return _decode_public_result(body)
 
 
 def _object(value: object) -> Mapping[str, object]:
     if not isinstance(value, Mapping):
-        raise BybitError("Invalid Bybit response")
+        raise BybitError(_INVALID_RESPONSE)
     return value
 
 
 def _text(value: object, *, max_length: int = 128) -> str:
     if type(value) is not str or not 1 <= len(value) <= max_length:
-        raise BybitError("Invalid Bybit response")
+        raise BybitError(_INVALID_RESPONSE)
     return value
 
 
 def _decimal(value: object) -> Decimal:
     text = _text(value)
     if _DECIMAL.fullmatch(text) is None:
-        raise BybitError("Invalid Bybit decimal")
+        raise BybitError(_INVALID_DECIMAL)
     try:
         number = Decimal(text)
     except InvalidOperation:
-        raise BybitError("Invalid Bybit decimal") from None
+        raise BybitError(_INVALID_DECIMAL) from None
     if not number.is_finite() or number <= 0:
-        raise BybitError("Invalid Bybit decimal")
+        raise BybitError(_INVALID_DECIMAL)
     return number
 
 
 def _nonnegative_decimal(value: object) -> Decimal:
     text = _text(value)
     if _DECIMAL.fullmatch(text) is None:
-        raise BybitError("Invalid Bybit decimal")
+        raise BybitError(_INVALID_DECIMAL)
     try:
         number = Decimal(text)
     except InvalidOperation:
-        raise BybitError("Invalid Bybit decimal") from None
+        raise BybitError(_INVALID_DECIMAL) from None
     if not number.is_finite() or number < 0:
-        raise BybitError("Invalid Bybit decimal")
+        raise BybitError(_INVALID_DECIMAL)
     return number
 
 
@@ -252,7 +239,7 @@ def _timestamp_ms(value: object) -> int:
 
 def _list(value: object) -> list[object]:
     if type(value) is not list:
-        raise BybitError("Invalid Bybit response")
+        raise BybitError(_INVALID_RESPONSE)
     return value
 
 
@@ -357,11 +344,11 @@ def _encode_cursor(cursor: _Cursor) -> bytes:
 
 def _decode_cursor(value: bytes, request: HistoryRequest, interval: str) -> _Cursor:
     if type(value) is not bytes or not 1 <= len(value) <= _CURSOR_LIMIT:
-        raise BybitError("Invalid Bybit cursor")
+        raise BybitError(_INVALID_CURSOR)
     try:
         data = json.loads(value.decode("ascii"), object_pairs_hook=_pairs)
     except (UnicodeError, json.JSONDecodeError, _JsonError, RecursionError):
-        raise BybitError("Invalid Bybit cursor") from None
+        raise BybitError(_INVALID_CURSOR) from None
     if not isinstance(data, dict) or set(data) != {
         "before_ms",
         "category",
@@ -372,7 +359,7 @@ def _decode_cursor(value: bytes, request: HistoryRequest, interval: str) -> _Cur
         "start_ns",
         "symbol",
     }:
-        raise BybitError("Invalid Bybit cursor")
+        raise BybitError(_INVALID_CURSOR)
     subject = request.stream.subject
     if not isinstance(subject, InstrumentId):
         raise BybitError("Invalid Bybit subject")
@@ -413,10 +400,33 @@ def _kline_row(value: object) -> tuple[int, list[str]]:
     timestamp_ms = _timestamp_ms(row[0])
     numeric = [_text(item) for item in row[1:]]
     open_value, high, low, close = (_decimal(item) for item in numeric[:4])
-    volume, turnover = (_nonnegative_decimal(item) for item in numeric[4:])
+    for item in numeric[4:]:
+        _nonnegative_decimal(item)
     if low > min(open_value, close) or high < max(open_value, close) or low > high:
         raise BybitError("Invalid Bybit OHLC")
     return timestamp_ms, [cast(str, row[0]), *numeric]
+
+
+def _decode_public_result(body: bytearray) -> dict[str, object]:
+    try:
+        decoded = json.loads(
+            body.decode("utf-8", "strict"),
+            object_pairs_hook=_pairs,
+            parse_constant=lambda _: (_ for _ in ()).throw(_JsonError()),
+        )
+    except (UnicodeError, json.JSONDecodeError, _JsonError, RecursionError):
+        raise BybitError(_INVALID_RESPONSE) from None
+    if not isinstance(decoded, dict):
+        raise BybitError(_INVALID_RESPONSE)
+    document = cast(dict[str, object], decoded)
+    if type(document.get("retCode")) is int and document["retCode"] == 10006:
+        raise BybitTransientError("Bybit public rate limit reached")
+    if type(document.get("retCode")) is not int or document["retCode"] != 0:
+        raise BybitError("Bybit rejected public request")
+    result = document.get("result")
+    if not isinstance(result, dict):
+        raise BybitError(_INVALID_RESPONSE)
+    return cast(dict[str, object], result)
 
 
 class BybitHistoricalSource:
@@ -513,6 +523,52 @@ class BybitHistoricalSource:
             cursor = next_cursor
         raise BybitError("Bybit instrument discovery exceeded page limit")
 
+    def _candle_envelope(
+        self,
+        subject: InstrumentId,
+        timestamp_ms: int,
+        values: list[str],
+        receipt: ClockSample,
+    ) -> RawEnvelope:
+        start_ns = timestamp_ms * _MS_NS
+        closing_boundary_ns = start_ns + self._interval_ns
+        finalized = is_final(receipt, closing_boundary_ns, self._limits)
+        payload = json.dumps(
+            {
+                "category": subject.category,
+                "close": values[4],
+                "finalized": finalized,
+                "high": values[2],
+                "interval": self._interval,
+                "interval_ns": self._interval_ns,
+                "low": values[3],
+                "open": values[1],
+                "publication_time": None,
+                "row": values,
+                "schema": {"name": "bybit_candle", "major": 1, "minor": 0},
+                "start_ns": start_ns,
+                "symbol": subject.symbol,
+                "volume": values[5],
+            },
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+        if len(payload) > self.descriptor.max_payload_bytes:
+            raise BybitError("Bybit candle exceeds configured limit")
+        return RawEnvelope(
+            source="bybit-public",
+            stream="market-kline",
+            channel=f"kline-{self._interval}",
+            adapter_version="1.0",
+            receipt=receipt,
+            payload=payload,
+            payload_limit=self.descriptor.max_payload_bytes,
+            subject=subject,
+            source_time=SourceTime(timestamp_ms, TimeUnit.MILLISECOND),
+            source_event_id=f"{subject.category}-{subject.symbol}-{timestamp_ms}",
+        )
+
     async def fetch(self, request: HistoryRequest) -> RawPage:
         if self._closed:
             raise BybitError("Bybit adapter is closed")
@@ -566,48 +622,10 @@ class BybitHistoricalSource:
         ordered = sorted(rows.items())
         selected = ordered[-request.page_size :]
         receipt = self._clock.sample()
-        envelopes: list[RawEnvelope] = []
-        for timestamp_ms, values in selected:
-            start_ns = timestamp_ms * _MS_NS
-            closing_boundary_ns = start_ns + self._interval_ns
-            finalized = is_final(receipt, closing_boundary_ns, self._limits)
-            payload = json.dumps(
-                {
-                    "category": subject.category,
-                    "close": values[4],
-                    "finalized": finalized,
-                    "high": values[2],
-                    "interval": self._interval,
-                    "interval_ns": self._interval_ns,
-                    "low": values[3],
-                    "open": values[1],
-                    "publication_time": None,
-                    "row": values,
-                    "schema": {"name": "bybit_candle", "major": 1, "minor": 0},
-                    "start_ns": start_ns,
-                    "symbol": subject.symbol,
-                    "volume": values[5],
-                },
-                ensure_ascii=True,
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode("ascii")
-            if len(payload) > self.descriptor.max_payload_bytes:
-                raise BybitError("Bybit candle exceeds configured limit")
-            envelopes.append(
-                RawEnvelope(
-                    source="bybit-public",
-                    stream="market-kline",
-                    channel=f"kline-{self._interval}",
-                    adapter_version="1.0",
-                    receipt=receipt,
-                    payload=payload,
-                    payload_limit=self.descriptor.max_payload_bytes,
-                    subject=subject,
-                    source_time=SourceTime(timestamp_ms, TimeUnit.MILLISECOND),
-                    source_event_id=f"{subject.category}-{subject.symbol}-{timestamp_ms}",
-                )
-            )
+        envelopes = [
+            self._candle_envelope(subject, timestamp_ms, values, receipt)
+            for timestamp_ms, values in selected
+        ]
         next_cursor = None
         if len(raw_rows) >= api_limit and selected and selected[0][0] > start_ms:
             next_cursor = _encode_cursor(

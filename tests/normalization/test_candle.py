@@ -579,8 +579,9 @@ def test_every_semantic_field_changes_the_revision() -> None:
 def test_semantics_reject_noncanonical_decimal_text(
     change: Callable[[CandleSemantics, str], CandleSemantics], value: str
 ) -> None:
+    prepared_semantic_value = semantic_value()
     with pytest.raises(ValueError):
-        change(semantic_value(), value)
+        change(prepared_semantic_value, value)
 
 
 @pytest.mark.parametrize(
@@ -745,24 +746,31 @@ def test_volume_unit_changes_revision() -> None:
 
 def test_invalid_caller_time_and_identity_mismatch_propagate() -> None:
     parsed = parsed_candle()
+    prepared_raw_record = raw_record()
+    prepared_instrument = instrument()
     with pytest.raises(TypeError, match="integer"):
         normalize_parsed_candle(
-            raw_record(), parsed, instrument(), normalized_at_ns=True
+            prepared_raw_record, parsed, prepared_instrument, normalized_at_ns=True
         )
+    prepared_raw_record_2 = raw_record()
+    prepared_instrument_2 = instrument(
+        identity=InstrumentId("fake-venue", "spot", "ETH-USDT")
+    )
     with pytest.raises(ValueError, match="identity"):
         normalize_parsed_candle(
-            raw_record(),
-            parsed,
-            instrument(identity=InstrumentId("fake-venue", "spot", "ETH-USDT")),
-            normalized_at_ns=1,
+            prepared_raw_record_2, parsed, prepared_instrument_2, normalized_at_ns=1
         )
 
 
 def test_invalid_parsed_field_type_propagates() -> None:
     parsed = replace(parsed_candle(), open="100.1")  # type: ignore[arg-type]
 
+    prepared_raw_record = raw_record()
+    prepared_instrument = instrument()
     with pytest.raises(TypeError, match="Decimal"):
-        normalize_parsed_candle(raw_record(), parsed, instrument(), normalized_at_ns=1)
+        normalize_parsed_candle(
+            prepared_raw_record, parsed, prepared_instrument, normalized_at_ns=1
+        )
 
 
 def test_supported_domain_failure_becomes_provenanced_rejection() -> None:
@@ -792,10 +800,12 @@ def test_normalization_wrapper_rejects_semantic_mismatch() -> None:
     )
     assert isinstance(result, CandleNormalization)
 
+    prepared_candle = replace(result.candle, revision="sha256:" + "0" * 64)
     with pytest.raises(ValueError, match="semantic"):
-        replace(result, candle=replace(result.candle, revision="sha256:" + "0" * 64))
+        replace(result, candle=prepared_candle)
+    prepared_candle_2 = replace(result.candle, volume_unit="USDT")
     with pytest.raises(ValueError, match="semantic"):
-        replace(result, candle=replace(result.candle, volume_unit="USDT"))
+        replace(result, candle=prepared_candle_2)
 
 
 def test_rejection_validates_digest_version_and_instrument_provenance() -> None:
@@ -805,7 +815,8 @@ def test_rejection_validates_digest_version_and_instrument_provenance() -> None:
         replace(result, raw_sha256="not-a-digest")
     with pytest.raises(ValueError):
         replace(result, normalizer_version="f06.fake_candle.v2")
+    prepared_instrument_schema = instrument().schema
     with pytest.raises(ValueError):
-        replace(result, instrument_schema=instrument().schema)
+        replace(result, instrument_schema=prepared_instrument_schema)
     with pytest.raises(ValueError):
         replace(result, instrument_revision="instrument-r1")

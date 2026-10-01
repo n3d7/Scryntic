@@ -30,7 +30,8 @@ def test_existing_object_prefix_parent_is_synced_on_install_retry(
     with pytest.raises(OSError):
         storage.install_staging(staging, object_hash)
     target = storage.object_path(object_hash)
-    assert target.parent.is_dir() and not target.exists()
+    assert target.parent.is_dir()
+    assert not target.exists()
     synced: list[Path] = []
     actual = ImmutableArchiveStorage._fsync_directory
 

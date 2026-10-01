@@ -23,14 +23,21 @@ from scryntic.domain.identity import (
 from scryntic.domain.raw import IngestionId, RawEnvelope, RawRecord
 from scryntic.domain.time import ClockSample, SourceTime, TimeQuality, TimeUnit
 
+_FORMAT_KEY = b"scryntic.format"
+_VERSION_KEY = b"scryntic.version"
+_CODEC_KEY = b"scryntic.codec"
+_RECORD_COUNT_KEY = b"scryntic.record_count"
+_LOGICAL_BYTES_KEY = b"scryntic.logical_decoded_bytes"
+_LIMITS_EXCEEDED = "Archive limits exceeded"
+
 _BATCH_ROWS = 1024
 _METADATA_KEYS = frozenset(
     {
-        b"scryntic.format",
-        b"scryntic.version",
-        b"scryntic.codec",
-        b"scryntic.record_count",
-        b"scryntic.logical_decoded_bytes",
+        _FORMAT_KEY,
+        _VERSION_KEY,
+        _CODEC_KEY,
+        _RECORD_COUNT_KEY,
+        _LOGICAL_BYTES_KEY,
     }
 )
 
@@ -69,11 +76,11 @@ def _schema(record_count: int, logical_bytes: int) -> pa.Schema:
             pa.field("content_sha256", pa.string(), nullable=False),
         ],
         metadata={
-            b"scryntic.format": RAW_PARQUET_SCHEMA.name.encode("ascii"),
-            b"scryntic.version": b"1.0",
-            b"scryntic.codec": PARQUET_CODEC.encode("ascii"),
-            b"scryntic.record_count": str(record_count).encode("ascii"),
-            b"scryntic.logical_decoded_bytes": str(logical_bytes).encode("ascii"),
+            _FORMAT_KEY: RAW_PARQUET_SCHEMA.name.encode("ascii"),
+            _VERSION_KEY: b"1.0",
+            _CODEC_KEY: PARQUET_CODEC.encode("ascii"),
+            _RECORD_COUNT_KEY: str(record_count).encode("ascii"),
+            _LOGICAL_BYTES_KEY: str(logical_bytes).encode("ascii"),
         },
     )
 
@@ -259,7 +266,7 @@ class ParquetRawArchive:
             if type(records) is not tuple or not records:
                 raise ArchiveError("Archive records must be non-empty")
             if len(records) > limits.max_records:
-                raise ArchiveError("Archive limits exceeded")
+                raise ArchiveError(_LIMITS_EXCEEDED)
             producer = records[0].identity.producer
             previous = 0
             logical_bytes = 0
@@ -275,7 +282,7 @@ class ParquetRawArchive:
                     canonical_json_bytes({"raw": raw_projection(record)})
                 )
                 if logical_bytes > limits.max_decoded_bytes:
-                    raise ArchiveError("Archive limits exceeded")
+                    raise ArchiveError(_LIMITS_EXCEEDED)
             schema = _schema(len(records), logical_bytes)
             table = pa.Table.from_pylist(
                 [_row(record) for record in records], schema=schema
@@ -294,7 +301,7 @@ class ParquetRawArchive:
                 )
                 encoded_bytes, object_sha256 = self._storage.prepare_staging(staging)
                 if encoded_bytes > limits.max_encoded_bytes:
-                    raise ArchiveError("Archive limits exceeded")
+                    raise ArchiveError(_LIMITS_EXCEEDED)
                 decoded = self._read_all(staging, object_sha256, limits)
                 if decoded != records:
                     raise ArchiveError("Raw archive validation mismatch")
@@ -346,71 +353,76 @@ class ParquetRawArchive:
         return decode_raw_path(path, expected_sha256, limits, self._owner_uid)
 
 
+def _validate_raw_file(path: Path, limits: ArchiveLimits, owner_uid: int) -> None:
+    fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    try:
+        info = os.fstat(fd)
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_uid != owner_uid
+            or stat.S_IMODE(info.st_mode) != 0o400
+        ):
+            raise ArchiveError("Unsafe raw archive object")
+        if info.st_size > limits.max_encoded_bytes:
+            raise ArchiveError(_LIMITS_EXCEEDED)
+        if info.st_size < 12:
+            raise ArchiveError("Invalid raw archive footer")
+        trailer = os.pread(fd, 8, info.st_size - 8)
+        footer_length = int.from_bytes(trailer[:4], "little")
+        if trailer[4:] != b"PAR1" or footer_length > info.st_size - 12:
+            raise ArchiveError("Invalid raw archive footer")
+    finally:
+        os.close(fd)
+
+
+def _validate_raw_columns(row_group: pq.RowGroupMetaData, encoded_size: int) -> None:
+    for index in range(row_group.num_columns):
+        column = row_group.column(index)
+        if (
+            column.compression != "UNCOMPRESSED"
+            or column.total_compressed_size < 0
+            or column.total_uncompressed_size < 0
+            or "RLE_DICTIONARY" in column.encodings
+            or column.total_compressed_size > encoded_size
+        ):
+            raise ArchiveError("Invalid raw archive encoding")
+
+
+def _validate_raw_metadata(
+    parquet: pq.ParquetFile, path: Path, limits: ArchiveLimits
+) -> tuple[int, int]:
+    metadata = parquet.metadata
+    schema_metadata = parquet.schema_arrow.metadata or {}
+    if frozenset(schema_metadata) != _METADATA_KEYS:
+        raise ArchiveError("Invalid raw archive schema")
+    record_count = _canonical_decimal_metadata(schema_metadata.get(_RECORD_COUNT_KEY))
+    logical_bytes = _canonical_decimal_metadata(schema_metadata.get(_LOGICAL_BYTES_KEY))
+    if record_count > limits.max_records or logical_bytes > limits.max_decoded_bytes:
+        raise ArchiveError(_LIMITS_EXCEEDED)
+    if (
+        schema_metadata.get(_FORMAT_KEY) != RAW_PARQUET_SCHEMA.name.encode("ascii")
+        or schema_metadata.get(_VERSION_KEY) != b"1.0"
+        or schema_metadata.get(_CODEC_KEY) != PARQUET_CODEC.encode("ascii")
+        or not parquet.schema_arrow.equals(
+            _schema(record_count, logical_bytes), check_metadata=True
+        )
+        or metadata.num_row_groups != 1
+        or metadata.num_rows != record_count
+    ):
+        raise ArchiveError("Invalid raw archive schema")
+    _validate_raw_columns(metadata.row_group(0), path.stat().st_size)
+    return record_count, logical_bytes
+
+
 def decode_raw_path(
     path: Path, expected_sha256: str, limits: ArchiveLimits, owner_uid: int
 ) -> tuple[RawRecord, ...]:
     try:
-        fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
-        try:
-            info = os.fstat(fd)
-            if (
-                not stat.S_ISREG(info.st_mode)
-                or info.st_uid != owner_uid
-                or stat.S_IMODE(info.st_mode) != 0o400
-            ):
-                raise ArchiveError("Unsafe raw archive object")
-            if info.st_size > limits.max_encoded_bytes:
-                raise ArchiveError("Archive limits exceeded")
-            if info.st_size < 12:
-                raise ArchiveError("Invalid raw archive footer")
-            trailer = os.pread(fd, 8, info.st_size - 8)
-            footer_length = int.from_bytes(trailer[:4], "little")
-            if trailer[4:] != b"PAR1" or footer_length > info.st_size - 12:
-                raise ArchiveError("Invalid raw archive footer")
-        finally:
-            os.close(fd)
+        _validate_raw_file(path, limits, owner_uid)
         if file_sha256(path, owner_uid) != expected_sha256:
             raise ArchiveError("Archive object hash mismatch")
         parquet = pq.ParquetFile(path, memory_map=False, pre_buffer=False)
-        metadata = parquet.metadata
-        schema_metadata = parquet.schema_arrow.metadata or {}
-        if frozenset(schema_metadata) != _METADATA_KEYS:
-            raise ArchiveError("Invalid raw archive schema")
-        record_count = _canonical_decimal_metadata(
-            schema_metadata.get(b"scryntic.record_count")
-        )
-        logical_bytes = _canonical_decimal_metadata(
-            schema_metadata.get(b"scryntic.logical_decoded_bytes")
-        )
-        if (
-            record_count > limits.max_records
-            or logical_bytes > limits.max_decoded_bytes
-        ):
-            raise ArchiveError("Archive limits exceeded")
-        if (
-            schema_metadata.get(b"scryntic.format")
-            != RAW_PARQUET_SCHEMA.name.encode("ascii")
-            or schema_metadata.get(b"scryntic.version") != b"1.0"
-            or schema_metadata.get(b"scryntic.codec") != PARQUET_CODEC.encode("ascii")
-            or not parquet.schema_arrow.equals(
-                _schema(record_count, logical_bytes), check_metadata=True
-            )
-            or metadata.num_row_groups != 1
-            or metadata.num_rows != record_count
-        ):
-            raise ArchiveError("Invalid raw archive schema")
-        row_group = metadata.row_group(0)
-        encoded_size = path.stat().st_size
-        for index in range(row_group.num_columns):
-            column = row_group.column(index)
-            if (
-                column.compression != "UNCOMPRESSED"
-                or column.total_compressed_size < 0
-                or column.total_uncompressed_size < 0
-                or "RLE_DICTIONARY" in column.encodings
-                or column.total_compressed_size > encoded_size
-            ):
-                raise ArchiveError("Invalid raw archive encoding")
+        record_count, logical_bytes = _validate_raw_metadata(parquet, path, limits)
         rows: list[RawRecord] = []
         observed_logical = 0
         for batch in parquet.iter_batches(
@@ -418,11 +430,11 @@ def decode_raw_path(
         ):
             for stored in batch.to_pylist():
                 if len(rows) >= limits.max_records:
-                    raise ArchiveError("Archive limits exceeded")
+                    raise ArchiveError(_LIMITS_EXCEEDED)
                 record = _decode_row(stored, limits.max_decoded_bytes)
                 size = len(canonical_json_bytes({"raw": raw_projection(record)}))
                 if observed_logical + size > limits.max_decoded_bytes:
-                    raise ArchiveError("Archive limits exceeded")
+                    raise ArchiveError(_LIMITS_EXCEEDED)
                 observed_logical += size
                 rows.append(record)
         if len(rows) != record_count or observed_logical != logical_bytes:

@@ -195,8 +195,9 @@ def test_process_requires_exact_predecessor_and_increasing_producer_offsets(
                     later.identity, offset={"same": 3, "lower": 2, "zero": 0}[invalid]
                 ),
             )
+        prepared_normalization = normalization(later)
         with pytest.raises(NormalizationError):
-            store.process(later, normalization(later), expected_predecessor=expected)
+            store.process(later, prepared_normalization, expected_predecessor=expected)
         assert store.checkpoint() == first.identity
         assert store.outcome(later.identity) is None
 
@@ -363,12 +364,13 @@ def test_process_rejects_stored_semantic_revision_value_mismatch_after_reopen(
     ) as db:
         db.execute(f"UPDATE candle_observations SET {change}")
     with NormalizationStore(target, producer="collector-a") as store:
+        prepared_normalization = normalization(later)
         with pytest.raises(
             NormalizationError,
             match="^Stored semantic revision does not match computed values$",
         ):
             store.process(
-                later, normalization(later), expected_predecessor=first.identity
+                later, prepared_normalization, expected_predecessor=first.identity
             )
         assert store.checkpoint() == first.identity
         assert store.outcome(later.identity) is None
@@ -553,9 +555,10 @@ def test_process_deletes_only_the_matching_barrier_atomically(
             assert store.barrier() is None
             assert store.checkpoint() == record.identity
         else:
+            prepared_normalization = normalization(record)
             with pytest.raises(NormalizationError, match="barrier"):
                 store.process(
-                    record, normalization(record), expected_predecessor=first.identity
+                    record, prepared_normalization, expected_predecessor=first.identity
                 )
             assert store.barrier() == barrier
             assert store.checkpoint() == first.identity
@@ -991,7 +994,8 @@ def test_decodes_populated_state_and_returns_owned_frozen_values(
         assert barrier.predecessor == accepted.identity
         assert barrier.reason is BarrierReason.UNSUPPORTED_SCHEMA
         assert barrier.raw_sha256 == "b" * 64
-        assert barrier.schema is not None and barrier.schema.version.major == 2
+        assert barrier.schema is not None
+        assert barrier.schema.version.major == 2
         assert barrier.instrument is None
         assert store.status().barrier == barrier
     assert observation.canonical_bytes() == _SEMANTIC_BYTES
@@ -1048,10 +1052,11 @@ def test_outcome_wraps_sqlite_fetch_errors_without_echoing_stored_values(
             )
             assert db.execute("PRAGMA quick_check(1)").fetchall() == [("ok",)]
             assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+        prepared_ingestion_id = IngestionId("collector-a", "epoch-a", 2)
         with pytest.raises(
             NormalizationError, match="^Unable to read normalization state$"
         ) as error:
-            store.outcome(IngestionId("collector-a", "epoch-a", 2))
+            store.outcome(prepared_ingestion_id)
         assert "secret" not in str(error.value)
 
 

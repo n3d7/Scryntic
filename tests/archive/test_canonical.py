@@ -219,12 +219,10 @@ def test_input_requires_semantics_exactly_for_non_rejected_outcomes() -> None:
 
     with pytest.raises(ValueError, match="semantics"):
         PublicationInput(accepted.raw, accepted.outcome, None)
+    rejected_raw = _rejected_vector().raw
+    rejected_outcome = _rejected_vector().outcome
     with pytest.raises(ValueError, match="semantics"):
-        PublicationInput(
-            _rejected_vector().raw,
-            _rejected_vector().outcome,
-            accepted.semantics,
-        )
+        PublicationInput(rejected_raw, rejected_outcome, accepted.semantics)
 
 
 def test_ordered_digest_requires_strictly_increasing_offsets() -> None:

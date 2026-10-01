@@ -33,10 +33,12 @@ def test_clock_steps_invalidate_epoch_until_a_post_step_measurement(step: int) -
     host.advance(10, step=step)
     stepped = monitor.sample()
     assert stepped.quality.status == "degraded"
-    assert monitor.health is not None and monitor.health.reason == "clock_step"
+    assert monitor.health is not None
+    assert monitor.health.reason == "clock_step"
     assert stepped.quality.epoch != previous.quality.epoch
     assert not monitor.finality_ready(0)
-    assert monitor.health is not None and monitor.health.reason == "awaiting_refresh"
+    assert monitor.health is not None
+    assert monitor.health.reason == "awaiting_refresh"
     host.advance(50)
     status.value = SyncEvidence(host.value.wall_time_ns, 0, 5, True)
     recovered = monitor.sample()
@@ -63,7 +65,8 @@ def test_unusable_evidence_never_grants_timing_authority(
     status.value = evidence
     sample = monitor.sample()
     assert sample.quality.status == want
-    assert monitor.health is not None and monitor.health.reason == reason
+    assert monitor.health is not None
+    assert monitor.health.reason == reason
     assert sample.quality.epoch != old.quality.epoch
     assert not monitor.finality_ready(0)
     if reason == "reference_regression":
@@ -78,7 +81,8 @@ def test_evidence_becomes_stale_even_when_daemon_keeps_reporting_synchronized() 
     host, _, monitor = healthy_monitor()
     host.advance(86)
     assert monitor.sample().quality.status == "unknown"
-    assert monitor.health is not None and monitor.health.reason == "stale_evidence"
+    assert monitor.health is not None
+    assert monitor.health.reason == "stale_evidence"
 
 
 def test_regressing_source_measurement_invalidates_timing_epoch() -> None:
@@ -88,9 +92,8 @@ def test_regressing_source_measurement_invalidates_timing_epoch() -> None:
     regressed = monitor.sample()
     assert regressed.quality.status == "unknown"
     assert regressed.quality.epoch != old.quality.epoch
-    assert (
-        monitor.health is not None and monitor.health.reason == "reference_regression"
-    )
+    assert monitor.health is not None
+    assert monitor.health.reason == "reference_regression"
     host.advance(1)
     status.value = SyncEvidence(host.value.wall_time_ns, 0, 5, True)
     assert monitor.sample().quality.status == "healthy"
@@ -103,7 +106,8 @@ def test_suspend_requires_refresh_even_with_small_wall_step_budget(
     host, status, monitor = healthy_monitor()
     host.advance(10, suspend=suspend)
     assert monitor.sample().quality.status == "degraded"
-    assert monitor.health is not None and monitor.health.reason == "suspend"
+    assert monitor.health is not None
+    assert monitor.health.reason == "suspend"
     assert monitor.sample().quality.status == "unknown"
     host.advance(1)
     status.value = SyncEvidence(host.value.wall_time_ns, 0, 5, True)
@@ -126,7 +130,8 @@ def test_large_sampling_gap_invalidates_continuity() -> None:
     host.advance(201)
     status.value = SyncEvidence(host.value.wall_time_ns, 0, 5, True)
     assert monitor.sample().quality.status == "degraded"
-    assert monitor.health is not None and monitor.health.reason == "sampling_gap"
+    assert monitor.health is not None
+    assert monitor.health.reason == "sampling_gap"
     assert monitor.sample().quality.status == "unknown"
     host.advance(1)
     status.value = SyncEvidence(host.value.wall_time_ns, 0, 5, True)
@@ -149,9 +154,8 @@ def test_session_change_and_monotonic_regression_cannot_reuse_old_evidence() -> 
     assert monitor.sample().quality.status == "healthy"
     host.value = replace(host.value, monotonic_ns=0)
     assert monitor.sample().quality.status == "degraded"
-    assert (
-        monitor.health is not None and monitor.health.reason == "monotonic_regression"
-    )
+    assert monitor.health is not None
+    assert monitor.health.reason == "monotonic_regression"
 
 
 def test_process_restart_has_unique_epochs_and_warms_up() -> None:
@@ -179,10 +183,8 @@ def test_extreme_holdover_evidence_stays_persistable_unknown() -> None:
     sample = monitor.sample()
     assert sample.quality.status == "unknown"
     assert sample.quality.uncertainty_ns is None
-    assert (
-        monitor.health is not None
-        and monitor.health.reason == "unrepresentable_evidence"
-    )
+    assert monitor.health is not None
+    assert monitor.health.reason == "unrepresentable_evidence"
 
 
 def test_step_during_status_query_is_detected() -> None:
@@ -195,7 +197,8 @@ def test_step_during_status_query_is_detected() -> None:
 
     querying = ClockMonitor(host, StepStatus(), LIMITS)
     assert querying.sample().quality.status == "degraded"
-    assert querying.health is not None and querying.health.reason == "clock_step"
+    assert querying.health is not None
+    assert querying.health.reason == "clock_step"
     assert monitor.sample().quality.status == "degraded"
 
 
@@ -207,7 +210,8 @@ def test_quality_transitions_emit_sanitized_status(
     status.value = None
     monitor.sample()
     assert "missing_evidence" in caplog.text
-    assert "healthy" in caplog.text and "unknown" in caplog.text
+    assert "healthy" in caplog.text
+    assert "unknown" in caplog.text
 
 
 def test_durable_capture_preserves_unhealthy_clock_evidence_after_restart(

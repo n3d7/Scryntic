@@ -86,14 +86,13 @@ def test_strict_snapshot_defers_when_uncertainty_overlaps_cutoff(
         tmp_path, (receipt(base + 4), receipt(base + 5))
     )
     try:
+        prepared_build_dataset_request = BuildDatasetRequest(
+            (manifest,),
+            AS_OBSERVED_CANDLE_RECIPE_SCHEMA,
+            as_observed_cutoff=receipt(base + 9),
+        )
         with pytest.raises(DatasetBuildError) as error:
-            builder.build(
-                BuildDatasetRequest(
-                    (manifest,),
-                    AS_OBSERVED_CANDLE_RECIPE_SCHEMA,
-                    as_observed_cutoff=receipt(base + 9),
-                )
-            )
+            builder.build(prepared_build_dataset_request)
         assert isinstance(error.value.__cause__, SelectionError)
     finally:
         bundle.close()

@@ -128,8 +128,9 @@ def test_manifest_enforces_chain_epoch_and_global_checkpoint_rules() -> None:
         after_offset=11,
     )
     assert parse_manifest(prepare_manifest(epoch_b), 100_000).body == epoch_b
+    prepared_checkpoint_after = IngestionId("producer-a", "epoch-a", 6)
     with pytest.raises((TypeError, ValueError)):
-        replace(continued, checkpoint_after=IngestionId("producer-a", "epoch-a", 6))
+        replace(continued, checkpoint_after=prepared_checkpoint_after)
 
 
 def test_storage_installs_exact_bytes_without_replacement(tmp_path: Path) -> None:
@@ -205,13 +206,14 @@ def test_manifest_initial_directories_are_parent_synced(
 @pytest.mark.parametrize("change", ["after_epoch", "overlap"])
 def test_manifest_rejects_inconsistent_global_input_coverage(change: str) -> None:
     value = body(before=IngestionId("producer-a", "epoch-a", 3))
-    with pytest.raises(ValueError):
-        if change == "after_epoch":
-            replace(
-                value, checkpoint_after=replace(value.checkpoint_after, epoch="epoch-b")
-            )
-        else:
-            replace(value, first_ingestion=IngestionId("producer-a", "epoch-a", 2))
+    if change == "after_epoch":
+        changed_checkpoint = replace(value.checkpoint_after, epoch="epoch-b")
+        with pytest.raises(ValueError):
+            replace(value, checkpoint_after=changed_checkpoint)
+    else:
+        first_ingestion = IngestionId("producer-a", "epoch-a", 2)
+        with pytest.raises(ValueError):
+            replace(value, first_ingestion=first_ingestion)
 
 
 def test_two_publishers_cannot_install_different_bytes_at_one_slot(

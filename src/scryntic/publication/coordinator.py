@@ -47,6 +47,9 @@ from scryntic.publication.sqlite_store import (
     PublicationStore,
 )
 
+_INVALID_NORMALIZATION_RESULT = "Invalid normalization reader result"
+_RESERVATION_EVIDENCE_CHANGED = "Publication reservation evidence changed"
+
 
 class NormalizationReader(Protocol):
     def outcome(self, identity: IngestionId) -> ProcessingOutcome | None: ...
@@ -152,11 +155,11 @@ class PublicationCoordinator:
         if outcome is None:
             return None
         if not isinstance(outcome, ProcessingOutcome):
-            raise PublicationError("Invalid normalization reader result")
+            raise PublicationError(_INVALID_NORMALIZATION_RESULT)
         semantics: CandleSemantics | None = None
         if outcome.kind is not OutcomeKind.REJECTED:
             if outcome.semantic_revision is None:
-                raise PublicationError("Invalid normalization reader result")
+                raise PublicationError(_INVALID_NORMALIZATION_RESULT)
             try:
                 semantics = self._normalization_reader.observation(
                     outcome.semantic_revision
@@ -166,11 +169,11 @@ class PublicationCoordinator:
                     "Unable to read normalization observation"
                 ) from None
             if not isinstance(semantics, CandleSemantics):
-                raise PublicationError("Invalid normalization reader result")
+                raise PublicationError(_INVALID_NORMALIZATION_RESULT)
         try:
             return PublicationInput(record, outcome, semantics)
         except (TypeError, ValueError):
-            raise PublicationError("Invalid normalization reader result") from None
+            raise PublicationError(_INVALID_NORMALIZATION_RESULT) from None
 
     @staticmethod
     def _partition(record: RawRecord) -> Partition:
@@ -188,9 +191,7 @@ class PublicationCoordinator:
             len(
                 canonical_json_bytes(
                     {
-                        "outcome": normalized_projection(
-                            value.outcome, value.semantics
-                        ),
+                        "outcome": normalized_projection(value.outcome),
                         "semantics": semantics_projection(value.semantics),
                     }
                 )
@@ -275,7 +276,7 @@ class PublicationCoordinator:
         if tuple(record.identity for record in records) != tuple(
             identity for identity, _ in reservation.inputs
         ):
-            raise PublicationError("Publication reservation evidence changed")
+            raise PublicationError(_RESERVATION_EVIDENCE_CHANGED)
         values: list[PublicationInput] = []
         for record, (_, expected_fingerprint) in zip(
             records, reservation.inputs, strict=True
@@ -283,11 +284,9 @@ class PublicationCoordinator:
             try:
                 value = self._publication_input(record)
             except PublicationError:
-                raise PublicationError(
-                    "Publication reservation evidence changed"
-                ) from None
+                raise PublicationError(_RESERVATION_EVIDENCE_CHANGED) from None
             if value is None or input_fingerprint(value) != expected_fingerprint:
-                raise PublicationError("Publication reservation evidence changed")
+                raise PublicationError(_RESERVATION_EVIDENCE_CHANGED)
             values.append(value)
         return tuple(values)
 

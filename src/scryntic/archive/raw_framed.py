@@ -13,7 +13,7 @@ import zlib
 from collections.abc import Iterator
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, cast
+from typing import BinaryIO, Literal, cast
 
 from scryntic.application.archive import ArchiveLimits, RawRecordRef, RawSegment
 from scryntic.archive.canonical import canonical_json_bytes, raw_projection
@@ -24,11 +24,35 @@ from scryntic.domain.identity import EntityId, InstrumentId, SchemaRef, Version
 from scryntic.domain.raw import IngestionId, RawEnvelope, RawRecord
 from scryntic.domain.time import ClockSample, SourceTime, TimeQuality, TimeUnit
 
+_LIMITS_EXCEEDED = "Archive limits exceeded"
+
 FRAMED_CODEC = "framed-zlib-v1"
 RAW_FRAMED_SCHEMA = SchemaRef("scryntic.raw-record.framed", Version(1, 0))
 _MAGIC = b"SCRAWZ1\n"
 _HEADER = struct.Struct(">8sQQ")
 _FRAME = struct.Struct(">II")
+
+
+def _read_frame(
+    stream: BinaryIO, remaining_bytes: int, encoded_bytes: int, payload_limit: int
+) -> tuple[RawRecord, int]:
+    decoded_size, encoded_size = _FRAME.unpack(stream.read(_FRAME.size))
+    if (
+        not 0 < decoded_size <= remaining_bytes
+        or not 0 < encoded_size <= encoded_bytes - stream.tell()
+    ):
+        raise ArchiveError("Invalid raw frame length")
+    compressed = stream.read(encoded_size)
+    decoder = zlib.decompressobj()
+    data = decoder.decompress(compressed, decoded_size + 1)
+    if (
+        len(data) != decoded_size
+        or not decoder.eof
+        or decoder.unused_data
+        or decoder.unconsumed_tail
+    ):
+        raise ArchiveError("Invalid bounded raw frame")
+    return _decode(data, payload_limit), decoded_size
 
 
 def _object(value: object) -> dict[str, object]:
@@ -146,7 +170,7 @@ class FramedZlibRawArchive:
                 or not records
                 or len(records) > limits.max_records
             ):
-                raise ArchiveError("Archive limits exceeded")
+                raise ArchiveError(_LIMITS_EXCEEDED)
             logical = 0
             previous = 0
             producer = records[0].identity.producer
@@ -159,7 +183,7 @@ class FramedZlibRawArchive:
                 previous = record.identity.offset
                 logical += len(canonical_json_bytes({"raw": raw_projection(record)}))
                 if logical > limits.max_decoded_bytes:
-                    raise ArchiveError("Archive limits exceeded")
+                    raise ArchiveError(_LIMITS_EXCEEDED)
             staging = self._storage.create_staging("raw-framed")
             try:
                 with staging.open("wb") as stream:
@@ -171,12 +195,12 @@ class FramedZlibRawArchive:
                             stream.tell() + _FRAME.size + len(compressed)
                             > limits.max_encoded_bytes
                         ):
-                            raise ArchiveError("Archive limits exceeded")
+                            raise ArchiveError(_LIMITS_EXCEEDED)
                         stream.write(_FRAME.pack(len(data), len(compressed)))
                         stream.write(compressed)
                 encoded, object_hash = self._storage.prepare_staging(staging)
                 if encoded > limits.max_encoded_bytes:
-                    raise ArchiveError("Archive limits exceeded")
+                    raise ArchiveError(_LIMITS_EXCEEDED)
                 if self._read_all(staging, object_hash, limits) != records:
                     raise ArchiveError("Raw archive validation mismatch")
                 target = self._storage.install_staging(staging, object_hash)
@@ -227,23 +251,9 @@ class FramedZlibRawArchive:
             previous = 0
             producer = None
             for _ in range(count):
-                decoded_size, encoded_size = _FRAME.unpack(stream.read(_FRAME.size))
-                if (
-                    not 0 < decoded_size <= logical - observed
-                    or not 0 < encoded_size <= info.st_size - stream.tell()
-                ):
-                    raise ArchiveError("Invalid raw frame length")
-                compressed = stream.read(encoded_size)
-                decoder = zlib.decompressobj()
-                data = decoder.decompress(compressed, decoded_size + 1)
-                if (
-                    len(data) != decoded_size
-                    or not decoder.eof
-                    or decoder.unused_data
-                    or decoder.unconsumed_tail
-                ):
-                    raise ArchiveError("Invalid bounded raw frame")
-                record = _decode(data, limits.max_decoded_bytes)
+                record, decoded_size = _read_frame(
+                    stream, logical - observed, info.st_size, limits.max_decoded_bytes
+                )
                 if producer is None:
                     producer = record.identity.producer
                 if (

@@ -91,6 +91,83 @@ def _recorded_candles(spec: WorkloadSpec) -> tuple[tuple[str, bytes], ...]:
     return tuple(result[: spec.instruments])
 
 
+def _candle_body(
+    timestamp_ms: int, price: float, rng: random.Random
+) -> list[int | str]:
+    return [
+        timestamp_ms,
+        f"{price:.4f}",
+        f"{price + 1:.4f}",
+        f"{price - 1:.4f}",
+        f"{price + 0.2:.4f}",
+        f"{rng.uniform(1, 100):.6f}",
+    ]
+
+
+def _trade_body(
+    spec: WorkloadSpec,
+    rng: random.Random,
+    symbol: str,
+    timestamp_ms: int,
+    price: float,
+    segment: int,
+    index: int,
+) -> dict[str, object]:
+    roll = rng.random()
+    if roll < 0.70:
+        batch_limit = 2
+    elif roll < 0.95:
+        batch_limit = 10
+    else:
+        batch_limit = spec.max_trade_batch
+    upper = min(spec.max_trade_batch, batch_limit)
+    count = rng.randint(1, upper)
+    return {
+        "symbol": symbol,
+        "timestamp_ms": timestamp_ms,
+        "trades": [
+            {
+                "id": segment * 1_000_000_000 + index * 1000 + trade,
+                "price": f"{price + rng.uniform(-0.05, 0.05):.4f}",
+                "quantity": f"{rng.uniform(0.001, 5):.6f}",
+                "side": rng.choice(["buy", "sell"]),
+            }
+            for trade in range(count)
+        ],
+    }
+
+
+def _orderbook_body(
+    spec: WorkloadSpec,
+    rng: random.Random,
+    symbol: str,
+    timestamp_ms: int,
+    price: float,
+    sequence: int,
+) -> dict[str, object]:
+    snapshot = sequence % 100 == 0 or (spec.kind == "mixed" and sequence == 2)
+    levels = spec.levels if snapshot else rng.randint(1, min(8, spec.levels))
+    return {
+        "symbol": symbol,
+        "timestamp_ms": timestamp_ms,
+        "sequence": sequence,
+        "type": "snapshot" if snapshot else "delta",
+        "bids": [
+            [
+                f"{price - (level + 1) * 0.01:.4f}",
+                "0"
+                if not snapshot and rng.random() < 0.1
+                else f"{rng.uniform(0.1, 20):.6f}",
+            ]
+            for level in range(levels)
+        ],
+        "asks": [
+            [f"{price + (level + 1) * 0.01:.4f}", f"{rng.uniform(0.1, 20):.6f}"]
+            for level in range(levels)
+        ],
+    }
+
+
 def build_workload(spec: WorkloadSpec, *, segment: int = 0) -> tuple[RawRecord, ...]:
     """Materialize at most spec.records inputs; each segment has new identities."""
     if type(segment) is not int or not 0 <= segment <= 10_000:
@@ -121,56 +198,11 @@ def build_workload(spec: WorkloadSpec, *, segment: int = 0) -> tuple[RawRecord, 
         if recorded:
             body = None
         elif kind == "candle":
-            body = [
-                timestamp_ms,
-                f"{price:.4f}",
-                f"{price + 1:.4f}",
-                f"{price - 1:.4f}",
-                f"{price + 0.2:.4f}",
-                f"{rng.uniform(1, 100):.6f}",
-            ]
+            body = _candle_body(timestamp_ms, price, rng)
         elif kind == "trade":
-            roll = rng.random()
-            upper = min(
-                spec.max_trade_batch,
-                2 if roll < 0.70 else 10 if roll < 0.95 else spec.max_trade_batch,
-            )
-            count = rng.randint(1, upper)
-            body = {
-                "symbol": symbol,
-                "timestamp_ms": timestamp_ms,
-                "trades": [
-                    {
-                        "id": segment * 1_000_000_000 + index * 1000 + trade,
-                        "price": f"{price + rng.uniform(-0.05, 0.05):.4f}",
-                        "quantity": f"{rng.uniform(0.001, 5):.6f}",
-                        "side": rng.choice(["buy", "sell"]),
-                    }
-                    for trade in range(count)
-                ],
-            }
+            body = _trade_body(spec, rng, symbol, timestamp_ms, price, segment, index)
         else:
-            snapshot = sequence % 100 == 0 or (spec.kind == "mixed" and sequence == 2)
-            levels = spec.levels if snapshot else rng.randint(1, min(8, spec.levels))
-            body = {
-                "symbol": symbol,
-                "timestamp_ms": timestamp_ms,
-                "sequence": sequence,
-                "type": "snapshot" if snapshot else "delta",
-                "bids": [
-                    [
-                        f"{price - (level + 1) * 0.01:.4f}",
-                        "0"
-                        if not snapshot and rng.random() < 0.1
-                        else f"{rng.uniform(0.1, 20):.6f}",
-                    ]
-                    for level in range(levels)
-                ],
-                "asks": [
-                    [f"{price + (level + 1) * 0.01:.4f}", f"{rng.uniform(0.1, 20):.6f}"]
-                    for level in range(levels)
-                ],
-            }
+            body = _orderbook_body(spec, rng, symbol, timestamp_ms, price, sequence)
         payload = (
             recorded[instrument][1]
             if recorded
