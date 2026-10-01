@@ -77,6 +77,7 @@ class ImportCatalog:
         self, installation: Installation, limits: ImportLimits | None = None
     ) -> None:
         self.limits = ImportLimits() if limits is None else limits
+        self._installation = installation
         self._resources = ExitStack()
         self._thread = threading.get_ident()
         self._closed = False
@@ -325,26 +326,21 @@ class ImportCatalog:
                 objects = self._snapshots(parent, document, resources)
                 self._validate(data, objects, resources)
                 if previous is not None:
-                    return self.inspect(document.ref)
-                self._quota(document)
-                for fd, item in zip(objects, document.body.objects, strict=True):
-                    self._install(fd, item.sha256, item.encoded_bytes)
+                    self.inspect(document.ref)
+                if previous is None:
+                    self._quota(document)
+                    for fd, item in zip(objects, document.body.objects, strict=True):
+                        self._install(fd, item.sha256, item.encoded_bytes)
                 self._db.execute("BEGIN IMMEDIATE")
                 try:
-                    self._db.execute(
-                        "INSERT INTO imports VALUES (?, ?, ?, ?, ?, ?)",
-                        (
-                            document.manifest_hash,
-                            document.body.producer,
-                            document.body.epoch,
-                            document.body.sequence,
-                            data,
-                            receipt_bytes,
-                        ),
-                    )
+                    self._register_import(document, data, receipt_bytes)
                     self._db.execute("COMMIT")
                 except BaseException:
-                    self._db.execute("ROLLBACK")
+                    try:
+                        self._db.execute("ROLLBACK")
+                    except BaseException:
+                        self.close()
+                        raise
                     raise
                 row = self._db.execute(
                     "SELECT manifest FROM imports WHERE manifest_hash=?",
@@ -355,6 +351,27 @@ class ImportCatalog:
                 return document.ref
         except Exception:
             raise ImportError("Import rejected") from None
+
+    def _register_import(
+        self, document: ManifestDocument, data: bytes, receipt_bytes: bytes
+    ) -> None:
+        """Trusted local extension point, inside the validated import transaction.
+
+        F17 may couple a compare-and-swap anchor to this registration. This hook
+        receives no remote callback, credential or decoder object. Plain F16
+        acceptance still creates no transport/enrollment trust.
+        """
+        self._db.execute(
+            "INSERT OR IGNORE INTO imports VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                document.manifest_hash,
+                document.body.producer,
+                document.body.epoch,
+                document.body.sequence,
+                data,
+                receipt_bytes,
+            ),
+        )
 
     def inspect(self, reference: ManifestRef) -> ManifestRef:
         self._check()

@@ -18,7 +18,7 @@ dependencies = [
 [dependency-groups]
 # Add dependencies only when their implementation task is approved.
 collector = ["pyarrow==25.0.1"]
-analysis = ["pyarrow==25.0.1"]
+analysis = ["asyncssh==2.24.0", "pyarrow==25.0.1"]
 dev = [
     "coverage==7.16.2",
     "mypy==2.3.1",

@@ -5,7 +5,8 @@
 Scryntic is a Linux/Python market-data and analysis project under development.
 The current implementation includes a deterministic fake-source / fake-provider
 demonstration, local ingestion, normalization, publication, dataset/forecast
-artifacts and F16 restricted hostile imports. It is not the completed Foundation
+artifacts, F16 restricted hostile imports and F17 authenticated resumable pull.
+It is not the completed Foundation
 v1 deployment.
 There are no published GitHub releases or established supported-release/backport
 matrix. Please identify the affected commit and reproduce against current `main`
@@ -37,6 +38,13 @@ locally selected fakes; provider descriptors do not authorize downloaded code,
 real model loading or cloud disclosure. See [CONTRACTS.md](docs/CONTRACTS.md).
 
 ## Implemented controls
+
+- **Authenticated pull:** explicit operator enrollment, exact Ed25519 host pin,
+  isolated transfer key and read-only SFTP operations; bounded opaque staging,
+  retained chain verification and atomic validated-import/anchor acceptance.
+  Anchor backups restore transport trust, never data conformance. Server jail
+  and read-only account enforcement remain operator prerequisites; complete
+  deployment qualification belongs to F27. See [F17 guide](docs/sync/F17_PULL.md).
 
 - **Hostile imports:** bounded sealed snapshots, restricted native decoder and
   independently validated primitive IPC; transactional conformance catalog and
@@ -85,15 +93,14 @@ Hashes and chained manifests detect altered or inconsistent bytes relative to
 retained history. They do not prove market correctness, completeness, truthful
 timestamps or numerical/model accuracy. A compromised producer can append false
 data, withhold data or present another history to a client without prior evidence.
-Current local checks are not authenticated workstation synchronization or an
-independent trust anchor. Immutable/read-only files are not tamper-proof against
+F17's independently enrolled and backed-up accepted anchors constrain later
+history, but do not remove these producer limitations. Immutable/read-only files are not tamper-proof against
 their owner, and retained metadata cannot reconstruct missing objects.
 
 ## Important limits and unfinished controls
 
-Authenticated workstation
-synchronization and retained trust anchors (F17), real-model admission/worker
-isolation (F20–F21), and least-privilege deployment profiles (F27) are not current
+Real-model admission/worker
+isolation (F20–F21) and least-privilege deployment profiles (F27) are not current
 guarantees. Configuration switches do not implement these services. F16 imports
 use the restricted boundary in [IMPORTS.md](docs/IMPORTS.md). Trusted collector-side
 Parquet readers still run in-process and must not be used as an import API.

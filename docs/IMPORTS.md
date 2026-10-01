@@ -2,7 +2,9 @@
 
 `ImportCatalog` owns conformance admission and opaque local storage. It does not
 enroll a server, authenticate transport, manage chain anchors or decide whether
-market data is true. Those responsibilities remain in F17 and later consumers.
+market data is true. F17's separate explicit transport/enrollment trust and
+resumable pull contract is documented in [F17_PULL.md](sync/F17_PULL.md);
+market-data truth remains a consumer concern.
 The collector's F11 readers are trusted local-publication readers, not import APIs.
 
 ## Workstation service and provisioning

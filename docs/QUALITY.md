@@ -9,7 +9,8 @@ F16 additionally requires operator-provisioned Bubblewrap/libseccomp and availab
 unprivileged Linux namespaces. `scripts/check_import_boundary.py` explicitly
 qualifies the fixed parser profile; unavailable controls fail instead of skipping
 tests. CI provisions these mechanisms on an ephemeral Ubuntu runner. The `analysis`
-profile includes pinned PyArrow for restricted workstation decoding; the base
+profile includes pinned PyArrow for restricted workstation decoding and AsyncSSH
+2.24.0 for F17 read-only SFTP; the base
 profile remains free of native archive decoders. See [IMPORTS.md](IMPORTS.md).
 
 ```sh
@@ -28,7 +29,8 @@ selection, not a bit-identical operating-system image.
 `scripts/check.sh` stops at the first failure:
 
 1. `uv lock --check` rejects stale metadata; `uv sync --locked` installs only the
-   explicitly selected development group. Neither command repairs the lock.
+   explicitly selected dev, collector and analysis groups for the complete test
+   suite. Neither command repairs the lock.
 2. Ruff checks lint and formatting without changing files. Rules cover Python
    errors, imports, supported syntax and common bug patterns.
 3. mypy checks owned source, tests and Python gate scripts in strict mode, with
@@ -69,6 +71,16 @@ All new tools and their transitive dependencies live in the `dev` group.
 Collector/analysis/shared runtime requirements remain empty at F02. Installation
 checks reject development tools in runtime environments and model libraries in
 base/collector. Keep future optional model dependencies out of those profiles.
+
+F17 adds AsyncSSH **2.24.0** only to `analysis`; packaging rejects it in base
+and collector installs. Its declared license is `EPL-2.0 OR GPL-2.0-or-later`;
+redistribution uses the EPL-2.0 option and retains its notices. The reviewed
+PyPI closure adds cryptography **50.0.2** (`Apache-2.0 OR BSD-3-Clause`),
+cffi **2.1.1** (`MIT-0`) and pycparser **3.0** (`BSD-3-Clause`). Cryptography
+and cffi contain native code. These libraries implement workstation transport,
+never the restricted archive decoder or collector role. Pin/hash/audit checks
+do not establish SSH or filesystem isolation. The adapter's bounded SFTP reader
+depends on the inspected 2.24.0 factory API; upgrades require its protocol tests.
 
 | Direct development requirement | Purpose | Declared license / origin |
 | --- | --- | --- |
