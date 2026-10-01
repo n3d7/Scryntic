@@ -167,8 +167,9 @@ def test_unsafe_credentials_fail(installation: Installation, mode: int) -> None:
     path = installation.credential_dir / "token"
     path.write_text(SENTINEL)
     path.chmod(mode)
+    prepared_credentials = credentials(installation)
     with pytest.raises(BoundaryError) as error:
-        credentials(installation).open()
+        prepared_credentials.open()
     assert SENTINEL not in str(error.value)
 
 
@@ -209,10 +210,9 @@ def test_path_ownership_and_substitution_fail(installation: Installation) -> Non
     installation.state_dir.symlink_to(original)
     with pytest.raises(BoundaryError):
         load_configuration(installation)
+    hostile_installation = dataclasses.replace(installation, owner_uid=os.geteuid() + 1)
     with pytest.raises(BoundaryError):
-        validate_directories(
-            dataclasses.replace(installation, owner_uid=os.geteuid() + 1)
-        )
+        validate_directories(hostile_installation)
 
 
 def test_xdg_and_service_reference_layout(tmp_path: Path) -> None:
@@ -340,8 +340,9 @@ def test_credential_path_and_size_attacks_fail(
         path.write_bytes(b"")
     else:
         path.write_bytes(b"x" * 65537)
+    prepared_credentials = credentials(installation)
     with pytest.raises(BoundaryError) as error:
-        credentials(installation).open()
+        prepared_credentials.open()
     assert error.value.__context__ is None
     assert SENTINEL not in str(error.value)
 
@@ -365,10 +366,12 @@ def test_file_replacement_during_read_is_rejected(
         return original_read(fd, count)
 
     monkeypatch.setattr(os, "read", replace_then_read)
+    prepared_credentials = credentials(installation)
     with pytest.raises(BoundaryError):
-        credentials(installation).open()
+        prepared_credentials.open()
+    prepared_credentials_2 = credentials(installation)
     with pytest.raises(BoundaryError):
-        credentials(installation).open()
+        prepared_credentials_2.open()
 
 
 def test_credential_change_during_read_is_rejected(
@@ -385,8 +388,9 @@ def test_credential_change_during_read_is_rejected(
         return original_read(fd, count)
 
     monkeypatch.setattr(os, "read", change_then_read)
+    prepared_credentials = credentials(installation)
     with pytest.raises(BoundaryError):
-        credentials(installation).open()
+        prepared_credentials.open()
 
 
 def test_secret_wrappers_do_not_log_or_serialize(
@@ -462,12 +466,15 @@ def test_wrong_credential_owner_is_rejected(
         return result
 
     monkeypatch.setattr(os, "fstat", foreign_file)
+    prepared_credentials = credentials(installation)
     with pytest.raises(BoundaryError):
-        credentials(installation).open()
+        prepared_credentials.open()
 
 
 def test_protected_paths_are_not_user_state(installation: Installation) -> None:
+    hostile_installation = dataclasses.replace(installation, state_dir=Path("/etc"))
     with pytest.raises(BoundaryError):
-        validate_directories(dataclasses.replace(installation, state_dir=Path("/etc")))
+        validate_directories(hostile_installation)
+    service_installation = dataclasses.replace(installation, service_mode=True)
     with pytest.raises(BoundaryError):
-        validate_directories(dataclasses.replace(installation, service_mode=True))
+        validate_directories(service_installation)

@@ -34,8 +34,9 @@ def test_result_is_exact_and_canonical(tmp_path: Path) -> None:
             ("status", "error"),
         ):
             bad_mapping = dict(value, **{field: changed})
+            bad_result_bytes = json.dumps(bad_mapping).encode()
             with pytest.raises(ImportError):
-                validate_result(json.dumps(bad_mapping).encode(), request)
+                validate_result(bad_result_bytes, request)
         for bad in (
             good + b"\n",
             b'{"protocol":1,"protocol":1}',
@@ -48,7 +49,9 @@ def test_result_is_exact_and_canonical(tmp_path: Path) -> None:
         raw = request.body.objects[0]
         unsupported = replace(raw, codec="remote-codec")
         body = replace(request.body, objects=(unsupported, request.body.objects[1]))
+        unsupported_manifest = prepare_manifest(body)
+        prepared_import_limits = ImportLimits()
         with pytest.raises(ImportError):
-            parse_request(prepare_manifest(body), ImportLimits())
+            parse_request(unsupported_manifest, prepared_import_limits)
     finally:
         bundle.close()

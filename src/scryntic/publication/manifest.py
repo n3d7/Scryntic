@@ -23,6 +23,9 @@ from scryntic.domain.identity import SchemaRef, Version
 from scryntic.domain.raw import IngestionId
 from scryntic.domain.validation import digest, identifier, integer
 
+_IDENTITY_CONFLICT = "Manifest identity conflict"
+_SEQUENCE_CONFLICT = "Manifest sequence conflict"
+
 MANIFEST_SCHEMA = SchemaRef("scryntic.publication-manifest", Version(1, 0))
 GENESIS_MANIFEST_HASH = "0" * 64
 SERIALIZATION_ALGORITHM = "canonical-json-v1"
@@ -521,7 +524,7 @@ class ManifestStorage:
         try:
             document = parse_manifest(data, len(data))
             if document.ref != ref:
-                raise ManifestError("Manifest identity conflict")
+                raise ManifestError(_IDENTITY_CONFLICT)
             sequence_dir = self._ensure_sequence_directory(ref)
             with self._sequence_lock(sequence_dir):
                 self._install_locked(data, ref, sequence_dir)
@@ -539,7 +542,7 @@ class ManifestStorage:
             target = self.manifest_path(ref)
             entries = self._entries(sequence_dir)
             if entries and entries != (target.name,):
-                raise ManifestError("Manifest sequence conflict")
+                raise ManifestError(_SEQUENCE_CONFLICT)
             fd, name = tempfile.mkstemp(
                 prefix=".manifest-", suffix=".json", dir=self._staging
             )
@@ -567,7 +570,7 @@ class ManifestStorage:
                     os.link(staging, target, follow_symlinks=False)
                 except FileExistsError:
                     if self._read_file(target, len(data)) != data:
-                        raise ManifestError("Manifest identity conflict") from None
+                        raise ManifestError(_IDENTITY_CONFLICT) from None
                 if self._fault is not None:
                     self._fault("after_manifest_install")
                 self._notify("before_manifest_directory_fsync")
@@ -593,10 +596,10 @@ class ManifestStorage:
             sequence_dir = self._sequence_directory(ref)
             entries = self._entries(sequence_dir)
             if len(entries) != 1 or entries[0] != f"{ref.manifest_hash}.json":
-                raise ManifestError("Manifest sequence conflict")
+                raise ManifestError(_SEQUENCE_CONFLICT)
             data = self._read_file(self.manifest_path(ref), max_bytes)
             if parse_manifest(data, max_bytes).ref != ref:
-                raise ManifestError("Manifest identity conflict")
+                raise ManifestError(_IDENTITY_CONFLICT)
             return data
         except BaseException as error:
             if isinstance(error, ManifestError):
@@ -604,6 +607,29 @@ class ManifestStorage:
             if isinstance(error, Exception):
                 raise ManifestError("Unable to read publication manifest") from None
             raise
+
+    def _committed_slot(
+        self, sequence: os.DirEntry[str], max_bytes: int
+    ) -> tuple[ManifestDocument, bytes] | None:
+        if (
+            len(sequence.name) != _SEQUENCE_WIDTH
+            or not sequence.name.isascii()
+            or not sequence.name.isdecimal()
+            or int(sequence.name) < 1
+        ):
+            raise ManifestError("Invalid committed manifest slot")
+        path = Path(sequence.path)
+        self._validate_directory(path)
+        names = self._entries(path)
+        if not names:
+            return None
+        if len(names) != 1:
+            raise ManifestError(_SEQUENCE_CONFLICT)
+        data = self._read_file(path / names[0], max_bytes)
+        document = parse_manifest(data, max_bytes)
+        if self.manifest_path(document.ref) != path / names[0]:
+            raise ManifestError("Manifest namespace conflict")
+        return document, data
 
     def iter_committed(
         self, max_bytes: int
@@ -617,25 +643,9 @@ class ManifestStorage:
                     self._validate_directory(epoch_path)
                     with os.scandir(epoch_path) as sequences:
                         for sequence in sequences:
-                            if (
-                                len(sequence.name) != _SEQUENCE_WIDTH
-                                or not sequence.name.isascii()
-                                or not sequence.name.isdecimal()
-                                or int(sequence.name) < 1
-                            ):
-                                raise ManifestError("Invalid committed manifest slot")
-                            path = Path(sequence.path)
-                            self._validate_directory(path)
-                            names = self._entries(path)
-                            if not names:
-                                continue
-                            if len(names) != 1:
-                                raise ManifestError("Manifest sequence conflict")
-                            data = self._read_file(path / names[0], max_bytes)
-                            document = parse_manifest(data, max_bytes)
-                            if self.manifest_path(document.ref) != path / names[0]:
-                                raise ManifestError("Manifest namespace conflict")
-                            yield document, data
+                            committed = self._committed_slot(sequence, max_bytes)
+                            if committed is not None:
+                                yield committed
         except BaseException as error:
             if isinstance(error, ManifestError):
                 raise

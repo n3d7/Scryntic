@@ -8,6 +8,7 @@ uv sync --locked --no-default-groups --group dev --group collector
 uv run --locked --no-sync ruff check .
 uv run --locked --no-sync ruff format --check .
 uv run --locked --no-sync mypy --no-incremental
-uv run --locked --no-sync python -m pytest
+uv run --locked --no-sync coverage run -m pytest
+uv run --locked --no-sync coverage xml
 uv run --locked --no-sync python scripts/check_package.py
 uv run --locked --no-sync python scripts/audit.py

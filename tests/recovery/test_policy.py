@@ -73,8 +73,9 @@ def test_missing_loss_marker_recovers_unknown(
                     IngestionError("injected")
                 ),
             )
+            prepared_sample = sample()
             with pytest.raises(IngestionError):
-                ledger.loss(10, 20, "overflow", sample())
+                ledger.loss(10, 20, "overflow", prepared_sample)
     with DurableIngestor(
         target, producer="a", epoch="b", capacity=1, max_payload_bytes=1024
     ) as spool:
@@ -123,8 +124,9 @@ def test_loss_quota_retains_restart_unknown_headroom(tmp_path: Path) -> None:
         ledger.begin(sample())
         for index in range(63):
             ledger.loss(index, index + 1, "overflow", sample())
+        prepared_sample = sample()
         with pytest.raises(IngestionError, match="quota"):
-            ledger.loss(100, 101, "overflow", sample())
+            ledger.loss(100, 101, "overflow", prepared_sample)
     with DurableIngestor(
         target, producer="a", epoch="b", capacity=1, max_payload_bytes=1024
     ) as spool:

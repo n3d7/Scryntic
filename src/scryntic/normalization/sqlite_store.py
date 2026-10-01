@@ -29,6 +29,10 @@ from scryntic.normalization.candle import (
     RejectionField,
 )
 
+_BEGIN_IMMEDIATE = "BEGIN IMMEDIATE"
+_INVALID_PROCESSING_CHAIN = "Invalid normalization processing chain"
+_STORE_FAILED = "Durable normalization store failed"
+
 _DATABASE_NAME = "normalization.sqlite3"
 _LOCK_NAME = "normalization.lock"
 _SCHEMA_VERSION = 1
@@ -343,7 +347,7 @@ class NormalizationStore:
                 is not None
             ):
                 raise NormalizationError("Invalid normalization schema")
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             try:
                 for _, _, _, sql in _SCHEMA:
                     connection.execute(sql)
@@ -402,24 +406,24 @@ class NormalizationStore:
         traversed = 0
         while current is not None:
             if traversed >= outcome_count:
-                raise NormalizationError("Invalid normalization processing chain")
+                raise NormalizationError(_INVALID_PROCESSING_CHAIN)
             outcome = self.outcome(current)
             if outcome is None:
-                raise NormalizationError("Invalid normalization processing chain")
+                raise NormalizationError(_INVALID_PROCESSING_CHAIN)
             current = outcome.predecessor
             traversed += 1
         # Each decoded predecessor strictly decreases the offset, so traversal
         # cannot repeat a row. Reaching every outcome proves a single root,
         # no fork or disconnected component, and the checkpoint as the only tail.
         if traversed != outcome_count:
-            raise NormalizationError("Invalid normalization processing chain")
+            raise NormalizationError(_INVALID_PROCESSING_CHAIN)
         barrier = self.barrier()
         if barrier is not None and barrier.predecessor != checkpoint:
             raise NormalizationError("Invalid normalization barrier")
 
     def _require_open(self) -> None:
         if self._failed:
-            raise NormalizationError("Durable normalization store failed")
+            raise NormalizationError(_STORE_FAILED)
         if self._closed:
             raise NormalizationError("Normalization store is closed")
         self._require_thread()
@@ -496,7 +500,7 @@ class NormalizationStore:
         self._require_open()
         connection = self._connection
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             predecessor = self.checkpoint()
             if predecessor != expected_predecessor:
                 raise NormalizationError(
@@ -576,7 +580,7 @@ class NormalizationStore:
         self._require_open()
         connection = self._connection
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             predecessor = self.checkpoint()
             if predecessor != expected_predecessor:
                 raise NormalizationError(
@@ -676,14 +680,16 @@ class NormalizationStore:
             if self._connection.in_transaction:
                 self._connection.execute("ROLLBACK")
             if self._connection.in_transaction:
-                raise NormalizationError("Durable normalization store failed")
-        except BaseException:
+                raise NormalizationError(_STORE_FAILED)
+        except BaseException as error:
             self._failed = True
             try:
                 self._connection.close()
-            except BaseException:
+            except Exception:
                 pass
-            raise NormalizationError("Durable normalization store failed") from None
+            if not isinstance(error, Exception):
+                raise
+            raise NormalizationError(_STORE_FAILED) from None
 
     def _store_semantics(self, value: CandleSemantics) -> OutcomeKind:
         revision = value.revision()

@@ -82,19 +82,20 @@ def test_exact_hash_uses_catalog_and_page_is_bounded(tmp_path: Path) -> None:
     try:
         first = bundle.coordinator.publish_next()
         second = bundle.coordinator.publish_next()
-        assert isinstance(first, Published) and isinstance(second, Published)
+        assert isinstance(first, Published)
+        assert isinstance(second, Published)
         reader = _reader(bundle)
         assert (
             reader.resolve_exact(first.manifest.manifest_hash).document
             == first.document
         )
         assert len(reader.catalog_page(anchor=None, limit=1)) == 1
+        prepared_limit = limits().max_manifests_per_read + 1
         with pytest.raises(PublicationReaderError, match="limit"):
-            reader.catalog_page(anchor=None, limit=limits().max_manifests_per_read + 1)
+            reader.catalog_page(anchor=None, limit=prepared_limit)
+        prepared_anchor = IngestionId("collector-a", "epoch-a", 3)
         with pytest.raises(PublicationReaderError, match="anchor"):
-            reader.catalog_page(
-                anchor=IngestionId("collector-a", "epoch-a", 3), limit=1
-            )
+            reader.catalog_page(anchor=prepared_anchor, limit=1)
     finally:
         bundle.close()
 
@@ -112,7 +113,8 @@ def test_complete_identity_is_readable_before_catalog_commit(tmp_path: Path) -> 
         with pytest.raises(ManifestError):
             bundle.coordinator.publish_next()
         pending = bundle.store.pending()
-        assert pending is not None and pending.manifest_ref is not None
+        assert pending is not None
+        assert pending.manifest_ref is not None
         assert bundle.store.status().checkpoint is None
         validated = _reader(bundle).resolve_exact(pending.manifest_ref)
         assert validated.document.ref == pending.manifest_ref
@@ -133,8 +135,9 @@ def test_reader_rejects_second_sequence_entry_and_object_corruption(
         conflict = manifest_path.parent / f"{'d' * 64}.json"
         conflict.write_bytes(result.document_bytes)
         conflict.chmod(0o400)
+        prepared_reader = _reader(bundle)
         with pytest.raises(PublicationReaderError, match="manifest"):
-            _reader(bundle).resolve_exact(result.manifest)
+            prepared_reader.resolve_exact(result.manifest)
         conflict.unlink()
 
         raw = result.document.body.objects[0]
@@ -149,8 +152,9 @@ def test_reader_rejects_second_sequence_entry_and_object_corruption(
         object_path.chmod(0o600)
         object_path.write_bytes(b"corrupt")
         object_path.chmod(0o400)
+        prepared_reader_2 = _reader(bundle)
         with pytest.raises(PublicationReaderError, match="object"):
-            _reader(bundle).resolve_exact(result.manifest)
+            prepared_reader_2.resolve_exact(result.manifest)
     finally:
         bundle.close()
 
@@ -165,11 +169,13 @@ def test_reader_requires_exact_per_epoch_predecessor(tmp_path: Path) -> None:
         first = bundle.coordinator.publish_next()
         bundle.coordinator.publish_next()
         third = bundle.coordinator.publish_next()
-        assert isinstance(first, Published) and isinstance(third, Published)
+        assert isinstance(first, Published)
+        assert isinstance(third, Published)
         manifest_root = bundle.root.state_dir / "archive" / "manifests"
         first_path = next(manifest_root.rglob(f"{first.manifest.manifest_hash}.json"))
         first_path.unlink()
+        prepared_reader = _reader(bundle)
         with pytest.raises(PublicationReaderError, match="predecessor"):
-            _reader(bundle).resolve_exact(third.manifest)
+            prepared_reader.resolve_exact(third.manifest)
     finally:
         bundle.close()

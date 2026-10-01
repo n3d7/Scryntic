@@ -167,9 +167,7 @@ def _semantics(value: CandleSemantics | None) -> JsonObject | None:
     }
 
 
-def normalized_projection(
-    outcome: ProcessingOutcome, semantics: CandleSemantics | None
-) -> JsonObject:
+def normalized_projection(outcome: ProcessingOutcome) -> JsonObject:
     if not isinstance(outcome, ProcessingOutcome):
         raise TypeError("Expected a processing outcome")
     return {
@@ -227,7 +225,7 @@ class PublicationInput:
     def projection(self) -> JsonObject:
         return {
             "algorithm": INPUT_FINGERPRINT_ALGORITHM,
-            "outcome": normalized_projection(self.outcome, self.semantics),
+            "outcome": normalized_projection(self.outcome),
             "raw": raw_projection(self.raw),
             "semantics": _semantics(self.semantics),
         }

@@ -359,7 +359,8 @@ def test_process_kill_recovers_atomic_outcome_and_replays_without_semantic_dupli
         assert blocked.barrier.reason is BarrierReason.UNSUPPORTED_SCHEMA
         first = store.outcome(records[0].identity)
         duplicate = store.outcome(records[2].identity)
-        assert first is not None and duplicate is not None
+        assert first is not None
+        assert duplicate is not None
         assert first.semantic_revision == duplicate.semantic_revision
         assert first.identity != duplicate.identity
         assert store.checkpoint() == records[2].identity
@@ -490,9 +491,8 @@ def test_normalization_time_changes_only_replay_provenance(tmp_path: Path) -> No
     record = raw_record(offset=2)
     first = normalization(record)
     later = normalization(record, normalized_at_ns=NORMALIZED_AT_NS + 1)
-    assert isinstance(first, CandleNormalization) and isinstance(
-        later, CandleNormalization
-    )
+    assert isinstance(first, CandleNormalization)
+    assert isinstance(later, CandleNormalization)
     outcomes = []
     for name, result in (("first", first), ("later", later)):
         with NormalizationStore(

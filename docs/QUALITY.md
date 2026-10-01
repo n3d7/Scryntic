@@ -35,6 +35,9 @@ selection, not a bit-identical operating-system image.
    the `src` package base configured explicitly. No blanket missing-import or
    untyped-vendor exceptions are present.
 4. pytest uses importlib discovery and strict configuration/marker validation.
+   Coverage.py measures production line/branch coverage and writes `coverage.xml`
+   for SonarQube. Unmeasured restricted-worker code remains uncovered; measurement
+   never adds tracing hooks, writable paths or authority inside the worker.
    Tests cover the package and audit coverage/rejection behavior.
 5. Packaging checks build both sdist and wheel through the hash-pinned PEP 517
    backend, rebuild a wheel from the sdist, and compare the wheels. Each of base,
@@ -70,17 +73,18 @@ base/collector. Keep future optional model dependencies out of those profiles.
 | Direct development requirement | Purpose | Declared license / origin |
 | --- | --- | --- |
 | pytest 9.1.1 | Tests and failure fixtures | MIT; `pytest-dev/pytest` |
+| coverage.py 7.16.2 | Line/branch measurement and SonarQube XML | Apache-2.0; `coveragepy/coveragepy` |
 | Ruff 0.16.7 | Lint and formatting checks | MIT; `astral-sh/ruff` |
 | mypy 2.3.1 | Strict static checking | MIT; `python/mypy` |
 | pip-audit 2.10.1 | Known-vulnerability queries | Apache-2.0; `pypa/pip-audit` |
 | packaging 26.3 | Evaluate requirement markers and audit identities | Apache-2.0 OR BSD-2-Clause; `pypa/packaging` |
 
 The reviewed lock uses only the public PyPI registry and SHA-256-addressed
-`files.pythonhosted.org` artifacts. The Linux development closure contains 38
-third-party distributions. Reviewed license metadata is MIT/BSD/Apache/PSF,
+`files.pythonhosted.org` artifacts. The development closure is exported and audited
+from the current lock. Reviewed license metadata is MIT/BSD/Apache/PSF,
 with MPL-2.0 for certifi and pathspec. Preserve applicable notices on redistribution;
 these dependencies are not included in Scryntic's runtime wheel.
-Ruff, mypy/librt/ast-serialize and some transitive dependencies include native
+Coverage.py, Ruff, mypy/librt/ast-serialize and some transitive dependencies include native
 code. Tool/backend/installer execution is a provisioning trust boundary, not a
 sandbox. Inspect new versions, origins, licenses, native components and build
 hooks when reviewing lock changes. Lock hashes do not prove upstream code safe.

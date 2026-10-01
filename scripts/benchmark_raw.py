@@ -504,6 +504,49 @@ def _run_case(command: list[str], storage_root: Path, timeout: int) -> str:
             return stdout
 
 
+def _case_command(
+    args: argparse.Namespace,
+    spec: WorkloadSpec,
+    codec: str,
+    repeat: int,
+    ingestion_records: int,
+) -> list[str]:
+    command = [
+        sys.executable,
+        str(Path(__file__).resolve()),
+        "--worker",
+        "--workloads",
+        spec.kind,
+        "--instruments",
+        str(spec.instruments),
+        "--records",
+        str(spec.records),
+        "--seed",
+        str(spec.seed),
+        "--levels",
+        str(spec.levels),
+        "--max-trade-batch",
+        str(spec.max_trade_batch),
+        "--candle-fixture",
+        str(args.candle_fixture),
+        "--segments",
+        str(args.segments),
+        "--point-reads",
+        str(args.point_reads),
+        "--ingestion-records",
+        str(ingestion_records),
+        "--codecs",
+        codec,
+        "--repeat-index",
+        str(repeat),
+        "--storage-root",
+        str(args.storage_root),
+    ]
+    if codec != args.codecs[0]:
+        command.append("--skip-ingestion")
+    return command
+
+
 def main() -> None:
     parser = _parser()
     args = parser.parse_args()
@@ -577,39 +620,7 @@ def main() -> None:
     for spec in specs:
         for codec in args.codecs:
             for repeat in range(args.repeats):
-                command = [
-                    sys.executable,
-                    str(Path(__file__).resolve()),
-                    "--worker",
-                    "--workloads",
-                    spec.kind,
-                    "--instruments",
-                    str(spec.instruments),
-                    "--records",
-                    str(spec.records),
-                    "--seed",
-                    str(spec.seed),
-                    "--levels",
-                    str(spec.levels),
-                    "--max-trade-batch",
-                    str(spec.max_trade_batch),
-                    "--candle-fixture",
-                    str(args.candle_fixture),
-                    "--segments",
-                    str(args.segments),
-                    "--point-reads",
-                    str(args.point_reads),
-                    "--ingestion-records",
-                    str(ingestion_records),
-                    "--codecs",
-                    codec,
-                    "--repeat-index",
-                    str(repeat),
-                    "--storage-root",
-                    str(args.storage_root),
-                ]
-                if codec != args.codecs[0]:
-                    command.append("--skip-ingestion")
+                command = _case_command(args, spec, codec, repeat, ingestion_records)
                 results.append(
                     json.loads(_run_case(command, args.storage_root, args.timeout))
                 )

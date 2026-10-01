@@ -283,7 +283,8 @@ async def test_explicit_close_drains_and_persists_clean_checkpoint(
         task = asyncio.create_task(supervisor.run())
         await asyncio.sleep(0.04)
         await supervisor.close()
-        assert task.done() and not task.cancelled()
+        assert task.done()
+        assert not task.cancelled()
         assert not supervisor.ledger.snapshot.active
         assert supervisor.budget.used == (0, 0)
 

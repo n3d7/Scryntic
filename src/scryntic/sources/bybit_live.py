@@ -34,6 +34,9 @@ from scryntic.domain.raw import RawEnvelope
 from scryntic.domain.time import ClockSample, SourceTime, TimeUnit
 from scryntic.sources.bybit import _INTERVAL_NS
 
+_SUBSCRIPTION_REJECTED = "Bybit subscription rejected"
+_INVALID_CANDLE_DECIMAL = "Invalid Bybit candle decimal"
+
 _URLS = {
     "spot": "wss://stream.bybit.com/v5/public/spot",
     "linear": "wss://stream.bybit.com/v5/public/linear",
@@ -44,6 +47,23 @@ _EVENT_LIMIT = 8_192
 _INTAKE_RECORD_LIMIT = 32
 _WRITE_TIMEOUT_S = 3.0
 _DECIMAL = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?", re.ASCII)
+
+
+def _is_pong(document: dict[str, object]) -> bool:
+    args = document.get("args")
+    return (
+        document.get("op") == "ping"
+        and document.get("success") is True
+        and document.get("ret_msg") == "pong"
+    ) or (
+        document.get("op") == "pong"
+        and isinstance(args, list)
+        and len(args) == 1
+        and type(args[0]) is str
+        and 1 <= len(args[0]) <= 20
+        and args[0].isascii()
+        and args[0].isdigit()
+    )
 
 
 class _ConnectionGate:
@@ -154,7 +174,7 @@ class BybitPublicWebSocketClient:
                     max_msg_size=_FRAME_LIMIT,
                     timeout=aiohttp.ClientWSTimeout(ws_close=3.0),
                 )
-        except (TimeoutError, aiohttp.ClientError, OSError):
+        except (aiohttp.ClientError, OSError):
             raise BybitLiveError("Bybit public WebSocket connect failed") from None
         if str(socket._response.url) != _URLS[category]:
             await socket.close()
@@ -191,7 +211,7 @@ def _document(message: aiohttp.WSMessage) -> dict[str, object]:
             object_pairs_hook=_pairs,
             parse_constant=lambda _: (_ for _ in ()).throw(ValueError()),
         )
-    except (UnicodeError, ValueError, RecursionError):
+    except (ValueError, RecursionError):
         raise BybitLiveError("Invalid Bybit WebSocket JSON") from None
     if not isinstance(value, dict):
         raise BybitLiveError("Invalid Bybit WebSocket document")
@@ -204,12 +224,12 @@ def _decimal(value: object) -> str:
         or not 1 <= len(value) <= 128
         or not _DECIMAL.fullmatch(value)
     ):
-        raise BybitLiveError("Invalid Bybit candle decimal")
+        raise BybitLiveError(_INVALID_CANDLE_DECIMAL)
     try:
         if not Decimal(value).is_finite():
-            raise BybitLiveError("Invalid Bybit candle decimal")
+            raise BybitLiveError(_INVALID_CANDLE_DECIMAL)
     except InvalidOperation:
-        raise BybitLiveError("Invalid Bybit candle decimal") from None
+        raise BybitLiveError(_INVALID_CANDLE_DECIMAL) from None
     return value
 
 
@@ -430,10 +450,10 @@ class BybitLiveSource:
         if ack.get("op") != "subscribe":
             raise BybitLiveError("Invalid Bybit subscription acknowledgement")
         if ack.get("success") is not True:
-            raise BybitLiveConfigurationError("Bybit subscription rejected")
+            raise BybitLiveConfigurationError(_SUBSCRIPTION_REJECTED)
         data = ack.get("data")
         if isinstance(data, dict) and data.get("failTopics"):
-            raise BybitLiveConfigurationError("Bybit subscription rejected")
+            raise BybitLiveConfigurationError(_SUBSCRIPTION_REJECTED)
         next_ping = time.monotonic() + self._limits.ping_interval_s
         last_data = time.monotonic()
         pong_deadline: float | None = None
@@ -462,20 +482,7 @@ class BybitLiveSource:
             # Buffered duplicates/control frames can otherwise bypass every
             # suspension point. Give cancellation and other collectors a turn.
             await asyncio.sleep(0)
-            args = document.get("args")
-            if (
-                document.get("op") == "ping"
-                and document.get("success") is True
-                and document.get("ret_msg") == "pong"
-            ) or (
-                document.get("op") == "pong"
-                and isinstance(args, list)
-                and len(args) == 1
-                and type(args[0]) is str
-                and 1 <= len(args[0]) <= 20
-                and args[0].isascii()
-                and args[0].isdigit()
-            ):
+            if _is_pong(document):
                 pong_deadline = None
                 continue
             if document.get("topic") != topic or document.get("type") != "snapshot":
@@ -600,7 +607,7 @@ class BybitLiveSource:
                         self._socket = None
                     self.last_error = "Bybit WebSocket disconnected"
                 except BybitLiveConfigurationError:
-                    self.last_error = "Bybit subscription rejected"
+                    self.last_error = _SUBSCRIPTION_REJECTED
                     raise
                 except asyncio.CancelledError:
                     owner = asyncio.current_task()
@@ -615,7 +622,6 @@ class BybitLiveSource:
                     BybitLiveError,
                     aiohttp.ClientError,
                     OSError,
-                    TimeoutError,
                 ) as exc:
                     self.last_error = (
                         str(exc)

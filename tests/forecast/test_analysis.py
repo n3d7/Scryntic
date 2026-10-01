@@ -143,10 +143,11 @@ def test_bad_provider_result_creates_no_artifact(tmp_path: Path, defect: str) ->
     installation = _installation(tmp_path)
     store = ImmutableForecastStore(installation)
     request, verified = _request()
+    prepared_operation = ForecastAnalysis(StubProvider(defect), store).run(
+        request, verified
+    )
     with pytest.raises((TypeError, ValueError)):
-        asyncio.run(
-            ForecastAnalysis(StubProvider(defect), store).run(request, verified)
-        )
+        asyncio.run(prepared_operation)
     assert not (installation.state_dir / "forecasts").exists()
 
 
@@ -167,6 +168,7 @@ def test_unsupported_request_creates_no_artifact(tmp_path: Path, invalid: str) -
         request = replace(request, horizon=4)
     else:
         request = replace(request, frequency_ns=INTERVAL_NS * 2)
+    prepared_operation = ForecastAnalysis(StubProvider(), store).run(request, verified)
     with pytest.raises((TypeError, ValueError)):
-        asyncio.run(ForecastAnalysis(StubProvider(), store).run(request, verified))
+        asyncio.run(prepared_operation)
     assert not (installation.state_dir / "forecasts").exists()

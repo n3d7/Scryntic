@@ -129,7 +129,8 @@ def test_instrument_discovery_paginates_categories_and_maps_distinct_units() -> 
         None,
         "linear-page-2",
     ]
-    assert "limit" not in client.calls[-2][1] and "cursor" not in client.calls[-2][1]
+    assert "limit" not in client.calls[-2][1]
+    assert "cursor" not in client.calls[-2][1]
     assert client.calls[-1][1]["baseCoin"] == "All"
 
 
@@ -187,7 +188,8 @@ def test_opaque_cursor_survives_restart_and_overlapping_page_is_deduplicated(
 
     restarted = BybitHistoricalSource(client=client, clock=clock)
     progress = BybitCursorStore(checkpoint_path).load(request())
-    assert progress is not None and not progress.complete
+    assert progress is not None
+    assert not progress.complete
     page2 = asyncio.run(restarted.fetch(request(cursor=progress.cursor)))
     checkpoint.save(request(), page2.next_cursor)
     complete = BybitCursorStore(checkpoint_path).load(request())
@@ -195,11 +197,16 @@ def test_opaque_cursor_survives_restart_and_overlapping_page_is_deduplicated(
     assert [item.source_time.value for item in page2.envelopes if item.source_time] == [
         1_700_000_040_000
     ]
-    assert complete is not None and complete.complete and complete.cursor is None
+    assert complete is not None
+    assert complete.complete
+    assert complete.cursor is None
+    prepared_bybit_cursor_store = BybitCursorStore(checkpoint_path)
+    prepared_request = request(symbol="ETHUSDT")
     with pytest.raises(BybitError, match="does not match"):
-        BybitCursorStore(checkpoint_path).load(request(symbol="ETHUSDT"))
+        prepared_bybit_cursor_store.load(prepared_request)
+    prepared_request_2 = request()
     with pytest.raises(BybitError, match="cannot regress"):
-        checkpoint.save(request(), page1.next_cursor)
+        checkpoint.save(prepared_request_2, page1.next_cursor)
     assert page2.next_cursor is None
     assert client.calls[1][1]["end"] == 1_700_000_100_000
     assert (
@@ -351,8 +358,9 @@ def test_rate_gate_enforces_conservative_two_requests_per_second(
 
 
 def test_fixed_duration_contract_rejects_calendar_month_interval() -> None:
+    prepared_clock = FixedClock(sample(wall_ns=_BASE_NS))
     with pytest.raises(ValueError, match="fixed-duration"):
-        BybitHistoricalSource(clock=FixedClock(sample(wall_ns=_BASE_NS)), interval="M")
+        BybitHistoricalSource(clock=prepared_clock, interval="M")
 
 
 def test_history_page_size_cannot_exceed_one_api_response() -> None:
@@ -361,8 +369,9 @@ def test_history_page_size_cannot_exceed_one_api_response() -> None:
         client=client, clock=FixedClock(sample(wall_ns=_BASE_NS))
     )
 
+    prepared_operation = source.fetch(request(page_size=1000))
     with pytest.raises(BybitError, match="page"):
-        asyncio.run(source.fetch(request(page_size=1_000)))
+        asyncio.run(prepared_operation)
 
     assert not client.calls
 

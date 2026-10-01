@@ -108,16 +108,18 @@ def test_seal_accepts_exact_logical_limit_and_rejects_one_below(
 
     segment = asyncio.run(archive.seal((record,), _limits(decoded=logical)))
     assert segment.decoded_bytes == logical
+    prepared_operation = archive.seal((record,), _limits(decoded=logical - 1))
     with pytest.raises(ArchiveError, match="limits"):
-        asyncio.run(archive.seal((record,), _limits(decoded=logical - 1)))
+        asyncio.run(prepared_operation)
 
 
 def test_seal_rejects_record_limit_before_writing(tmp_path: Path) -> None:
     archive = ParquetRawArchive(installation(tmp_path))
     records = (raw_record(offset=2), raw_record(offset=5))
 
+    prepared_operation = archive.seal(records, _limits(records=1))
     with pytest.raises(ArchiveError, match="limits"):
-        asyncio.run(archive.seal(records, _limits(records=1)))
+        asyncio.run(prepared_operation)
 
     assert not tuple(archive.staging_path.iterdir())
 
@@ -138,13 +140,12 @@ def test_read_enforces_exact_encoded_limit_and_rejects_one_below(
         )
         == record
     )
+    prepared_operation = archive.read(
+        RawRecordRef(segment.sha256, 0, record.identity),
+        _limits(encoded=segment.encoded_bytes - 1),
+    )
     with pytest.raises(ArchiveError, match="limits"):
-        asyncio.run(
-            archive.read(
-                RawRecordRef(segment.sha256, 0, record.identity),
-                _limits(encoded=segment.encoded_bytes - 1),
-            )
-        )
+        asyncio.run(prepared_operation)
 
 
 def test_read_rejects_reference_index_or_identity_mismatch(tmp_path: Path) -> None:
@@ -152,21 +153,21 @@ def test_read_rejects_reference_index_or_identity_mismatch(tmp_path: Path) -> No
     archive = ParquetRawArchive(installation(tmp_path))
     segment = asyncio.run(archive.seal((record,), _limits()))
 
+    prepared_operation = archive.read(
+        RawRecordRef(segment.sha256, 1, record.identity), _limits()
+    )
     with pytest.raises(ArchiveError, match="reference"):
-        asyncio.run(
-            archive.read(RawRecordRef(segment.sha256, 1, record.identity), _limits())
-        )
+        asyncio.run(prepared_operation)
+    prepared_operation_2 = archive.read(
+        RawRecordRef(
+            segment.sha256,
+            0,
+            replace(record.identity, offset=record.identity.offset + 1),
+        ),
+        _limits(),
+    )
     with pytest.raises(ArchiveError, match="reference"):
-        asyncio.run(
-            archive.read(
-                RawRecordRef(
-                    segment.sha256,
-                    0,
-                    replace(record.identity, offset=record.identity.offset + 1),
-                ),
-                _limits(),
-            )
-        )
+        asyncio.run(prepared_operation_2)
 
 
 def test_read_rejects_corrupted_object_bytes(tmp_path: Path) -> None:
@@ -184,10 +185,11 @@ def test_read_rejects_corrupted_object_bytes(tmp_path: Path) -> None:
         os.fsync(stream.fileno())
     path.chmod(0o400)
 
+    prepared_operation = archive.read(
+        RawRecordRef(segment.sha256, 0, record.identity), _limits()
+    )
     with pytest.raises(ArchiveError, match="hash"):
-        asyncio.run(
-            archive.read(RawRecordRef(segment.sha256, 0, record.identity), _limits())
-        )
+        asyncio.run(prepared_operation)
 
 
 def test_seal_rejects_non_increasing_or_cross_producer_records(tmp_path: Path) -> None:
@@ -198,7 +200,9 @@ def test_seal_rejects_non_increasing_or_cross_producer_records(tmp_path: Path) -
         raw_record(offset=7), identity=replace(first.identity, producer="b")
     )
 
+    prepared_operation = archive.seal((first, lower), _limits())
     with pytest.raises(ArchiveError, match="order"):
-        asyncio.run(archive.seal((first, lower), _limits()))
+        asyncio.run(prepared_operation)
+    prepared_operation_2 = archive.seal((first, other), _limits())
     with pytest.raises(ArchiveError, match="order"):
-        asyncio.run(archive.seal((first, other), _limits()))
+        asyncio.run(prepared_operation_2)

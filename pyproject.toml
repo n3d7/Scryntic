@@ -20,6 +20,7 @@ dependencies = [
 collector = ["pyarrow==25.0.1"]
 analysis = ["pyarrow==25.0.1"]
 dev = [
+    "coverage==7.16.2",
     "mypy==2.3.1",
     "packaging==26.3",
     "pip-audit==2.10.1",
@@ -43,6 +44,14 @@ source-include = [".python-version", "uv.lock", "build-constraints.txt"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib", "--strict-config", "--strict-markers", "-ra"]
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+source = ["src/scryntic"]
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 [tool.ruff]
 target-version = "py312"

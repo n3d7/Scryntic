@@ -86,7 +86,7 @@ def main() -> None:
                 cwd=temp,
                 check=True,
             )
-            forbidden = ["pytest", "ruff", "mypy", "pip_audit"]
+            forbidden = ["pytest", "ruff", "mypy", "pip_audit", "coverage"]
             if profile == "base":
                 forbidden += ["pyarrow"]
             if profile != "analysis":

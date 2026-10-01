@@ -126,7 +126,7 @@ def test_seal_and_read_enforce_logical_limits_symmetrically(tmp_path: Path) -> N
     logical = len(
         canonical_json_bytes(
             {
-                "outcome": normalized_projection(value.outcome, value.semantics),
+                "outcome": normalized_projection(value.outcome),
                 "semantics": semantics_projection(value.semantics),
             }
         )
@@ -136,10 +136,12 @@ def test_seal_and_read_enforce_logical_limits_symmetrically(tmp_path: Path) -> N
     descriptor = asyncio.run(archive.seal((value,), _limits(decoded=logical)))
     assert descriptor.decoded_bytes == logical
     assert asyncio.run(archive.read(descriptor, _limits(decoded=logical)))
+    prepared_operation = archive.seal((value,), _limits(decoded=logical - 1))
     with pytest.raises(NormalizedArchiveError, match="limits"):
-        asyncio.run(archive.seal((value,), _limits(decoded=logical - 1)))
+        asyncio.run(prepared_operation)
+    prepared_operation_2 = archive.read(descriptor, _limits(decoded=logical - 1))
     with pytest.raises(NormalizedArchiveError, match="limits"):
-        asyncio.run(archive.read(descriptor, _limits(decoded=logical - 1)))
+        asyncio.run(prepared_operation_2)
 
 
 def test_reader_rejects_descriptor_identity_or_count_mismatch(tmp_path: Path) -> None:
@@ -147,12 +149,14 @@ def test_reader_rejects_descriptor_identity_or_count_mismatch(tmp_path: Path) ->
     archive = NormalizedParquetArchive(installation(tmp_path))
     descriptor = asyncio.run(archive.seal((value,), _limits()))
 
+    prepared_operation = archive.read(
+        replace(descriptor, record_count=2), _limits(records=2)
+    )
     with pytest.raises(NormalizedArchiveError, match="descriptor"):
-        asyncio.run(
-            archive.read(replace(descriptor, record_count=2), _limits(records=2))
-        )
+        asyncio.run(prepared_operation)
+    prepared_operation_2 = archive.read(replace(descriptor, sha256="0" * 64), _limits())
     with pytest.raises(NormalizedArchiveError, match="hash"):
-        asyncio.run(archive.read(replace(descriptor, sha256="0" * 64), _limits()))
+        asyncio.run(prepared_operation_2)
 
 
 def test_normalized_rows_require_strictly_increasing_input_order(
@@ -160,13 +164,12 @@ def test_normalized_rows_require_strictly_increasing_input_order(
 ) -> None:
     archive = NormalizedParquetArchive(installation(tmp_path))
 
+    prepared_operation = archive.seal(
+        (
+            _accepted(OutcomeKind.ACCEPTED, offset=5),
+            _accepted(OutcomeKind.ACCEPTED, offset=2),
+        ),
+        _limits(),
+    )
     with pytest.raises(NormalizedArchiveError, match="order"):
-        asyncio.run(
-            archive.seal(
-                (
-                    _accepted(OutcomeKind.ACCEPTED, offset=5),
-                    _accepted(OutcomeKind.ACCEPTED, offset=2),
-                ),
-                _limits(),
-            )
-        )
+        asyncio.run(prepared_operation)

@@ -56,8 +56,9 @@ def test_disk_headroom_stops_payload_but_allows_loss_metadata(tmp_path: Path) ->
         max_payload_bytes=1024,
         metadata_headroom_bytes=2**60,
     ) as spool:
+        prepared_envelope = envelope(InstrumentId("bybit", "spot", "BTCUSDT"))
         with pytest.raises(IngestionError, match="headroom"):
-            spool.accept(envelope(InstrumentId("bybit", "spot", "BTCUSDT")))
+            spool.accept(prepared_envelope)
         spool.recovery_put("stream-a", b"unknown", expected=None)
         assert spool.recovery_get("stream-a") == b"unknown"
 

@@ -112,15 +112,17 @@ def test_reservation_is_idempotent_but_immutable(tmp_path: Path) -> None:
     with PublicationStore(installation(tmp_path), producer="producer-a") as store:
         value = reservation(offset=3)
         assert store.reserve(value) == store.reserve(value)
+        prepared_reservation = reservation(offset=4)
         with pytest.raises(PublicationError, match="pending"):
-            store.reserve(reservation(offset=4))
+            store.reserve(prepared_reservation)
 
 
 def test_store_lock_is_acquired_before_second_sqlite_owner(tmp_path: Path) -> None:
     first = PublicationStore(installation(tmp_path), producer="producer-a")
     try:
+        prepared_installation = installation(tmp_path)
         with pytest.raises(PublisherOwned):
-            PublicationStore(installation(tmp_path), producer="producer-a")
+            PublicationStore(prepared_installation, producer="producer-a")
     finally:
         first.close()
 
@@ -137,8 +139,9 @@ def test_prepare_failure_rolls_back_exact_reserved_state(tmp_path: Path) -> None
         installation(tmp_path), producer="producer-a", fault=fail
     ) as store:
         pending = store.reserve(reservation())
+        manifest_bytes = prepared_bytes(pending.reservation)
         with pytest.raises(PublicationError):
-            store.prepare(pending, prepared_bytes(pending.reservation))
+            store.prepare(pending, manifest_bytes)
         assert store.pending() == pending
         assert store.status().checkpoint is None
     assert "before_prepare_commit" in stages

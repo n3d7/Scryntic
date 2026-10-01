@@ -76,15 +76,20 @@ def test_exact_decimals_are_not_rounded_by_current_context() -> None:
     "bad", [Decimal("NaN"), Decimal("Infinity"), Decimal("-1"), 0.1]
 )
 def test_invalid_market_values_are_rejected(bad: object) -> None:
+    prepared_candle = candle()
+    prepared_volume = cast(Decimal, bad)
     with pytest.raises((TypeError, ValueError)):
-        replace(candle(), volume=cast(Decimal, bad))
+        replace(prepared_candle, volume=prepared_volume)
 
 
 def test_candle_rejects_inconsistent_range_and_interval() -> None:
+    prepared_candle = candle()
+    prepared_high = Decimal("0.15")
     with pytest.raises(ValueError):
-        replace(candle(), high=Decimal("0.15"))
+        replace(prepared_candle, high=prepared_high)
+    prepared_candle_2 = candle().key
     with pytest.raises(ValueError):
-        replace(candle().key, interval_ns=0)
+        replace(prepared_candle_2, interval_ns=0)
 
 
 def test_market_category_entity_kind_and_revision_are_distinct() -> None:
@@ -111,8 +116,10 @@ def test_schema_compatibility_is_explicit_and_namespaced() -> None:
         with pytest.raises(ValueError, match="Unsupported schema"):
             reader.require_readable(incoming)
     assert candle().schema == CANDLE_SCHEMA
+    prepared_candle = candle()
+    prepared_schema = SchemaRef("candle", Version(2, 0))
     with pytest.raises(ValueError):
-        replace(candle(), schema=SchemaRef("candle", Version(2, 0)))
+        replace(prepared_candle, schema=prepared_schema)
     with pytest.raises(ValueError):
         Version(0, 0)
 
@@ -133,8 +140,9 @@ def test_raw_payload_limit_hash_and_ingestion_identity() -> None:
     assert first.envelope == second.envelope
     with pytest.raises(ValueError, match="payload"):
         envelope(limit=2)
+    prepared_payload = cast(bytes, bytearray(b"abc"))
     with pytest.raises(TypeError):
-        replace(raw, payload=cast(bytes, bytearray(b"abc")), payload_limit=3)
+        replace(raw, payload=prepared_payload, payload_limit=3)
     with pytest.raises(ValueError):
         replace(raw, channel="https://user:password@example.test", payload_limit=3)
 

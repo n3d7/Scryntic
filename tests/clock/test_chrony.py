@@ -68,7 +68,8 @@ def test_real_subprocess_adapter_executes_only_monitoring_and_parses_response(
     )
     executable.chmod(0o700)
     value = ChronyStatus(executable=executable).read()
-    assert value is not None and value.offset_ns == -2000
+    assert value is not None
+    assert value.offset_ns == -2000
 
 
 @pytest.mark.parametrize("body", ["exit 1", "printf 'unparseable'", "sleep 2"])

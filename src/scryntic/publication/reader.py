@@ -40,6 +40,10 @@ from scryntic.publication.sqlite_store import (
     PublicationStore,
 )
 
+_INVALID_PREDECESSOR = "Invalid manifest predecessor"
+_INVALID_OBJECT_DESCRIPTOR = "Invalid publication object descriptor"
+_OBJECT_ROWS_DISAGREE = "Publication object rows disagree"
+
 
 class PublicationReaderError(RuntimeError):
     """Fixed-message publication read failure."""
@@ -109,7 +113,7 @@ class PublicationReader:
         continuity = Continuity.SELF
         if body.sequence == 1:
             if body.previous_manifest_hash != GENESIS_MANIFEST_HASH:
-                raise PublicationReaderError("Invalid manifest predecessor")
+                raise PublicationReaderError(_INVALID_PREDECESSOR)
         else:
             predecessor = ManifestRef(
                 body.producer,
@@ -120,19 +124,19 @@ class PublicationReader:
             try:
                 previous, previous_bytes = self._external_document(predecessor)
             except PublicationReaderError:
-                raise PublicationReaderError("Invalid manifest predecessor") from None
+                raise PublicationReaderError(_INVALID_PREDECESSOR) from None
             if (
                 previous.ref != predecessor
                 or previous.body.checkpoint_after.offset >= body.checkpoint_after.offset
             ):
-                raise PublicationReaderError("Invalid manifest predecessor")
+                raise PublicationReaderError(_INVALID_PREDECESSOR)
             catalog = self._store.catalog_by_epoch_sequence(
                 body.epoch, body.sequence - 1
             )
             if catalog is not None and (
                 catalog.ref != predecessor or catalog.manifest_bytes != previous_bytes
             ):
-                raise PublicationReaderError("Invalid manifest predecessor")
+                raise PublicationReaderError(_INVALID_PREDECESSOR)
             continuity = Continuity.EPOCH
         if body.checkpoint_before is not None:
             global_predecessor = self._store.catalog_by_checkpoint(
@@ -164,14 +168,14 @@ class PublicationReader:
             or normalized_descriptor.role is not ArchiveRole.NORMALIZED
             or normalized_descriptor.record_count != body.record_count
         ):
-            raise PublicationReaderError("Invalid publication object descriptor")
+            raise PublicationReaderError(_INVALID_OBJECT_DESCRIPTOR)
         raw_path = self._storage.object_path(raw_descriptor.sha256)
         try:
             if (
                 raw_path.stat(follow_symlinks=False).st_size
                 != raw_descriptor.encoded_bytes
             ):
-                raise PublicationReaderError("Invalid publication object descriptor")
+                raise PublicationReaderError(_INVALID_OBJECT_DESCRIPTOR)
             normalized = asyncio.run(
                 self._normalized.read(normalized_descriptor, self._limits.normalized)
             )
@@ -190,7 +194,7 @@ class PublicationReader:
         except Exception:
             raise PublicationReaderError("Invalid publication object") from None
         if len(normalized) != len(records):
-            raise PublicationReaderError("Publication object rows disagree")
+            raise PublicationReaderError(_OBJECT_ROWS_DISAGREE)
         if (
             sum(
                 len(canonical_json_bytes({"raw": raw_projection(record)}))
@@ -198,19 +202,17 @@ class PublicationReader:
             )
             != raw_descriptor.decoded_bytes
         ):
-            raise PublicationReaderError("Invalid publication object descriptor")
+            raise PublicationReaderError(_INVALID_OBJECT_DESCRIPTOR)
         values: list[PublicationInput] = []
         for record, archived in zip(records, normalized, strict=True):
             if archived.identity != record.identity:
-                raise PublicationReaderError("Publication object rows disagree")
+                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE)
             try:
                 value = PublicationInput(record, archived.outcome, archived.semantics)
             except (TypeError, ValueError):
-                raise PublicationReaderError(
-                    "Publication object rows disagree"
-                ) from None
+                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE) from None
             if archived != archived_normalization(value):
-                raise PublicationReaderError("Publication object rows disagree")
+                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE)
             values.append(value)
         if ordered_input_digest(tuple(values)) != body.ordered_input_digest:
             raise PublicationReaderError("Publication ordered input digest mismatch")

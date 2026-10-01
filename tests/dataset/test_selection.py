@@ -31,7 +31,8 @@ def _source(
     )
     reader = FixedNormalizationReader((raw,))
     outcome = reader.outcome(raw.identity)
-    assert outcome is not None and outcome.semantic_revision is not None
+    assert outcome is not None
+    assert outcome.semantic_revision is not None
     semantics = reader.observation(outcome.semantic_revision)
     assert semantics is not None
     if kind is OutcomeKind.REJECTED:
@@ -104,10 +105,12 @@ def test_strict_timing_cannot_hide_known_conflict_behind_unknown_receipt(
     cutoff = ClockSample(
         1_700_000_100_000_000_000, 1, "cutoff", TimeQuality("epoch", "healthy", 0, 5, 0)
     )
+    prepared_clock_limits = ClockLimits()
     with pytest.raises(SelectionError):
-        selection.strict_eligible((accepted, bad), cutoff, ClockLimits())
+        selection.strict_eligible((accepted, bad), cutoff, prepared_clock_limits)
 
 
 def test_duplicate_requires_a_prior_identical_semantic_revision() -> None:
+    prepared_source = (_source(1, kind=OutcomeKind.DUPLICATE),)
     with pytest.raises(SelectionError):
-        select_candles((_source(1, kind=OutcomeKind.DUPLICATE),))
+        select_candles(prepared_source)

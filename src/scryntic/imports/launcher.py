@@ -13,6 +13,19 @@ from pathlib import Path
 from scryntic.imports.protocol import ImportError, ImportLimits
 
 
+def _terminate_process(process: subprocess.Popen[bytes]) -> None:
+    # PID namespace lifetime also kills descendants; group termination covers
+    # launcher/bootstrap failures before the namespace exists.
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    process.wait()
+    for pipe in (process.stdout, process.stderr):
+        if pipe is not None:
+            pipe.close()
+
+
 def bounded_process(
     command: list[str], descriptors: tuple[int, ...], limits: ImportLimits
 ) -> bytes:
@@ -66,16 +79,7 @@ def bounded_process(
         raise ImportError("Restricted decoder failed") from None
     finally:
         if process is not None:
-            # PID namespace lifetime also kills descendants; group termination
-            # covers launcher/bootstrap failures before the namespace exists.
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            process.wait()
-            for pipe in (process.stdout, process.stderr):
-                if pipe is not None:
-                    pipe.close()
+            _terminate_process(process)
 
 
 class LinuxDecoder:

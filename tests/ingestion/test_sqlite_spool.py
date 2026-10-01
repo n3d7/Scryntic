@@ -297,8 +297,9 @@ def test_failed_commit_rolls_back_without_advancing_acceptance(
         connection = connections[0]
         connection.observations.clear()
         connection.fail_commit = True
+        prepared_envelope = envelope(InstrumentId("fake", "spot", "BTC-USDT"))
         with pytest.raises(IngestionError, match="commit"):
-            ingestor.accept(envelope(InstrumentId("fake", "spot", "BTC-USDT")))
+            ingestor.accept(prepared_envelope)
         assert ingestor.status().accepted_offset == 0
         assert connection.in_transaction is False
         assert ("ROLLBACK", "after", True, False) in connection.observations
@@ -328,8 +329,9 @@ def test_failed_rollback_permanently_fails_writer_without_exposing_progress(
     connection.fail_rollback = True
 
     try:
+        prepared_envelope = envelope(InstrumentId("fake", "spot", "BTC-USDT"))
         with pytest.raises(IngestionError, match="transaction recovery"):
-            ingestor.accept(envelope(InstrumentId("fake", "spot", "BTC-USDT")))
+            ingestor.accept(prepared_envelope)
         with pytest.raises(IngestionError, match="writer failed"):
             ingestor.status()
     finally:

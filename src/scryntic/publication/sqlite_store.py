@@ -30,6 +30,9 @@ from scryntic.publication.manifest import (
     parse_manifest,
 )
 
+_BEGIN_IMMEDIATE = "BEGIN IMMEDIATE"
+_STORE_FAILED = "Durable publication store failed"
+
 _DATABASE_NAME = "publication.sqlite3"
 _LOCK_NAME = "publication.lock"
 _SCHEMA_VERSION = 1
@@ -352,7 +355,7 @@ class PublicationStore:
                 is not None
             ):
                 raise PublicationError("Invalid publication schema")
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             try:
                 for _, _, _, sql in _SCHEMA:
                     connection.execute(sql)
@@ -463,7 +466,7 @@ class PublicationStore:
 
     def _require_open(self) -> None:
         if self._failed:
-            raise PublicationError("Durable publication store failed")
+            raise PublicationError(_STORE_FAILED)
         if self._closed:
             raise PublicationError("Publication store is closed")
         if threading.get_ident() != self._owner_thread:
@@ -585,7 +588,7 @@ class PublicationStore:
             raise TypeError("Expected a publication reservation")
         connection = self._connection
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             existing = self.pending()
             if existing is not None:
                 if existing.reservation == value:
@@ -681,7 +684,7 @@ class PublicationStore:
         document = self._validate_prepared(pending.reservation, manifest_bytes)
         connection = self._connection
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             current = self.pending()
             if current != pending:
                 raise PublicationError("Pending publication changed")
@@ -721,7 +724,7 @@ class PublicationStore:
         body = document.body
         connection = self._connection
         try:
-            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(_BEGIN_IMMEDIATE)
             if self.pending() != pending:
                 raise PublicationError("Pending publication changed")
             connection.execute(
@@ -886,14 +889,16 @@ class PublicationStore:
             if self._connection.in_transaction:
                 self._connection.execute("ROLLBACK")
             if self._connection.in_transaction:
-                raise PublicationError("Durable publication store failed")
-        except BaseException:
+                raise PublicationError(_STORE_FAILED)
+        except BaseException as error:
             self._failed = True
             try:
                 self._connection.close()
-            except BaseException:
+            except Exception:
                 pass
-            raise PublicationError("Durable publication store failed") from None
+            if not isinstance(error, Exception):
+                raise
+            raise PublicationError(_STORE_FAILED) from None
 
     def close(self) -> None:
         if self._closed:
