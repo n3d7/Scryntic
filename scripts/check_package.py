@@ -87,6 +87,8 @@ def main() -> None:
                 check=True,
             )
             forbidden = ["pytest", "ruff", "mypy", "pip_audit", "coverage"]
+            if profile != "analysis":
+                forbidden += ["asyncssh"]
             if profile == "base":
                 forbidden += ["pyarrow"]
             if profile != "analysis":
