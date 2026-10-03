@@ -110,6 +110,11 @@ def main() -> None:
     if sys.argv[3:] == ["probe"]:
         os.write(1, b'{"isolation":"verified","protocol":1}')
         return
+    if sys.argv[3] == "analysis":
+        from scryntic.dataset.worker import run as analyze
+
+        analyze(sys.argv[4:])
+        return
     from scryntic.imports.worker import run
 
     run(sys.argv[3:])

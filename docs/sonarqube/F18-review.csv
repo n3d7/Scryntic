@@ -1,0 +1,25 @@
+issue_key,rule,file,first_observed_line,classification,action
+cbab0e70-a5cc-4ad6-8b3c-64cbf6186a8a,python:S3776,src/scryntic/dataset/recipes.py,117,F18 attributable,Repaired and no longer open
+cb23c789-ab2d-472c-9fc7-63d50d9b8aec,python:S3776,src/scryntic/dataset/recipes.py,182,F18 attributable,Repaired and no longer open
+80d97191-27ac-4672-8fd1-b86437d09af1,python:S1192,src/scryntic/dataset/schemas.py,5,F18 attributable,Repaired and no longer open
+05d43c56-93f8-4c9f-84ad-c3ca67e17cb3,python:S5864,src/scryntic/dataset/schemas.py,27,F18 attributable,Repaired and no longer open
+3825ea17-6b8f-4087-935c-ed0931c61e00,python:S5864,src/scryntic/dataset/schemas.py,27,F18 attributable,Repaired and no longer open
+aac5424a-4d75-44b5-8e22-cf1b07a6dbf5,python:S5864,src/scryntic/dataset/schemas.py,27,F18 attributable,Repaired and no longer open
+dcc0af0e-fe71-40b3-b22a-b605a346919a,python:S3358,src/scryntic/dataset/service.py,103,F18 attributable,Repaired and no longer open
+c78c501d-68e5-4fd6-8de6-81b0b4557c9b,python:S3776,src/scryntic/dataset/worker.py,289,F18 attributable,Repaired and no longer open
+69bbc605-91f4-4d30-a46e-d09cf6301d70,python:S3358,src/scryntic/imports/launcher.py,161,F18 attributable,Repaired and no longer open
+0690473e-e406-4f3f-9456-a14d7d61835e,python:S3358,src/scryntic/imports/launcher.py,203,F18 attributable,Repaired and no longer open
+c8d0287d-257f-4f19-8717-fefee85a1648,python:S3776,src/scryntic/dataset/snapshot.py,191,pre-existing baseline,Outside F18 scope; retained
+805fca79-607b-4664-9210-dc15126db2b1,python:S5754,src/scryntic/imports/bootstrap.py,126,pre-existing baseline,Outside F18 scope; retained
+120c246a-8f22-4a26-b866-f2dc1471bbd1,python:S930,src/scryntic/imports/catalog.py,121,pre-existing baseline,Outside F18 scope; retained
+ca024992-3791-42e2-9d27-a4d75d5049a3,python:S3776,src/scryntic/imports/launcher.py,30,pre-existing baseline,Outside F18 scope; retained
+21c603d2-f70a-405d-bc37-172d979ae3d9,python:S5864,src/scryntic/dataset/protocol.py,58,F18 attributable,Repaired and no longer open
+ec801205-bb48-422f-a587-999c8998cdd3,python:S5778,tests/dataset/test_imported.py,96,F18 attributable,Repaired and no longer open
+6a669752-42c7-4777-a33d-ad26b43de97d,python:S5778,tests/dataset/test_imported.py,98,F18 attributable,Repaired and no longer open
+2ccda95b-1cf7-41c8-886e-2e1a5969a422,python:S5778,tests/dataset/test_imported_security.py,61,F18 attributable,Repaired and no longer open
+70172feb-7264-4d10-aff0-f73df5b482af,python:S5778,tests/dataset/test_imported_security.py,122,F18 attributable,Repaired and no longer open
+fd13d847-cc88-469f-9db0-2b3c784b07c9,python:S5778,tests/dataset/test_imported_security.py,141,F18 attributable,Repaired and no longer open
+25d4b4ae-28bd-4ccc-94e3-290b5fe2150a,python:S5778,tests/dataset/test_recipes.py,80,F18 attributable,Repaired and no longer open
+5c491109-a31c-46ef-b9c6-4a6ae521581f,python:S5778,tests/dataset/test_recipes.py,97,F18 attributable,Repaired and no longer open
+a548307f-384e-4c50-ad1b-b611a2c8b1b0,python:S5778,tests/dataset/test_recipes.py,121,F18 attributable,Repaired and no longer open
+33a1a83f-68b4-410f-8ace-dc38a06a8d9c,python:S5778,tests/dataset/test_recipes.py,129,F18 attributable,Repaired and no longer open

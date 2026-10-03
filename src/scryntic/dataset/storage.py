@@ -1,13 +1,16 @@
 """Local no-replace storage for generated dataset artifacts."""
 
+from __future__ import annotations
+
 import os
 import stat
 import tempfile
 from hashlib import sha256
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import pyarrow as pa  # type: ignore[import-untyped]
-import pyarrow.parquet as pq  # type: ignore[import-untyped]
+if TYPE_CHECKING:
+    import pyarrow as pa  # type: ignore[import-untyped]
 
 from scryntic.configuration.paths import Installation, directory
 from scryntic.domain.validation import digest
@@ -23,8 +26,10 @@ class DatasetStorage:
         self._owner_uid = installation.owner_uid
 
     def _ensure_directory(self, path: Path) -> None:
+        created = False
         try:
             path.mkdir(mode=0o700)
+            created = True
         except FileExistsError:
             pass
         info = path.stat(follow_symlinks=False)
@@ -34,6 +39,8 @@ class DatasetStorage:
             or stat.S_IMODE(info.st_mode) != 0o700
         ):
             raise DatasetStorageError("Unsafe dataset directory")
+        if created:
+            self._fsync_directory(path.parent)
 
     def _prepare(self, installation: Installation) -> Path:
         with directory(installation.state_dir, installation.owner_uid, private=True):
@@ -108,6 +115,8 @@ class DatasetStorage:
     def write_table(
         self, installation: Installation, table: pa.Table, *, max_bytes: int
     ) -> tuple[str, int]:
+        import pyarrow.parquet as pq  # type: ignore[import-untyped]
+
         staging_dir = self._prepare(installation)
         fd, name = tempfile.mkstemp(
             prefix=".dataset-", suffix=".parquet", dir=staging_dir
@@ -123,6 +132,13 @@ class DatasetStorage:
     def write_manifest(
         self, installation: Installation, data: bytes, *, max_bytes: int
     ) -> tuple[str, int]:
+        return self.write_bytes(installation, data, "json", max_bytes=max_bytes)
+
+    def write_bytes(
+        self, installation: Installation, data: bytes, suffix: str, *, max_bytes: int
+    ) -> tuple[str, int]:
+        if suffix not in ("json", "parquet") or type(data) is not bytes:
+            raise DatasetStorageError("Unsupported dataset artifact")
         staging_dir = self._prepare(installation)
         fd, name = tempfile.mkstemp(
             prefix=".manifest-", suffix=".json", dir=staging_dir
@@ -133,7 +149,7 @@ class DatasetStorage:
                 file.write(data)
                 file.flush()
                 os.fsync(file.fileno())
-            return self._install(path, "json", max_bytes)
+            return self._install(path, suffix, max_bytes)
         finally:
             path.unlink(missing_ok=True)
 

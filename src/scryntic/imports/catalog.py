@@ -6,7 +6,8 @@ import re
 import sqlite3
 import stat
 import threading
-from contextlib import ExitStack
+from collections.abc import Iterator
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from uuid import uuid4
 
@@ -392,3 +393,46 @@ class ImportCatalog:
             return document.ref
         except Exception:
             raise ImportError("Import inspection rejected") from None
+
+    @contextmanager
+    def analytical_inputs(
+        self, hashes: tuple[str, ...]
+    ) -> Iterator[tuple[tuple[ManifestDocument, bytes, tuple[int, int, int]], ...]]:
+        """Accepted exact inputs, sealed without native decoding in this process.
+
+        The consumer must revalidate these bytes in the restricted worker. Catalog
+        acceptance and hashes confer identity, never parser authority.
+        """
+        self._check()
+        if not hashes or len(hashes) > 8 or len(set(hashes)) != len(hashes):
+            raise ImportError("Invalid analytical input selection")
+        with ExitStack() as resources:
+            result: list[tuple[ManifestDocument, bytes, tuple[int, int, int]]] = []
+            for value in hashes:
+                digest(value)
+                row = self._db.execute(
+                    "SELECT manifest, receipt FROM imports WHERE manifest_hash=?",
+                    (value,),
+                ).fetchone()
+                if row is None or any(type(item) is not bytes for item in row):
+                    raise ImportError("Unknown analytical input")
+                document = parse_request(row[0], self.limits)
+                if document.manifest_hash != value:
+                    raise ImportError("Analytical input identity mismatch")
+                manifest_fd = sealed_bytes(row[0])
+                resources.callback(os.close, manifest_fd)
+                objects = self._snapshots(self._objects, document, resources)
+                result.append((document, row[1], (manifest_fd, *objects)))
+            if (
+                sum(item[0].body.record_count for item in result)
+                > self.limits.max_records
+            ):
+                raise ImportError("Analytical input row limit")
+            if (
+                sum(
+                    obj.encoded_bytes for item in result for obj in item[0].body.objects
+                )
+                > 128 * 1024 * 1024
+            ):
+                raise ImportError("Analytical input byte limit")
+            yield tuple(result)

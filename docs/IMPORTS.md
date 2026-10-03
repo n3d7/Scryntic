@@ -5,6 +5,10 @@ enroll a server, authenticate transport, manage chain anchors or decide whether
 market data is true. F17's separate explicit transport/enrollment trust and
 resumable pull contract is documented in [F17_PULL.md](sync/F17_PULL.md);
 market-data truth remains a consumer concern.
+
+F18's [dataset guide](DATASETS.md) documents accepted-input snapshots, immutable
+retention pins and restricted analytical build/inspection/export. Catalog
+acceptance never permits native parsing in the coordinator.
 The collector's F11 readers are trusted local-publication readers, not import APIs.
 
 ## Workstation service and provisioning
