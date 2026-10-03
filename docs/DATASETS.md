@@ -77,7 +77,7 @@ also require finalized future candles. Gaps/missing/non-final values become null
 with reasons and source fingerprints, including partial chains; no imputation,
 float conversion or fitting occurs. Disabled derived fields are null and omitted
 from active definitions. Labels are separate from features. Splits/train-only
-fitting/replay evaluation belong to F19, not this service.
+fitting/replay evaluation use [F19 ReplayService](REPLAY.md) over pinned snapshots.
 
 ## Compatibility
 

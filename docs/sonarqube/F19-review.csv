@@ -1,0 +1,14 @@
+issue,rule,file,line,repair
+c8e68953-6c3f-4ff7-926e-1c42ff8c4416,python:S3776,src/scryntic/replay/evaluation.py,97,Extract cohesive chain/forecast phase
+2a20c0c2-cb51-43dc-9caa-bacb55ade488,python:S3776,src/scryntic/replay/reader.py,157,Extract cohesive chain/forecast phase
+caa5cd6e-3e4e-4fd7-9d6b-3629f46eed51,python:S3415,tests/replay/test_evaluation.py,26,Use consistent actual/expected order
+ecb2fccb-6d91-42cc-bca9-c063493cf3a7,python:S9073,tests/replay/test_evaluation.py,89,Split assertion preserving checks
+fd297624-2d95-4324-9abd-d642922c9ed3,python:S5778,tests/replay/test_guards.py,26,Prepare configuration before raises
+13f40e1f-984f-4ec6-bd5c-5c6a47099933,python:S5778,tests/replay/test_guards.py,64,Prepare configuration before raises
+45ebe490-fe64-49d4-b2a9-ee37538d9287,python:S5778,tests/replay/test_quality.py,123,Prepare configuration before raises
+1c91b65b-f4fa-4c80-b5a4-0a81eeae3490,python:S9073,tests/replay/test_reader.py,31,Split assertion preserving checks
+de94cca8-8ae5-48ad-8b97-ed63428bc937,python:S5778,tests/replay/test_reader.py,91,Prepare configuration before raises
+c118fe8c-4401-459d-a3f1-7773a9e55e74,python:S5778,tests/replay/test_reader.py,95,Prepare configuration before raises
+e170a429-9164-440c-8744-33b339d31d27,python:S5778,tests/replay/test_service.py,83,Prepare configuration before raises
+d49c5a1a-3d0b-4bd0-b5ea-a89f445cb8d2,python:S5778,tests/replay/test_service.py,107,Prepare configuration before raises
+ba4ec3c4-b0da-493a-8ddb-acd89a6d72a0,python:S5778,tests/replay/test_service.py,129,Prepare configuration before raises
