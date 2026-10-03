@@ -72,13 +72,15 @@ warnings, intentional terminal worker shutdown, and the known Python 3.12 SQLite
 `autocommit` false positive. They were verified against actual source/tests and
 not expanded into this task.
 
-Final repaired-tree analysis at **2026-10-03T11:08:52Z** imported `coverage.xml`
+Final committed-tree analysis at **2026-10-03T11:16:44Z**, revision
+`fd163b906ee79f7bfb9a3d081503e2fae7056930`, imported `coverage.xml`
 without a coverage warning. Production query: four pre-existing findings; new-test
 query: zero findings; new-code issue metric: **0**. Global gate is **ERROR** solely
-because new-code coverage is **78.4%**, below 80%; new-code duplication is **0.0%**.
+because new-code coverage is **78.5%**, below 80%; new-code duplication is **0.0%**.
 Scanner exit 3 means the completed analysis failed that gate, not an absent report.
-Uncommitted-tree scans warned about missing SCM blame; publication verification
-uses the committed tree. Coverage percentages are server baseline metrics, not
+The committed-tree scan completed SCM blame for all 16 changed source/test files;
+the subsequent documentation-only commit does not change analyzed code. Coverage
+percentages are server baseline metrics, not
 proof that restricted parsing is safe or that worker results cannot be malicious.
 
 ## Remaining limits
