@@ -85,8 +85,18 @@ Final local-tree analysis at **2026-10-03T20:35:24Z** completed with scanner exi
 **gate OK**, **0 new issues**, **96.6% new-code coverage**, **0.0% new-code
 duplication**, **0 scoped Security Hotspots**. Complete result pages were inspected
 through SonarQube MCP. Four production files and all new test files have no remaining
-attributable findings. Initial untracked-file SCM warnings will be resolved by the
-committed-tree verification before publication evidence is finalized.
+attributable findings.
+
+Committed-tree analysis at **2026-10-03T20:37:09Z**, revision
+`deafb0fb72bf3cd1d21a417a9ef7bdc30ffc9977`, also exited 0: **gate OK**, **0 new
+issues**, **96.6% new-code coverage**, **0.0% new duplication**. SCM blame completed
+for the new source/test files without the initial missing-blame warning. SonarQube
+MCP confirmed the gate, measures and analysis date. The subsequent evidence-only
+documentation commit does not change analyzed code or measured production inputs.
+
+Publication uses branch `ker-23-f19-replay` against main. The implementation and
+evidence are committed/pushed; a review PR is opened without merging. The original
+checkout remains on main with its original local modifications preserved.
 
 ## Remaining limits
 
