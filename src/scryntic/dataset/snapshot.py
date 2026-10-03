@@ -22,6 +22,18 @@ from scryntic.archive.raw_parquet import RAW_PARQUET_SCHEMA
 from scryntic.clock.policy import time_interval
 from scryntic.configuration.clock import ClockLimits
 from scryntic.configuration.paths import Installation
+from scryntic.dataset.schemas import (
+    AS_OBSERVED_CANDLE_RECIPE_SCHEMA as AS_OBSERVED_CANDLE_RECIPE_SCHEMA,
+)
+from scryntic.dataset.schemas import (
+    CANDLE_RECIPE_SCHEMA as CANDLE_RECIPE_SCHEMA,
+)
+from scryntic.dataset.schemas import (
+    DATASET_SCHEMA as DATASET_SCHEMA,
+)
+from scryntic.dataset.schemas import (
+    MANIFEST_SCHEMA as MANIFEST_SCHEMA,
+)
 from scryntic.dataset.selection import (
     SelectedCandle,
     SelectionError,
@@ -31,7 +43,7 @@ from scryntic.dataset.selection import (
 )
 from scryntic.dataset.storage import DatasetStorage, DatasetStorageError
 from scryntic.domain.dataset import DatasetRef
-from scryntic.domain.identity import SchemaRef, Version
+from scryntic.domain.identity import SchemaRef
 from scryntic.domain.market import CANDLE_SCHEMA, INSTRUMENT_SCHEMA
 from scryntic.domain.validation import digest, identifier
 from scryntic.normalization.candle import FAKE_CANDLE_SCHEMA
@@ -40,12 +52,6 @@ from scryntic.publication.reader import PublicationReader, PublicationReaderErro
 
 _CANDLE_PRICE_DEFINITION = "decimal128(38,18) candle price"
 
-CANDLE_RECIPE_SCHEMA = SchemaRef("scryntic.dataset.candle-recipe", Version(1, 0))
-AS_OBSERVED_CANDLE_RECIPE_SCHEMA = SchemaRef(
-    "scryntic.dataset.candle-recipe", Version(1, 1)
-)
-DATASET_SCHEMA = SchemaRef("scryntic.dataset.candle.parquet", Version(1, 0))
-MANIFEST_SCHEMA = SchemaRef("scryntic.dataset.manifest", Version(1, 0))
 MAX_PARQUET_BYTES = 512 * 1024 * 1024
 MAX_MANIFEST_BYTES = 64 * 1024 * 1024
 
@@ -431,6 +437,8 @@ class DatasetReader:
 
     def read_table(self, reference: DatasetRef) -> pa.Table:
         manifest = self.read_manifest(reference)
+        if "imports" in manifest:
+            raise DatasetBuildError("Imported datasets require restricted inspection")
         descriptor = manifest.get("parquet")
         if (
             not isinstance(descriptor, dict)

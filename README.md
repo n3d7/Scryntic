@@ -8,6 +8,9 @@ F10 capacity measurements, raw codec selection and configurable retention sizing
 Workstation F17 enrollment, authenticated resumable SFTP pulls and trust-anchor
 recovery: [operator/API guide](docs/sync/F17_PULL.md).
 
+F18 reproducible imported datasets, temporal/coverage recipes, schema compatibility
+and restricted inspection/export: [dataset guide](docs/DATASETS.md).
+
 ## License
 
 Scryntic is licensed under the [Apache License, Version 2.0](LICENSE).

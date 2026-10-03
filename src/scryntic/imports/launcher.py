@@ -2,6 +2,7 @@
 
 import os
 import platform
+import re
 import selectors
 import signal
 import subprocess
@@ -27,9 +28,18 @@ def _terminate_process(process: subprocess.Popen[bytes]) -> None:
 
 
 def bounded_process(
-    command: list[str], descriptors: tuple[int, ...], limits: ImportLimits
+    command: list[str],
+    descriptors: tuple[int, ...],
+    limits: ImportLimits,
+    *,
+    max_output_bytes: int | None = None,
 ) -> bytes:
     """No communicate() accumulation or wait for attacker-controlled pipe EOF."""
+    output_limit = (
+        limits.max_message_bytes if max_output_bytes is None else max_output_bytes
+    )
+    if type(output_limit) is not int or not 0 < output_limit <= 64 * 1024 * 1024:
+        raise ImportError("Invalid analytical output limit")
     process: subprocess.Popen[bytes] | None = None
     try:
         process = subprocess.Popen(
@@ -66,10 +76,7 @@ def bounded_process(
                         output.extend(data)
                     else:
                         errors += len(data)
-                    if (
-                        len(output) > limits.max_message_bytes
-                        or errors > limits.max_message_bytes
-                    ):
+                    if len(output) > output_limit or errors > limits.max_message_bytes:
                         raise ImportError("Decoder message limit exceeded")
             remaining = deadline - time.monotonic()
             if remaining <= 0 or process.wait(timeout=remaining) != 0:
@@ -88,7 +95,13 @@ class LinuxDecoder:
     def __init__(self, limits: ImportLimits) -> None:
         self.limits = limits
 
-    def _command(self, inputs: tuple[int, ...], *, probe: bool) -> list[str]:
+    def _command(
+        self,
+        inputs: tuple[int, ...],
+        *,
+        probe: bool,
+        analytical_names: tuple[str, ...] | None = None,
+    ) -> list[str]:
         if platform.system() != "Linux" or platform.machine() != "x86_64":
             raise ImportError("Unsupported decoder host")
         python_root = Path(sys.base_prefix).resolve()
@@ -142,7 +155,12 @@ class LinuxDecoder:
                 raise ImportError("Decoder runtime unavailable")
             command.extend(("--ro-bind", str(source), f"/packages/{name}"))
         command.extend(("--dir", "/input"))
-        names = () if probe else ("manifest", "raw", "normalized")
+        if analytical_names is not None:
+            names = analytical_names
+        elif probe:
+            names = ()
+        else:
+            names = ("manifest", "raw", "normalized")
         for fd, name in zip(inputs, names, strict=True):
             command.extend(
                 ("--perms", "0400", "--ro-bind-data", str(fd), f"/input/{name}")
@@ -180,19 +198,43 @@ class LinuxDecoder:
                 str(self.limits.cpu_seconds),
             )
         )
-        command.extend(
-            ["probe"]
-            if probe
-            else [
-                str(self.limits.max_encoded_bytes),
-                str(self.limits.max_decoded_bytes),
-                str(self.limits.max_records),
-            ]
-        )
+        if probe:
+            command.append("probe")
+        else:
+            if analytical_names is not None:
+                command.append("analysis")
+            command.extend(
+                [
+                    str(self.limits.max_encoded_bytes),
+                    str(self.limits.max_decoded_bytes),
+                    str(self.limits.max_records),
+                ]
+            )
         return command
 
     def decode(self, inputs: tuple[int, int, int]) -> bytes:
         return bounded_process(self._command(inputs, probe=False), inputs, self.limits)
+
+    def analytical(
+        self, inputs: tuple[int, ...], names: tuple[str, ...], output_limit: int
+    ) -> bytes:
+        if (
+            not names
+            or names[0] != "request"
+            or len(names) != len(inputs)
+            or any(
+                re.fullmatch(r"request|manifest|parquet|[mrn][0-7]", name) is None
+                for name in names
+            )
+            or len(set(names)) != len(names)
+        ):
+            raise ImportError("Invalid analytical inputs")
+        return bounded_process(
+            self._command(inputs, probe=False, analytical_names=names),
+            inputs,
+            self.limits,
+            max_output_bytes=output_limit,
+        )
 
     def probe(self) -> None:
         output = bounded_process(self._command((), probe=True), (), self.limits)

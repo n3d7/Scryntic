@@ -104,8 +104,10 @@ implementation; F10 chooses the deployment codec after measurement. A codec
 identifier never causes an import or download.
 
 A `DatasetRef` identifies the exact immutable JSON manifest by SHA-256; the
-manifest will bind input objects, recipes, environment and provenance in F08/
-F18. Row count and schema are claims to verify against it, not authority to open
+manifest binds input objects, recipes, environment and provenance in F08/F18.
+[F18 dataset contracts](DATASETS.md) describe supported generations, immutable
+pins and restricted analytical inspection/export. Row count and schema are claims
+to verify against it, not authority to open
 paths. Application DTOs contain owned values only. Bounded identifier/cursor/
 collection sizes are contract safety limits, not instrument-count, frequency
 or retention product limits. Runtime deployment budgets may be lower.
