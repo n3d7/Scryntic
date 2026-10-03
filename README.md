@@ -11,6 +11,9 @@ recovery: [operator/API guide](docs/sync/F17_PULL.md).
 F18 reproducible imported datasets, temporal/coverage recipes, schema compatibility
 and restricted inspection/export: [dataset guide](docs/DATASETS.md).
 
+F19 deterministic offline candle replay, temporal splits, training-only transforms
+and statistical forecast evaluation: [replay guide](docs/REPLAY.md).
+
 ## License
 
 Scryntic is licensed under the [Apache License, Version 2.0](LICENSE).
