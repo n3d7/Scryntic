@@ -23,3 +23,4 @@ fd13d847-cc88-469f-9db0-2b3c784b07c9,python:S5778,tests/dataset/test_imported_se
 5c491109-a31c-46ef-b9c6-4a6ae521581f,python:S5778,tests/dataset/test_recipes.py,97,F18 attributable,Repaired and no longer open
 a548307f-384e-4c50-ad1b-b611a2c8b1b0,python:S5778,tests/dataset/test_recipes.py,121,F18 attributable,Repaired and no longer open
 33a1a83f-68b4-410f-8ace-dc38a06a8d9c,python:S5778,tests/dataset/test_recipes.py,129,F18 attributable,Repaired and no longer open
+afd0502d-4f92-4c2b-aea4-d0a411c2d8bd,python:S9073,tests/dataset/test_recipe_guards.py,131,F18 coverage follow-up,Split composite assertion; no longer open
