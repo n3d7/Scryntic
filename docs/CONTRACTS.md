@@ -120,6 +120,11 @@ and enforcement (terms/review date, resource/loading requirements, approved use,
 local/remote policy); F21 enforces OS isolation. No real model may run under the
 F03 fake-provider path. Descriptors cannot resolve secrets or load code.
 
+[F20 provider jobs](JOBS.md) implement the exact review/policy grants, closed
+versioned job/response envelopes, durable cancellation/deadlines and fenced restart
+recovery over these owned provider/result contracts. Remote execution remains an
+explicitly authorized bounded loopback fixture, disabled by default.
+
 `ProviderDescriptor.require` checks forecast support, input schema, row/horizon
 limits, optional covariates and explicit remote-disclosure intent. That intent
 is necessary but not sufficient deployment authorization. Result validation

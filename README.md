@@ -14,6 +14,9 @@ and restricted inspection/export: [dataset guide](docs/DATASETS.md).
 F19 deterministic offline candle replay, temporal splits, training-only transforms
 and statistical forecast evaluation: [replay guide](docs/REPLAY.md).
 
+F20 explicit provider/model admission, durable jobs and bounded loopback HTTP
+fixtures: [provider jobs guide](docs/JOBS.md).
+
 ## License
 
 Scryntic is licensed under the [Apache License, Version 2.0](LICENSE).

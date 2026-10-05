@@ -331,17 +331,20 @@ class DurableIngestor:
                 active_request = None
         except BaseException as error:
             if not self._ready.done():
-                startup_error = (
-                    error
-                    if isinstance(error, IngestionError)
-                    else IngestionError("Unable to initialize durable ingestion")
-                )
-                self._ready.set_exception(startup_error)
+                self._startup_failed(error)
             else:
                 self._fail_writer(active_request)
         finally:
             if connection is not None:
                 connection.close()
+
+    def _startup_failed(self, error: BaseException) -> None:
+        startup_error = (
+            error
+            if isinstance(error, IngestionError)
+            else IngestionError("Unable to initialize durable ingestion")
+        )
+        self._ready.set_exception(startup_error)
 
     def _fail_writer(self, active_request: _Request | None = None) -> None:
         failure = IngestionError("Durable ingestion writer failed")
