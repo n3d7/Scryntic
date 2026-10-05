@@ -326,20 +326,24 @@ def test_public_http_client_rejects_redirects_oversize_and_non_allowlisted_paths
         monkeypatch, status=302, headers={"Location": "https://evil.invalid"}
     )
     client = BybitPublicClient()
+    prepared_operation = client.get("/v5/market/kline", {"category": "spot"})
     with pytest.raises(BybitError, match="redirect"):
-        asyncio.run(client.get("/v5/market/kline", {"category": "spot"}))
+        asyncio.run(prepared_operation)
 
     _stub_http_session(monkeypatch, headers={"Content-Length": "1048577"})
+    prepared_operation = client.get("/v5/market/kline", {"category": "spot"})
     with pytest.raises(BybitError, match="configured limit") as large:
-        asyncio.run(client.get("/v5/market/kline", {"category": "spot"}))
+        asyncio.run(prepared_operation)
     assert "secret-response-body" not in str(large.value)
 
     _stub_http_session(monkeypatch, body=b"x" * 1_048_577)
+    prepared_operation = client.get("/v5/market/kline", {"category": "spot"})
     with pytest.raises(BybitError, match="configured limit"):
-        asyncio.run(client.get("/v5/market/kline", {"category": "spot"}))
+        asyncio.run(prepared_operation)
 
+    prepared_operation = client.get("https://example.invalid/private", {})
     with pytest.raises(BybitError, match="endpoint"):
-        asyncio.run(client.get("https://example.invalid/private", {}))
+        asyncio.run(prepared_operation)
 
 
 def test_rate_gate_enforces_conservative_two_requests_per_second(
@@ -391,8 +395,9 @@ def test_request_deadline_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
         client=SlowClient(), clock=FixedClock(sample(wall_ns=_BASE_NS))
     )
 
+    prepared_operation = source.discover("spot")
     with pytest.raises(BybitError, match="timed out"):
-        asyncio.run(source.discover("spot"))
+        asyncio.run(prepared_operation)
 
 
 def test_request_deadline_closes_slowly_streaming_body(

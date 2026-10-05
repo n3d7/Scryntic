@@ -91,6 +91,18 @@ class ManifestBody:
             raise ValueError("Invalid manifest predecessor")
         if not isinstance(self.partition, Partition):
             raise TypeError("Expected a publication partition")
+        self._validate_checkpoints()
+        if type(self.objects) is not tuple or len(self.objects) != 2:
+            raise ValueError("Manifest requires two archive objects")
+        if tuple(value.role for value in self.objects) != (
+            ArchiveRole.RAW,
+            ArchiveRole.NORMALIZED,
+        ):
+            raise ValueError("Invalid manifest object role order")
+        if any(value.record_count != self.record_count for value in self.objects):
+            raise ValueError("Manifest object count mismatch")
+
+    def _validate_checkpoints(self) -> None:
         identities = (self.checkpoint_after, self.first_ingestion, self.last_ingestion)
         if any(not isinstance(value, IngestionId) for value in identities):
             raise TypeError("Expected ingestion identities")
@@ -118,15 +130,6 @@ class ManifestBody:
             and self.checkpoint_before.offset >= self.first_ingestion.offset
         ):
             raise ValueError("Manifest checkpoint did not advance")
-        if type(self.objects) is not tuple or len(self.objects) != 2:
-            raise ValueError("Manifest requires two archive objects")
-        if tuple(value.role for value in self.objects) != (
-            ArchiveRole.RAW,
-            ArchiveRole.NORMALIZED,
-        ):
-            raise ValueError("Invalid manifest object role order")
-        if any(value.record_count != self.record_count for value in self.objects):
-            raise ValueError("Manifest object count mismatch")
 
 
 @dataclass(frozen=True, slots=True)

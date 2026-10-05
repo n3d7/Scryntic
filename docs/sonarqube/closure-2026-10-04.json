@@ -1,0 +1,723 @@
+{
+  "project": "Scryntic",
+  "server_branch": "main",
+  "working_tree": "main; uncommitted pre-existing full-review repairs",
+  "base_revision": "131b7e9a6e4feeac62cce9d6f17498dda14afbe3",
+  "analysis_date_utc": "2026-10-03T21:00:04Z",
+  "local_date": "2026-10-04",
+  "timezone": "Europe/Kyiv",
+  "validation": {
+    "normal_gates": {
+      "passed": true,
+      "tests_passed": 1365,
+      "strict_mypy_files": 199,
+      "log": "/tmp/scryntic-sonar-cleanup-gates.log"
+    },
+    "negative_controls": {
+      "passed": true,
+      "count": 7,
+      "log": "/tmp/scryntic-sonar-cleanup-negative.log"
+    },
+    "scanner": {
+      "passed": true,
+      "log": "/tmp/scryntic-sonar-cleanup-final.log"
+    }
+  },
+  "gate": {
+    "status": "OK",
+    "conditions": [
+      {
+        "metricKey": "new_coverage",
+        "status": "OK",
+        "errorThreshold": "80",
+        "actualValue": "85.9"
+      },
+      {
+        "metricKey": "new_duplicated_lines_density",
+        "status": "OK",
+        "errorThreshold": "3",
+        "actualValue": "0.0"
+      },
+      {
+        "metricKey": "new_violations",
+        "status": "OK",
+        "errorThreshold": "0",
+        "actualValue": "0"
+      }
+    ]
+  },
+  "measures": {
+    "component": {
+      "key": "Scryntic",
+      "name": "Scryntic",
+      "qualifier": "TRK"
+    },
+    "measures": [
+      {
+        "metric": "coverage",
+        "value": "80.3",
+        "bestValue": false
+      },
+      {
+        "metric": "reliability_rating",
+        "value": "1.0",
+        "bestValue": true
+      },
+      {
+        "metric": "duplicated_lines_density",
+        "value": "0.0",
+        "bestValue": true
+      },
+      {
+        "metric": "code_smells",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "duplicated_lines",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "security_rating",
+        "value": "1.0",
+        "bestValue": true
+      },
+      {
+        "metric": "new_coverage",
+        "value": "85.9",
+        "period": 1,
+        "bestValue": false
+      },
+      {
+        "metric": "violations",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "security_hotspots",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "sqale_rating",
+        "value": "1.0",
+        "bestValue": true
+      },
+      {
+        "metric": "bugs",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "new_violations",
+        "value": "0",
+        "period": 1,
+        "bestValue": true
+      },
+      {
+        "metric": "duplicated_blocks",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "duplicated_files",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "vulnerabilities",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "new_duplicated_lines_density",
+        "value": "0.0",
+        "period": 1,
+        "bestValue": true
+      }
+    ],
+    "metrics": [
+      {
+        "key": "coverage",
+        "name": "Coverage",
+        "description": "Coverage by tests",
+        "domain": "Coverage",
+        "type": "PERCENT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "new_coverage",
+        "name": "Coverage on New Code",
+        "description": "Coverage of new/changed code",
+        "domain": "Coverage",
+        "type": "PERCENT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "duplicated_lines",
+        "name": "Duplicated Lines",
+        "description": "Duplicated lines",
+        "domain": "Duplications",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "duplicated_blocks",
+        "name": "Duplicated Blocks",
+        "description": "Duplicated blocks",
+        "domain": "Duplications",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "duplicated_files",
+        "name": "Duplicated Files",
+        "description": "Duplicated files",
+        "domain": "Duplications",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "duplicated_lines_density",
+        "name": "Duplicated Lines (%)",
+        "description": "Duplicated lines balanced by statements",
+        "domain": "Duplications",
+        "type": "PERCENT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "new_duplicated_lines_density",
+        "name": "Duplicated Lines (%) on New Code",
+        "description": "Duplicated lines (%) on new code balanced by statements",
+        "domain": "Duplications",
+        "type": "PERCENT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "violations",
+        "name": "Issues",
+        "description": "Issues",
+        "domain": "Issues",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "new_violations",
+        "name": "New Issues",
+        "description": "New issues",
+        "domain": "Issues",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "code_smells",
+        "name": "Code Smells",
+        "description": "Code Smells",
+        "domain": "Maintainability",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "bugs",
+        "name": "Bugs",
+        "description": "Bugs",
+        "domain": "Reliability",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "vulnerabilities",
+        "name": "Vulnerabilities",
+        "description": "Vulnerabilities",
+        "domain": "Security",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "security_hotspots",
+        "name": "Security Hotspots",
+        "description": "Security Hotspots",
+        "domain": "SecurityReview",
+        "type": "INT",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "sqale_rating",
+        "name": "Maintainability Rating",
+        "description": "A-to-E rating based on the technical debt ratio",
+        "domain": "Maintainability",
+        "type": "RATING",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "reliability_rating",
+        "name": "Reliability Rating",
+        "description": "Reliability rating",
+        "domain": "Reliability",
+        "type": "RATING",
+        "hidden": false,
+        "custom": false
+      },
+      {
+        "key": "security_rating",
+        "name": "Security Rating",
+        "description": "Security rating",
+        "domain": "Security",
+        "type": "RATING",
+        "hidden": false,
+        "custom": false
+      }
+    ]
+  },
+  "hotspots": {
+    "hotspots": [],
+    "paging": {
+      "pageIndex": 1,
+      "pageSize": 500,
+      "total": 0
+    }
+  },
+  "open_issues": {
+    "issues": [],
+    "paging": {
+      "pageIndex": 1,
+      "pageSize": 500,
+      "total": 0
+    }
+  },
+  "branches": {
+    "projectKey": "Scryntic",
+    "totalBranches": 1,
+    "branches": [
+      {
+        "name": "main",
+        "isMain": true,
+        "qualityGateStatus": "OK",
+        "analysisDate": "2026-10-03T21:00:04+0000",
+        "branchId": "83929e52-7ed7-45ca-81e3-ad5f7f5ea6c0"
+      }
+    ]
+  },
+  "dispositions": {
+    "false_positive": 21,
+    "accepted": 17,
+    "applied": 38
+  },
+  "publication": "No commit, push, new PR or merge during this follow-up; existing F19 PR/worktree unchanged.",
+  "server_review": {
+    "analyses": [
+      {
+        "key": "e8de149b-e37d-4230-aa7d-6279b3c7460e",
+        "date": "2026-10-03T21:00:04+0000",
+        "events": [
+          {
+            "key": "4c127a63-1784-4e8e-89fd-2e2c8ad45ee5",
+            "category": "VERSION",
+            "name": "full-sonar-review-2026-10-03"
+          }
+        ],
+        "projectVersion": "full-sonar-review-2026-10-03",
+        "manualNewCodePeriodBaseline": false,
+        "revision": "131b7e9a6e4feeac62cce9d6f17498dda14afbe3",
+        "detectedCI": "undetected"
+      },
+      {
+        "key": "ced43c41-2e94-404a-9800-4a645fb87e8d",
+        "date": "2026-10-03T20:49:52+0000",
+        "events": [],
+        "projectVersion": "full-sonar-review-2026-10-03",
+        "manualNewCodePeriodBaseline": false,
+        "revision": "131b7e9a6e4feeac62cce9d6f17498dda14afbe3",
+        "detectedCI": "undetected"
+      },
+      {
+        "key": "69308c0e-57af-4726-9613-00b512291eb9",
+        "date": "2026-10-03T20:37:09+0000",
+        "events": [
+          {
+            "key": "6da6672b-9426-45c9-b90f-9ae81828cf8d",
+            "category": "VERSION",
+            "name": "KER-23-F19-local-branch"
+          }
+        ],
+        "projectVersion": "KER-23-F19-local-branch",
+        "manualNewCodePeriodBaseline": false,
+        "revision": "deafb0fb72bf3cd1d21a417a9ef7bdc30ffc9977",
+        "detectedCI": "undetected"
+      }
+    ],
+    "reviewed_dispositions": [
+      {
+        "key": "2e52781a-4688-4f65-90ab-cfff12c8125d",
+        "rule": "python:S5754",
+        "component": "Scryntic:src/scryntic/sync/catalog.py",
+        "line": 102,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. The rollback-failure handler closes the catalog; the outer handler then reraises the original BaseException. It cannot silently continue with an open transaction or swallow cancellation. Sync transaction tests verify fail-closed behavior.\n\nEvidence: https://docs.python.org/3.12/library/contextlib.html#contextlib.contextmanager\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "650a5e69-f182-4be4-bb86-9eb06e104292",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/sync/catalog.py",
+        "line": 282,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "4ddbe541-a3dd-498e-9b6e-364430fdaf48",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/sync/catalog.py",
+        "line": 285,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "77c25156-61c5-4fc1-873f-ca239412fd22",
+        "rule": "python:S5754",
+        "component": "Scryntic:src/scryntic/ingestion/sqlite_spool.py",
+        "line": 491,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. Any rollback interruption poisons the writer via _WriterFatal, and recovery now verifies the transaction actually ended. Narrowing the catch would bypass poisoning for cancellation. Control-flow and test_sonar_recovery_rollback.py verify terminal errors and no-op rollback.\n\nEvidence: https://docs.python.org/3.12/library/concurrent.futures.html#concurrent.futures.Future.result\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "bd7c9b41-e302-4e07-b32d-c8aabae8fb0a",
+        "rule": "python:S5864",
+        "component": "Scryntic:src/scryntic/normalization/bybit_candle.py",
+        "line": 139,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. An exact dict precondition rejects every non-dict and subclass before subscription. The apparent missing __getitem__ is an analyzer narrowing error. The type check was separated from shape validation; no redundant isinstance check or cast was kept merely to silence the analyzer. Focused normalization tests and strict mypy pass; runtime probe accepted valid dict/None and rejected 11 invalid/subclass inputs as ValueError without subscription TypeError.\n\nEvidence: https://docs.python.org/3.12/library/stdtypes.html#mapping-types-dict\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "333bc840-cac3-46e6-923c-8c7a2791a520",
+        "rule": "python:S5864",
+        "component": "Scryntic:src/scryntic/normalization/bybit_candle.py",
+        "line": 140,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. An exact dict precondition rejects every non-dict and subclass before subscription. The apparent missing __getitem__ is an analyzer narrowing error. The type check was separated from shape validation; no redundant isinstance check or cast was kept merely to silence the analyzer. Focused normalization tests and strict mypy pass; runtime probe accepted valid dict/None and rejected 11 invalid/subclass inputs as ValueError without subscription TypeError.\n\nEvidence: https://docs.python.org/3.12/library/stdtypes.html#mapping-types-dict\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "fd3e83a6-c5a7-4390-9dcf-ed4afed91260",
+        "rule": "python:S5864",
+        "component": "Scryntic:src/scryntic/normalization/bybit_candle.py",
+        "line": 141,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. An exact dict precondition rejects every non-dict and subclass before subscription. The apparent missing __getitem__ is an analyzer narrowing error. The type check was separated from shape validation; no redundant isinstance check or cast was kept merely to silence the analyzer. Focused normalization tests and strict mypy pass; runtime probe accepted valid dict/None and rejected 11 invalid/subclass inputs as ValueError without subscription TypeError.\n\nEvidence: https://docs.python.org/3.12/library/stdtypes.html#mapping-types-dict\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "06e83e0c-354b-49d8-b32c-24c4dda0aa1d",
+        "rule": "python:S5864",
+        "component": "Scryntic:src/scryntic/normalization/bybit_candle.py",
+        "line": 144,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. An exact dict precondition rejects every non-dict and subclass before subscription. The apparent missing __getitem__ is an analyzer narrowing error. The type check was separated from shape validation; no redundant isinstance check or cast was kept merely to silence the analyzer. Focused normalization tests and strict mypy pass; runtime probe accepted valid dict/None and rejected 11 invalid/subclass inputs as ValueError without subscription TypeError.\n\nEvidence: https://docs.python.org/3.12/library/stdtypes.html#mapping-types-dict\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "5c5da3a5-d343-475a-98dd-7d297ff35e8e",
+        "rule": "python:S5754",
+        "component": "Scryntic:src/scryntic/imports/bootstrap.py",
+        "line": 126,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. Restricted bootstrap terminates with os._exit(1) for every failure, including BaseException, and emits no diagnostics. It never continues with partial isolation. Real import-boundary tests qualify the worker controls.\n\nEvidence: https://docs.python.org/3.12/library/os.html#os._exit\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "444bdb05-96a4-4a3d-a561-fcf93271802c",
+        "rule": "python:S930",
+        "component": "Scryntic:src/scryntic/imports/catalog.py",
+        "line": 121,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. sqlite3.connect accepts autocommit since Python 3.12; project pins CPython 3.12.14. Explicit True plus SQL BEGIN/COMMIT/ROLLBACK is deliberate. tests/test_sqlite_state.py and ingestion/normalization/publication suites verify transactions; strict mypy passes.\n\nEvidence: https://docs.python.org/3.12/library/sqlite3.html#sqlite3.connect\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "5974df5e-3153-486a-96b9-10d2911947ed",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 277,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "1d61bdc5-2d64-4da6-a0b5-d968b8617611",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 282,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "9547fc7a-181c-44eb-8003-63b2679f14fe",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 318,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "710776ea-571c-44aa-8f5c-473e57e959b4",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 333,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "2116ce44-25dd-4278-b030-fc7b5a5c7a5c",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 469,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "1b0cd66a-4191-49e9-a06d-072af09fae31",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 488,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "ed0b4c25-e09b-4476-bf6b-10cbc58bce67",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 495,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "a7c10feb-0ded-47b6-aab9-16de074280a9",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 500,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "54ba4f2c-681d-41d2-b19a-fa66670a85fc",
+        "rule": "python:S5655",
+        "component": "Scryntic:src/scryntic/recovery/coverage.py",
+        "line": 517,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. dataclasses.replace returns the same dataclass type: CoverageSnapshot or Enrollment, matching the callee annotation. Strict mypy and recovery/sync persisted-transition tests pass; runtime Enrollment probe confirmed exact type.\n\nEvidence: https://docs.python.org/3.12/library/dataclasses.html#dataclasses.replace\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "1c06d75c-3960-41ea-982e-9abf51050459",
+        "rule": "python:S7497",
+        "component": "Scryntic:src/scryntic/recovery/supervisor.py",
+        "line": 96,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. _settle joins shielded durable work despite repeated caller cancellation, then raises CancelledError. Immediate propagation would abandon submitted SQLite work. tests/recovery/test_settle_cancellation.py verifies the join precedes propagation.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#shielding-from-cancellation\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "833b0092-d7ed-477d-93a9-39fd3fffb28a",
+        "rule": "python:S4830",
+        "component": "Scryntic:src/scryntic/sources/bybit_live.py",
+        "line": 162,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. The actual aiohttp connector receives ssl.create_default_context(), with CERT_REQUIRED and check_hostname=True. HTTP and WebSocket regression tests inspect the effective context. No verification bypass was introduced; unit tests are not a live exchange handshake.\n\nEvidence: https://docs.python.org/3.12/library/ssl.html#ssl.create_default_context\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "30449ee1-2689-4c0d-ae0b-3b1293ba5ff4",
+        "rule": "python:S4830",
+        "component": "Scryntic:src/scryntic/sources/bybit.py",
+        "line": 170,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. The actual aiohttp connector receives ssl.create_default_context(), with CERT_REQUIRED and check_hostname=True. HTTP and WebSocket regression tests inspect the effective context. No verification bypass was introduced; unit tests are not a live exchange handshake.\n\nEvidence: https://docs.python.org/3.12/library/ssl.html#ssl.create_default_context\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "e1aa7e92-7293-4315-90d0-8d7102fb86ea",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/sources/bybit.py",
+        "line": 498,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "0f8e1869-a594-4d32-a889-3ebfdf76151a",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/archive/raw_framed.py",
+        "line": 182,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "2f3257a0-d846-4dbd-8e0e-847c9099a35d",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/archive/raw_framed.py",
+        "line": 278,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "76f4fed4-de2d-4565-9af7-63f284c2eedc",
+        "rule": "python:S2245",
+        "component": "Scryntic:src/scryntic/benchmarks/workloads.py",
+        "line": 244,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. The seeded PRNG generates public synthetic benchmark payloads or samples benchmark reads; it generates no credentials, tokens, keys, nonces or security decisions. tests/benchmarks/test_workloads.py verifies repeatability and segment identities; CSPRNG substitution would remove reproducibility.\n\nEvidence: https://docs.python.org/3.12/library/random.html\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "bb81876e-1777-4259-8b95-c0528989d4d2",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/providers/fake.py",
+        "line": 82,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "503f567f-1f80-49f5-ae51-780b87e26e8e",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/providers/fake.py",
+        "line": 93,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "d7a9bab1-aa5f-4a17-8eae-ec9847d271a4",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/sources/fake.py",
+        "line": 108,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "67521227-54e5-45a9-ac5e-40f35d9a523a",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/sources/fake.py",
+        "line": 140,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "b40ad224-7a94-42ac-8981-a70f963a5b08",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/archive/normalized_parquet.py",
+        "line": 455,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "77cc93bd-aeac-4f41-8d62-e3abcedfd0a4",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/archive/normalized_parquet.py",
+        "line": 510,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "6130b3ab-b719-4c05-aba9-3df55c540b26",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/archive/raw_parquet.py",
+        "line": 286,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "41a349c6-b3c2-4b85-bdaf-e222f8341d00",
+        "rule": "python:S7503",
+        "component": "Scryntic:src/scryntic/archive/raw_parquet.py",
+        "line": 335,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. These methods implement async archive/source/provider ports and existing await/asyncio.run consumers. Immediate coroutine completion is valid; removing async breaks callers, while an artificial await adds no useful work. Archive, source and forecast suites verify the contracts.\n\nEvidence: https://docs.python.org/3.12/library/asyncio-task.html#coroutines\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "b313d6ae-3001-4c1b-89ac-800339ce9d6a",
+        "rule": "python:S5754",
+        "component": "Scryntic:src/scryntic/ingestion/sqlite_spool.py",
+        "line": 223,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. Interrupted startup must join the non-daemon writer before releasing ownership. An interruption during join retries cleanup; the original constructor exception is reraised after cleanup. Control-flow tests verify lock lifetime.\n\nEvidence: https://docs.python.org/3.12/library/concurrent.futures.html#concurrent.futures.Future.result\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "87212c41-dfd5-41e2-bf18-1aeedd550aad",
+        "rule": "python:S5754",
+        "component": "Scryntic:src/scryntic/ingestion/sqlite_spool.py",
+        "line": 305,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. The dedicated writer puts the original BaseException in the request Future; caller Future.result reraises it. It retires the queue lane in finally. Control-flow tests cover KeyboardInterrupt, SystemExit and CancelledError with rollback and writer reuse.\n\nEvidence: https://docs.python.org/3.12/library/concurrent.futures.html#concurrent.futures.Future.result\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "8f871c09-f147-42d6-825c-c592b857ce30",
+        "rule": "python:S930",
+        "component": "Scryntic:src/scryntic/ingestion/sqlite_spool.py",
+        "line": 314,
+        "transition": "falsepositive",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nVerified false positive. sqlite3.connect accepts autocommit since Python 3.12; project pins CPython 3.12.14. Explicit True plus SQL BEGIN/COMMIT/ROLLBACK is deliberate. tests/test_sqlite_state.py and ingestion/normalization/publication suites verify transactions; strict mypy passes.\n\nEvidence: https://docs.python.org/3.12/library/sqlite3.html#sqlite3.connect\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "FALSE_POSITIVE"
+      },
+      {
+        "key": "dd093288-1d15-42c4-b2d8-2ef995000d88",
+        "rule": "python:S5754",
+        "component": "Scryntic:src/scryntic/ingestion/sqlite_spool.py",
+        "line": 330,
+        "transition": "accept",
+        "comment": "Full Sonar review, 2026-10-03; current local main at base 131b7e9a6e4feeac62cce9d6f17498dda14afbe3, with uncommitted repairs. Rechecked current source, required application contracts, primary documentation and regression tests. Full project validation passed (1365 tests, Ruff, strict mypy, packaging and dependency audits).\n\nAccepted intentional application-boundary construct; not an unresolved functional defect. Every startup failure must signal _ready so the constructor cannot wait indefinitely; sanitized IngestionError crosses the worker boundary and the connection closes in finally. Startup and control-flow tests verify failure and ownership cleanup.\n\nEvidence: https://docs.python.org/3.12/library/concurrent.futures.html#concurrent.futures.Future.result\nNo quality gate, severity, rule profile, exclusion or inline suppression changed. Server disposition explicitly requested by the project owner in this session.",
+        "server_status": "ACCEPTED"
+      }
+    ],
+    "other_preexisting_resolved": [
+      {
+        "key": "a098b71e-ff71-4887-95e3-ae9433c129cc",
+        "rule": "python:S7497",
+        "component": "Scryntic:src/scryntic/sources/bybit_live.py",
+        "server_status": "ACCEPTED"
+      },
+      {
+        "key": "ea45836a-c7b3-4521-9512-605cfdb4da6d",
+        "rule": "python:S930",
+        "component": "Scryntic:src/scryntic/sqlite_state.py",
+        "server_status": "FALSE_POSITIVE"
+      }
+    ]
+  }
+}

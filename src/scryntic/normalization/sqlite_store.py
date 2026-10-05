@@ -4,14 +4,12 @@ import fcntl
 import json
 import os
 import sqlite3
-import stat
 import threading
 from collections.abc import Iterator
 from contextlib import ExitStack
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
-from pathlib import Path
 from types import TracebackType
 from typing import Literal, cast
 
@@ -28,6 +26,7 @@ from scryntic.normalization.candle import (
     RejectionCode,
     RejectionField,
 )
+from scryntic.sqlite_state import connect_pinned, open_private_file, schema_matches
 
 _BEGIN_IMMEDIATE = "BEGIN IMMEDIATE"
 _INVALID_PROCESSING_CHAIN = "Invalid normalization processing chain"
@@ -286,15 +285,13 @@ class NormalizationStore:
                 state_fd, _DATABASE_NAME, installation.owner_uid
             )
             self._resources.callback(os.close, database_fd)
-            database = Path(f"/proc/self/fd/{state_fd}/{_DATABASE_NAME}")
-            self._connection = sqlite3.connect(database, autocommit=True)
-            self._resources.callback(self._connection.close)
-            # Verify the fixed name still denotes the validated inode after open.
-            for name, fd in ((_LOCK_NAME, lock_fd), (_DATABASE_NAME, database_fd)):
-                pinned = os.fstat(fd)
-                current = os.stat(name, dir_fd=state_fd, follow_symlinks=False)
-                if (pinned.st_dev, pinned.st_ino) != (current.st_dev, current.st_ino):
-                    raise NormalizationError("Unsafe normalization state file")
+            self._connection = connect_pinned(
+                state_fd,
+                _DATABASE_NAME,
+                ((_LOCK_NAME, lock_fd), (_DATABASE_NAME, database_fd)),
+                self._resources,
+                unsafe_file_error=NormalizationError("Unsafe normalization state file"),
+            )
             self._initialize()
         except BaseException as error:
             self._closed = True
@@ -309,25 +306,10 @@ class NormalizationStore:
 
     @staticmethod
     def _open_file(state_fd: int, name: str, owner_uid: int) -> int:
-        fd = os.open(
-            name,
-            os.O_RDWR | os.O_CREAT | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK,
-            0o600,
-            dir_fd=state_fd,
-        )
         try:
-            info = os.fstat(fd)
-            if (
-                not stat.S_ISREG(info.st_mode)
-                or info.st_uid != owner_uid
-                or info.st_nlink != 1
-                or stat.S_IMODE(info.st_mode) != 0o600
-            ):
-                raise NormalizationError("Unsafe normalization state file")
-            return fd
-        except BaseException:
-            os.close(fd)
-            raise
+            return open_private_file(state_fd, name, owner_uid)
+        except ValueError:
+            raise NormalizationError("Unsafe normalization state file") from None
 
     def _initialize(self) -> None:
         connection = self._connection
@@ -347,20 +329,7 @@ class NormalizationStore:
                 is not None
             ):
                 raise NormalizationError("Invalid normalization schema")
-            connection.execute(_BEGIN_IMMEDIATE)
-            try:
-                for _, _, _, sql in _SCHEMA:
-                    connection.execute(sql)
-                connection.execute(
-                    "INSERT INTO normalization_metadata VALUES (1, ?)",
-                    (self._producer,),
-                )
-                connection.execute("PRAGMA user_version=1")
-                connection.execute("COMMIT")
-            except BaseException:
-                if connection.in_transaction:
-                    connection.execute("ROLLBACK")
-                raise
+            self._create_schema()
         elif version != (_SCHEMA_VERSION,):
             raise NormalizationError("Unsupported normalization schema")
         self._validate_schema()
@@ -370,22 +339,25 @@ class NormalizationStore:
             raise NormalizationError("Normalization database foreign key check failed")
         self._validate_rows()
 
-    def _validate_schema(self) -> None:
-        rows = self._connection.execute(
-            "SELECT type, name, tbl_name, sql FROM sqlite_schema "
-            "WHERE name NOT GLOB 'sqlite_*' ORDER BY name"
-        ).fetchall()
-        actual = tuple((r[0], r[1], r[2], " ".join(r[3].split())) for r in rows)
-        expected = tuple(
-            sorted(
-                (
-                    (kind, name, table, " ".join(sql.split()))
-                    for kind, name, table, sql in _SCHEMA
-                ),
-                key=lambda row: row[1],
+    def _create_schema(self) -> None:
+        connection = self._connection
+        connection.execute(_BEGIN_IMMEDIATE)
+        try:
+            for _, _, _, sql in _SCHEMA:
+                connection.execute(sql)
+            connection.execute(
+                "INSERT INTO normalization_metadata VALUES (1, ?)",
+                (self._producer,),
             )
-        )
-        if actual != expected:
+            connection.execute("PRAGMA user_version=1")
+            connection.execute("COMMIT")
+        except BaseException:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+
+    def _validate_schema(self) -> None:
+        if not schema_matches(self._connection, _SCHEMA):
             raise NormalizationError("Invalid normalization schema")
         metadata = self._connection.execute(
             "SELECT singleton, producer FROM normalization_metadata"
@@ -487,6 +459,42 @@ class NormalizationStore:
         )
         return None if row is None else self._decode_observation(row)
 
+    def _check_predecessor(
+        self, record: RawRecord, expected: IngestionId | None
+    ) -> IngestionId | None:
+        predecessor = self.checkpoint()
+        if predecessor != expected:
+            raise NormalizationError(
+                "Normalization checkpoint does not match predecessor"
+            )
+        identity = record.identity
+        if identity.producer != self._producer or identity.offset <= (
+            0 if predecessor is None else predecessor.offset
+        ):
+            raise NormalizationError("Invalid normalization record order")
+        return predecessor
+
+    @staticmethod
+    def _validate_barrier_details(
+        record: RawRecord,
+        reason: BarrierReason,
+        schema: SchemaRef | None,
+        instrument: InstrumentId | None,
+    ) -> None:
+        if (
+            not isinstance(reason, BarrierReason)
+            or not isinstance(schema, SchemaRef)
+            or (reason is BarrierReason.UNSUPPORTED_SCHEMA and instrument is not None)
+            or (
+                reason is BarrierReason.METADATA_UNAVAILABLE
+                and (
+                    not isinstance(instrument, InstrumentId)
+                    or instrument != record.envelope.subject
+                )
+            )
+        ):
+            raise NormalizationError("Invalid normalization barrier details")
+
     def block(
         self,
         record: RawRecord,
@@ -501,32 +509,10 @@ class NormalizationStore:
         connection = self._connection
         try:
             connection.execute(_BEGIN_IMMEDIATE)
-            predecessor = self.checkpoint()
-            if predecessor != expected_predecessor:
-                raise NormalizationError(
-                    "Normalization checkpoint does not match predecessor"
-                )
+            predecessor = self._check_predecessor(record, expected_predecessor)
             identity = record.identity
-            if identity.producer != self._producer or identity.offset <= (
-                0 if predecessor is None else predecessor.offset
-            ):
-                raise NormalizationError("Invalid normalization record order")
-            if (
-                not isinstance(reason, BarrierReason)
-                or not isinstance(schema, SchemaRef)
-                or (
-                    reason is BarrierReason.UNSUPPORTED_SCHEMA
-                    and instrument is not None
-                )
-                or (
-                    reason is BarrierReason.METADATA_UNAVAILABLE
-                    and (
-                        not isinstance(instrument, InstrumentId)
-                        or instrument != record.envelope.subject
-                    )
-                )
-            ):
-                raise NormalizationError("Invalid normalization barrier details")
+            self._validate_barrier_details(record, reason, schema, instrument)
+            schema = cast(SchemaRef, schema)
             barrier = ProcessingBarrier(
                 identity,
                 predecessor,
@@ -569,6 +555,56 @@ class NormalizationStore:
                 ) from None
             raise
 
+    def _outcome_kind(
+        self,
+        record: RawRecord,
+        normalization: CandleNormalization | NormalizationRejection,
+    ) -> OutcomeKind:
+        identity = record.identity
+        if isinstance(normalization, CandleNormalization):
+            if (
+                normalization.candle.raw_record != identity
+                or normalization.candle.receipt != record.envelope.receipt
+            ):
+                raise NormalizationError(
+                    "Normalization result does not match raw record"
+                )
+            kind = self._store_semantics(normalization.semantics)
+        else:
+            if (
+                normalization.raw_record != identity
+                or normalization.raw_sha256 != record.envelope.content_sha256
+            ):
+                raise NormalizationError(
+                    "Normalization result does not match raw record"
+                )
+            kind = OutcomeKind.REJECTED
+        return kind
+
+    def _advance_checkpoint(
+        self, identity: IngestionId, predecessor: IngestionId | None
+    ) -> None:
+        connection = self._connection
+        identity_values = (identity.producer, identity.epoch, identity.offset)
+        if predecessor is None:
+            connection.execute(
+                "INSERT INTO processing_checkpoint VALUES (1, ?, ?, ?)",
+                identity_values,
+            )
+        else:
+            updated = connection.execute(
+                "UPDATE processing_checkpoint SET producer=?, epoch=?, offset=? "
+                "WHERE singleton=1 AND producer=? AND epoch=? AND offset=?",
+                (
+                    *identity_values,
+                    predecessor.producer,
+                    predecessor.epoch,
+                    predecessor.offset,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise NormalizationError("Normalization checkpoint did not advance")
+
     def process(
         self,
         record: RawRecord,
@@ -581,16 +617,8 @@ class NormalizationStore:
         connection = self._connection
         try:
             connection.execute(_BEGIN_IMMEDIATE)
-            predecessor = self.checkpoint()
-            if predecessor != expected_predecessor:
-                raise NormalizationError(
-                    "Normalization checkpoint does not match predecessor"
-                )
+            predecessor = self._check_predecessor(record, expected_predecessor)
             identity = record.identity
-            if identity.producer != self._producer or identity.offset <= (
-                0 if predecessor is None else predecessor.offset
-            ):
-                raise NormalizationError("Invalid normalization record order")
             barrier = self.barrier()
             if barrier is not None and (
                 barrier.blocker != identity
@@ -598,45 +626,11 @@ class NormalizationStore:
                 or barrier.raw_sha256 != record.envelope.content_sha256
             ):
                 raise NormalizationError("Normalization record does not match barrier")
-            if isinstance(normalization, CandleNormalization):
-                if (
-                    normalization.candle.raw_record != identity
-                    or normalization.candle.receipt != record.envelope.receipt
-                ):
-                    raise NormalizationError(
-                        "Normalization result does not match raw record"
-                    )
-                kind = self._store_semantics(normalization.semantics)
-            else:
-                if (
-                    normalization.raw_record != identity
-                    or normalization.raw_sha256 != record.envelope.content_sha256
-                ):
-                    raise NormalizationError(
-                        "Normalization result does not match raw record"
-                    )
-                kind = OutcomeKind.REJECTED
+            kind = self._outcome_kind(record, normalization)
             outcome = self._processing_outcome(record, normalization, predecessor, kind)
             self._insert_outcome(outcome)
             identity_values = (identity.producer, identity.epoch, identity.offset)
-            if predecessor is None:
-                connection.execute(
-                    "INSERT INTO processing_checkpoint VALUES (1, ?, ?, ?)",
-                    identity_values,
-                )
-            else:
-                updated = connection.execute(
-                    "UPDATE processing_checkpoint SET producer=?, epoch=?, offset=? "
-                    "WHERE singleton=1 AND producer=? AND epoch=? AND offset=?",
-                    (
-                        *identity_values,
-                        predecessor.producer,
-                        predecessor.epoch,
-                        predecessor.offset,
-                    ),
-                )
-                if updated.rowcount != 1:
-                    raise NormalizationError("Normalization checkpoint did not advance")
+            self._advance_checkpoint(identity, predecessor)
             if barrier is not None:
                 connection.execute(
                     "DELETE FROM processing_barrier WHERE singleton=1 "

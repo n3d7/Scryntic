@@ -28,34 +28,18 @@ def _table(value: object, keys: set[str]) -> dict[str, object]:
     return dict(value)
 
 
-def _configuration(
-    data: dict[str, object], overrides: Mapping[str, object]
-) -> Configuration:
-    settings = _table(
-        data, {"profile", "log_level", "capabilities", "credentials", "clock"}
-    )
-    override = _table(dict(overrides), {"profile", "log_level"})
-    # Validate each layer before applying precedence, so overrides cannot mask errors.
-    for layer in (settings, override):
-        if "profile" in layer and layer["profile"] not in ("collector", "workstation"):
-            raise BoundaryError(ErrorCode.INVALID_CONFIG)
-        if "log_level" in layer and (
-            not isinstance(layer["log_level"], str)
-            or layer["log_level"] not in LOG_LEVELS
-        ):
-            raise BoundaryError(ErrorCode.INVALID_CONFIG)
-    profile_value = override.get("profile", settings.get("profile", "workstation"))
-    profile = Profile(str(profile_value))
-    log_level = str(override.get("log_level", settings.get("log_level", "info")))
-    default = (
-        Capability.PUBLIC_COLLECTION
-        if profile is Profile.COLLECTOR
-        else Capability.LOCAL_ANALYSIS
-    )
+def _validate_layer(layer: dict[str, object]) -> None:
+    if "profile" in layer and layer["profile"] not in ("collector", "workstation"):
+        raise BoundaryError(ErrorCode.INVALID_CONFIG)
+    if "log_level" in layer and (
+        not isinstance(layer["log_level"], str) or layer["log_level"] not in LOG_LEVELS
+    ):
+        raise BoundaryError(ErrorCode.INVALID_CONFIG)
+
+
+def _capabilities(value: object, default: Capability) -> frozenset[Capability]:
     enabled = {default}
-    capabilities = _table(
-        settings.get("capabilities", {}), {c.value for c in Capability}
-    )
+    capabilities = _table(value, {c.value for c in Capability})
     for name, value in capabilities.items():
         if type(value) is not bool:
             raise BoundaryError(ErrorCode.INVALID_CONFIG)
@@ -64,7 +48,11 @@ def _configuration(
             enabled.add(capability)
         else:
             enabled.discard(capability)
-    credentials = _table(settings.get("credentials", {}), {"telegram", "transfer"})
+    return frozenset(enabled)
+
+
+def _credentials(value: object) -> tuple[SecretReference, ...]:
+    credentials = _table(value, {"telegram", "transfer"})
     references = []
     for name, value in credentials.items():
         spec = _table(value, {"backend", "name"})
@@ -80,6 +68,29 @@ def _configuration(
             else Capability.SYNCHRONIZATION
         )
         references.append(SecretReference(capability, spec["backend"], spec["name"]))
+    return tuple(sorted(references, key=lambda reference: reference.capability))
+
+
+def _configuration(
+    data: dict[str, object], overrides: Mapping[str, object]
+) -> Configuration:
+    settings = _table(
+        data, {"profile", "log_level", "capabilities", "credentials", "clock"}
+    )
+    override = _table(dict(overrides), {"profile", "log_level"})
+    # Validate each layer before precedence so overrides cannot mask errors.
+    for layer in (settings, override):
+        _validate_layer(layer)
+    profile_value = override.get("profile", settings.get("profile", "workstation"))
+    profile = Profile(str(profile_value))
+    log_level = str(override.get("log_level", settings.get("log_level", "info")))
+    default = (
+        Capability.PUBLIC_COLLECTION
+        if profile is Profile.COLLECTOR
+        else Capability.LOCAL_ANALYSIS
+    )
+    enabled = _capabilities(settings.get("capabilities", {}), default)
+    references = _credentials(settings.get("credentials", {}))
     clock = _table(
         settings.get("clock", {}), {field.name for field in fields(ClockLimits)}
     )
@@ -89,8 +100,8 @@ def _configuration(
     return Configuration(
         profile,
         log_level,
-        frozenset(enabled),
-        tuple(sorted(references, key=lambda r: r.capability)),
+        enabled,
+        references,
         ClockLimits(**clock_values),
     )
 

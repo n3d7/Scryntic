@@ -48,7 +48,11 @@ from scryntic.domain.market import CANDLE_SCHEMA, INSTRUMENT_SCHEMA
 from scryntic.domain.validation import digest, identifier
 from scryntic.normalization.candle import FAKE_CANDLE_SCHEMA
 from scryntic.publication.manifest import prepare_manifest
-from scryntic.publication.reader import PublicationReader, PublicationReaderError
+from scryntic.publication.reader import (
+    PublicationReader,
+    PublicationReaderError,
+    ValidatedManifest,
+)
 
 _CANDLE_PRICE_DEFINITION = "decimal128(38,18) candle price"
 
@@ -166,6 +170,32 @@ def _row(value: SelectedCandle) -> dict[str, Any]:
     }
 
 
+def _publication_sources(validated: ValidatedManifest) -> list[SourceInput]:
+    raw_object, normalized_object = validated.document.body.objects
+    sources: list[SourceInput] = []
+    for ordinal, (value, raw) in enumerate(
+        zip(validated.inputs, validated.raw_records, strict=True)
+    ):
+        if value.raw != raw:
+            raise DatasetBuildError("Publication correspondence disagrees")
+        if (
+            value.outcome.input_schema not in (FAKE_CANDLE_SCHEMA, BYBIT_CANDLE_SCHEMA)
+            or value.outcome.instrument_schema != INSTRUMENT_SCHEMA
+            or value.outcome.output_schema != CANDLE_SCHEMA
+        ):
+            raise DatasetBuildError("Unsupported normalized candle schema")
+        sources.append(
+            SourceInput(
+                validated.document.manifest_hash,
+                raw_object.sha256,
+                normalized_object.sha256,
+                ordinal,
+                value,
+            )
+        )
+    return sources
+
+
 class DatasetBuilder:
     def __init__(
         self,
@@ -238,27 +268,7 @@ class DatasetBuilder:
                     ],
                 }
             )
-            for ordinal, (value, raw) in enumerate(
-                zip(validated.inputs, validated.raw_records, strict=True)
-            ):
-                if value.raw != raw:
-                    raise DatasetBuildError("Publication correspondence disagrees")
-                if (
-                    value.outcome.input_schema
-                    not in (FAKE_CANDLE_SCHEMA, BYBIT_CANDLE_SCHEMA)
-                    or value.outcome.instrument_schema != INSTRUMENT_SCHEMA
-                    or value.outcome.output_schema != CANDLE_SCHEMA
-                ):
-                    raise DatasetBuildError("Unsupported normalized candle schema")
-                sources.append(
-                    SourceInput(
-                        validated.document.manifest_hash,
-                        raw_object.sha256,
-                        normalized_object.sha256,
-                        ordinal,
-                        value,
-                    )
-                )
+            sources.extend(_publication_sources(validated))
         return sources, inputs
 
     def _manifest_payload(

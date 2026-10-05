@@ -120,6 +120,7 @@ def validate_directories(installation: Installation) -> None:
             (installation.runtime_dir, installation.owner_uid, True),
         ):
             with directory(path, uid, private=private):
+                # Opening the descriptor validates ownership, mode and traversal.
                 pass
     except (OSError, BoundaryError):
         failure = True

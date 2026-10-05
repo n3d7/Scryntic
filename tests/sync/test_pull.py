@@ -166,8 +166,9 @@ def test_object_failure_never_advances_catalog(tmp_path: Path, attack: str) -> N
             path.write_bytes(b"x" * item.encoded_bytes)
         with PullCatalog(installation(tmp_path / "client")) as catalog:
             catalog.enroll(endpoint)
+            prepared_operation = pull(catalog, endpoint.name, remote, DEFAULT_RECEIPT)
             with pytest.raises(PullError):
-                asyncio.run(pull(catalog, endpoint.name, remote, DEFAULT_RECEIPT))
+                asyncio.run(prepared_operation)
             assert catalog.count() == 0
             assert catalog.anchor(endpoint.name).sequence == 0
     finally:
@@ -184,10 +185,11 @@ def test_interrupted_object_resumes_without_advancing_anchor(tmp_path: Path) -> 
         limits = PullLimits(chunk_bytes=1024)
         with PullCatalog(installation(tmp_path / "client")) as catalog:
             catalog.enroll(endpoint)
+            prepared_operation = pull(
+                catalog, endpoint.name, remote, DEFAULT_RECEIPT, limits
+            )
             with pytest.raises(PullError):
-                asyncio.run(
-                    pull(catalog, endpoint.name, remote, DEFAULT_RECEIPT, limits)
-                )
+                asyncio.run(prepared_operation)
             assert catalog.anchor(endpoint.name).sequence == 0
             assert catalog.count() == 0
             remote.interrupt_after = None
@@ -263,8 +265,9 @@ def test_history_incidents_preserve_accepted_anchor(
                     if attack == "predecessor":
                         storage.manifest_path(second.manifest).unlink()
                     storage.install_exact(changed, reference)
+            prepared_operation = pull(catalog, endpoint.name, remote, DEFAULT_RECEIPT)
             with pytest.raises(PullError):
-                asyncio.run(pull(catalog, endpoint.name, remote, DEFAULT_RECEIPT))
+                asyncio.run(prepared_operation)
             assert catalog.anchor(endpoint.name) == anchor
             assert catalog.count() == 1
     finally:
@@ -274,8 +277,9 @@ def test_history_incidents_preserve_accepted_anchor(
 def test_unenrolled_catalog_cannot_pull(tmp_path: Path) -> None:
     remote = PathRemote(tmp_path, enrollment())
     with PullCatalog(installation(tmp_path / "client")) as catalog:
+        prepared_operation = pull(catalog, "server-a", remote, DEFAULT_RECEIPT)
         with pytest.raises(PullError):
-            asyncio.run(pull(catalog, "server-a", remote, DEFAULT_RECEIPT))
+            asyncio.run(prepared_operation)
 
 
 def test_stale_hint_never_hides_new_chain_tail(tmp_path: Path) -> None:
@@ -376,8 +380,9 @@ def test_epoch_reconciliation_requires_operator_and_preserves_old_anchor(
             asyncio.run(pull(catalog, endpoint.name, remote, DEFAULT_RECEIPT))
             old = catalog.anchor(endpoint.name)
             assert isinstance(bundle.coordinator.publish_next(), Published)
+            prepared_operation = pull(catalog, endpoint.name, remote, DEFAULT_RECEIPT)
             with pytest.raises(PullError):
-                asyncio.run(pull(catalog, endpoint.name, remote, DEFAULT_RECEIPT))
+                asyncio.run(prepared_operation)
             assert catalog.anchor(endpoint.name) == old
             catalog.authorize_epoch(endpoint.name, "epoch-b")
             remote.enrollment = catalog.enrollment(endpoint.name)
@@ -397,16 +402,15 @@ def test_wire_budget_cannot_skip_an_object(tmp_path: Path) -> None:
         remote = PathRemote(bundle.root.state_dir / "archive", endpoint)
         with PullCatalog(installation(tmp_path / "client")) as catalog:
             catalog.enroll(endpoint)
+            prepared_operation = pull(
+                catalog,
+                endpoint.name,
+                remote,
+                DEFAULT_RECEIPT,
+                PullLimits(max_transfer_bytes=1),
+            )
             with pytest.raises(PullError):
-                asyncio.run(
-                    pull(
-                        catalog,
-                        endpoint.name,
-                        remote,
-                        DEFAULT_RECEIPT,
-                        PullLimits(max_transfer_bytes=1),
-                    )
-                )
+                asyncio.run(prepared_operation)
             assert catalog.count() == 0
             assert catalog.anchor(endpoint.name).sequence == 0
     finally:

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from scryntic.imports.protocol import ImportError as UnsafeImport
 from scryntic.sync.model import PullError, PullLimits
 from scryntic.sync.staging import Staging
 from tests.normalization.helpers import installation
@@ -59,9 +60,10 @@ def test_corrupt_complete_download_cannot_publish(tmp_path: Path) -> None:
 def test_staging_quota_checks_partial_bytes(tmp_path: Path) -> None:
     root = installation(tmp_path / "local")
     limits = PullLimits(max_staging_bytes=3)
+    name = sha256(b"four").hexdigest()
     with Staging(root, limits) as stage:
         with pytest.raises(PullError):
-            with stage.partial(sha256(b"four").hexdigest(), 4):
+            with stage.partial(name, 4):
                 pass
 
 
@@ -86,12 +88,25 @@ def test_replaced_partial_name_cannot_publish_another_inode(tmp_path: Path) -> N
     outside = tmp_path / "outside"
     outside.write_bytes(b"sentinel")
     with Staging(root) as stage:
-        with pytest.raises(PullError):
-            with stage.partial(name, len(data)) as fd:
-                stage.append(fd, data)
-                partial = stage.path / (name + ".part")
-                partial.unlink()
-                partial.symlink_to(outside)
-                stage.finish(fd, name, len(data))
+        size = len(data)
+        partial_file = stage.partial(name, size)
+        fd = partial_file.__enter__()
+        rejection: UnsafeImport | None = None
+        try:
+            stage.append(fd, data)
+            partial = stage.path / (name + ".part")
+            partial.unlink()
+            partial.symlink_to(outside)
+            with pytest.raises(UnsafeImport) as rejected:
+                stage.finish(fd, name, size)
+            rejection = rejected.value
+        finally:
+            if rejection is None:
+                partial_file.__exit__(None, None, None)
+            else:
+                with pytest.raises(PullError):
+                    partial_file.__exit__(
+                        UnsafeImport, rejection, rejection.__traceback__
+                    )
         assert not (stage.path / name).exists()
     assert outside.read_bytes() == b"sentinel"

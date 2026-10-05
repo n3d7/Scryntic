@@ -198,6 +198,24 @@ class PublicationCoordinator:
             ),
         )
 
+    def _batch_fits(self, count: int, raw_bytes: int, normalized_bytes: int) -> bool:
+        return (
+            count <= self._limits.max_batch_records
+            and count <= self._limits.raw.max_records
+            and count <= self._limits.normalized.max_records
+            and raw_bytes <= self._limits.raw.max_decoded_bytes
+            and normalized_bytes <= self._limits.normalized.max_decoded_bytes
+        )
+
+    def _admit_batch_record(
+        self, count: int, raw_bytes: int, normalized_bytes: int
+    ) -> bool:
+        if self._batch_fits(count, raw_bytes, normalized_bytes):
+            return True
+        if count == 1:
+            raise PublicationError("Publication limits reject next record")
+        return False
+
     def _select(
         self,
     ) -> tuple[PublicationInput, ...] | WaitingForNormalization | NoPublishableWork:
@@ -223,16 +241,11 @@ class PublicationCoordinator:
             ):
                 break
             raw_size, normalized_size = self._logical_sizes(value)
-            if (
-                len(selected) + 1 > self._limits.max_batch_records
-                or len(selected) + 1 > self._limits.raw.max_records
-                or len(selected) + 1 > self._limits.normalized.max_records
-                or raw_bytes + raw_size > self._limits.raw.max_decoded_bytes
-                or normalized_bytes + normalized_size
-                > self._limits.normalized.max_decoded_bytes
+            if not self._admit_batch_record(
+                len(selected) + 1,
+                raw_bytes + raw_size,
+                normalized_bytes + normalized_size,
             ):
-                if not selected:
-                    raise PublicationError("Publication limits reject next record")
                 break
             selected.append(value)
             epoch = record.identity.epoch
@@ -438,6 +451,26 @@ class PublicationCoordinator:
             pending = self._seal_and_prepare(pending, values)
         return Recovered(self._install_and_commit(pending, values))
 
+    def _reconcile_manifest(
+        self,
+        document: ManifestDocument,
+        data: bytes,
+        pending: PendingPublication | None,
+    ) -> None:
+        entry = self._store.catalog_by_epoch_sequence(
+            document.ref.epoch, document.ref.sequence
+        )
+        if entry is not None:
+            if entry.ref != document.ref or entry.manifest_bytes != data:
+                raise PublicationError("Conflicting committed publication history")
+        elif (
+            pending is None
+            or pending.state is not PendingState.PREPARED
+            or pending.manifest_ref != document.ref
+            or pending.manifest_bytes != data
+        ):
+            raise PublicationError("Unreconciled committed publication history")
+
     def _reconcile_history(self, *, force: bool = False) -> None:
         """Validate both authorities; never synthesize a missing reservation."""
         if self._history_checked and not force:
@@ -457,19 +490,7 @@ class PublicationCoordinator:
         ):
             if document.ref.producer != producer:
                 continue
-            entry = self._store.catalog_by_epoch_sequence(
-                document.ref.epoch, document.ref.sequence
-            )
-            if entry is not None:
-                if entry.ref != document.ref or entry.manifest_bytes != data:
-                    raise PublicationError("Conflicting committed publication history")
-            elif (
-                pending is None
-                or pending.state is not PendingState.PREPARED
-                or pending.manifest_ref != document.ref
-                or pending.manifest_bytes != data
-            ):
-                raise PublicationError("Unreconciled committed publication history")
+            self._reconcile_manifest(document, data, pending)
         after: IngestionId | None = None
         while entries := self._store.catalog_page(
             after, self._limits.max_manifests_per_read

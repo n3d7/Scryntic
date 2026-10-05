@@ -258,8 +258,9 @@ async def test_failure_in_repair_task_stops_stalled_live_source(
             raise IngestionError("injected recovery failure")
 
         monkeypatch.setattr(supervisor, "_repair", failed_repair)
+        operation = supervisor.run()
         with pytest.raises(IngestionError, match="injected"):
-            await asyncio.wait_for(supervisor.run(), timeout=0.3)
+            await asyncio.wait_for(operation, timeout=0.3)
         assert supervisor.state is SupervisorState.FAILED
         assert isinstance(supervisor.source, IdleSource)
         assert supervisor.source.closed.is_set()

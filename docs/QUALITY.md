@@ -37,8 +37,10 @@ selection, not a bit-identical operating-system image.
    the `src` package base configured explicitly. No blanket missing-import or
    untyped-vendor exceptions are present.
 4. pytest uses importlib discovery and strict configuration/marker validation.
-   Coverage.py measures production line/branch coverage and writes `coverage.xml`
-   for SonarQube. Unmeasured restricted-worker code remains uncovered; measurement
+   Coverage.py measures package and owned Python-script line/branch coverage and
+   writes `coverage.xml` for SonarQube. Both `src/scryntic` and `scripts` are measured
+   because the full Sonar configuration analyzes them. Unmeasured restricted-worker
+   code remains uncovered; measurement
    never adds tracing hooks, writable paths or authority inside the worker.
    Tests cover the package and audit coverage/rejection behavior.
 5. Packaging checks build both sdist and wheel through the hash-pinned PEP 517
@@ -55,6 +57,29 @@ Use `uv run --locked --no-sync python scripts/check_package.py` or
 `uv run --locked --no-sync python scripts/audit.py` to repeat individual gates
 after the development environment has been synchronized. Ruff/mypy/pytest can
 also be run individually with the exact commands in `scripts/check.sh`.
+
+## Full SonarQube review
+
+Run `scripts/check.sh` before `sonar-scanner -Dsonar.qualitygate.wait=true` from
+the repository root. Use the existing `sonar-project.properties`; provide server
+credentials through the private operator environment, never repository files or
+command-line tokens. Record the analyzed revision, branch, date and dirty-tree
+state: local working-tree analysis is distinct from a published commit.
+
+Read complete open issues, Security Hotspots, gate conditions, coverage details,
+duplication blocks and project measures through the official read-only SonarQube
+MCP. Review source and tests for each attributable finding, then repair, validate,
+regenerate coverage and repeat the full analysis. A passing gate is not evidence
+that all findings were reviewed. Conversely, a verified API false positive or
+necessary control-flow construct must have a concrete recorded rationale; do not
+change thresholds, severities, exclusions or suppressions to hide it. Server issue
+dispositions require a separately authorized review mechanism.
+
+The [2026-10-03 full review](sonarqube/full-review-2026-10-03.md) records the
+replacement server's authoritative snapshot and subsequent repairs.
+The [2026-10-04 follow-up](sonarqube/closure-2026-10-04.md) records revalidation,
+individually authorized issue dispositions and the current zero-open-issue result;
+it distinguishes source repairs from Accepted and False Positive records.
 
 `scripts/check_negative.py` runs entirely in temporary source copies. It verifies
 nonzero failures for tests, lint, formatting, types and stale locked sync; it

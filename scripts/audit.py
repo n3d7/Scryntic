@@ -51,37 +51,41 @@ def validate_report(report: object, expected: set[tuple[str, str]]) -> None:
         raise ValueError("Audit report does not cover the resolved profile exactly")
 
 
+def export_profile(profile: str, requirements: Path) -> None:
+    if profile == "build":
+        requirements.write_text((ROOT / "build-constraints.txt").read_text())
+    elif profile == "uv":
+        config = tomllib.loads((ROOT / "pyproject.toml").read_text())
+        pin = config["tool"]["uv"]["required-version"]
+        if not re.fullmatch(r"==\d+\.\d+\.\d+", pin, flags=re.ASCII):
+            raise ValueError("Expected exact uv tooling pin")
+        requirements.write_text(f"uv{pin}\n")
+    else:
+        args = [
+            "uv",
+            "export",
+            "--locked",
+            "--no-default-groups",
+            "--no-emit-project",
+            "--no-annotate",
+            "--no-header",
+            "--format",
+            "requirements-txt",
+            "--output-file",
+            str(requirements),
+        ]
+        if profile != "base":
+            args += ["--group", profile]
+        subprocess.run(args, cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
+
+
 def main() -> None:
     subprocess.run(["uv", "lock", "--check"], cwd=ROOT, check=True)
     with tempfile.TemporaryDirectory(prefix="scryntic-audit-") as scratch:
         temp = Path(scratch)
         for profile in ("base", "collector", "analysis", "dev", "build", "uv"):
             requirements = temp / f"{profile}.txt"
-            if profile == "build":
-                requirements.write_text((ROOT / "build-constraints.txt").read_text())
-            elif profile == "uv":
-                config = tomllib.loads((ROOT / "pyproject.toml").read_text())
-                pin = config["tool"]["uv"]["required-version"]
-                if not re.fullmatch(r"==[0-9]+\.[0-9]+\.[0-9]+", pin):
-                    raise ValueError("Expected exact uv tooling pin")
-                requirements.write_text(f"uv{pin}\n")
-            else:
-                args = [
-                    "uv",
-                    "export",
-                    "--locked",
-                    "--no-default-groups",
-                    "--no-emit-project",
-                    "--no-annotate",
-                    "--no-header",
-                    "--format",
-                    "requirements-txt",
-                    "--output-file",
-                    str(requirements),
-                ]
-                if profile != "base":
-                    args += ["--group", profile]
-                subprocess.run(args, cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
+            export_profile(profile, requirements)
             expected = expected_packages(requirements.read_text())
             output = temp / f"{profile}.json"
             # Empty profiles have no third-party packages to query, but still get evidence.

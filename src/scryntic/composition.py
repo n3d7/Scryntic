@@ -140,6 +140,60 @@ def _catalog_hashes(
     return tuple(hashes)
 
 
+def _ingest_fake_history(
+    source: DeterministicCandleSource, ingestor: DurableIngestor
+) -> None:
+    cursor = None
+    for _ in range(2):
+        page = asyncio.run(
+            source.fetch(
+                HistoryRequest(
+                    StreamRequest(FAKE_CANDLE_SCHEMA, FAKE_INSTRUMENT_ID),
+                    FIRST_START_NS,
+                    END_NS,
+                    page_size=source.descriptor.max_page_records,
+                    cursor=cursor,
+                )
+            )
+        )
+        for envelope in page.envelopes:
+            ingestor.accept(envelope)
+        cursor = page.next_cursor
+        if cursor is None:
+            break
+    else:
+        raise RuntimeError("Fake source paging exceeded its bound")
+
+
+def _normalize_fake_history(
+    ingestor: DurableIngestor, normalization: NormalizationStore
+) -> None:
+    for _ in range(64):
+        outcome = process_next(
+            ingestor,
+            normalization,
+            {FAKE_INSTRUMENT_ID: fake_instrument()},
+            normalized_at_ns=time.time_ns(),
+        )
+        if isinstance(outcome, NoWork):
+            break
+        if isinstance(outcome, Blocked):
+            raise RuntimeError("Fake source normalization is blocked")
+    else:
+        raise RuntimeError("F09 normalization exceeded its bound")
+
+
+def _publish_fake_history(coordinator: PublicationCoordinator) -> None:
+    for _ in range(64):
+        published = coordinator.publish_next()
+        if isinstance(published, NoPublishableWork):
+            break
+        if isinstance(published, WaitingForNormalization):
+            raise RuntimeError("Fake source publication awaits normalization")
+    else:
+        raise RuntimeError("F09 publication exceeded its bound")
+
+
 def build_fake_dataset(
     installation: Installation,
     *,
@@ -165,41 +219,8 @@ def build_fake_dataset(
             publication = PublicationStore(installation, producer=_PRODUCER)
             stack.callback(publication.close)
 
-            cursor = None
-            for _ in range(2):
-                page = asyncio.run(
-                    source.fetch(
-                        HistoryRequest(
-                            StreamRequest(FAKE_CANDLE_SCHEMA, FAKE_INSTRUMENT_ID),
-                            FIRST_START_NS,
-                            END_NS,
-                            page_size=source.descriptor.max_page_records,
-                            cursor=cursor,
-                        )
-                    )
-                )
-                for envelope in page.envelopes:
-                    ingestor.accept(envelope)
-                cursor = page.next_cursor
-                if cursor is None:
-                    break
-            else:
-                raise RuntimeError("Fake source paging exceeded its bound")
-
-            for _ in range(64):
-                outcome = process_next(
-                    ingestor,
-                    normalization,
-                    {FAKE_INSTRUMENT_ID: fake_instrument()},
-                    normalized_at_ns=time.time_ns(),
-                )
-                if isinstance(outcome, NoWork):
-                    break
-                if isinstance(outcome, Blocked):
-                    raise RuntimeError("Fake source normalization is blocked")
-            else:
-                raise RuntimeError("F09 normalization exceeded its bound")
-
+            _ingest_fake_history(source, ingestor)
+            _normalize_fake_history(ingestor, normalization)
             coordinator = PublicationCoordinator(
                 ingestor,
                 normalization,
@@ -210,14 +231,7 @@ def build_fake_dataset(
                 installation,
                 limits,
             )
-            for _ in range(64):
-                published = coordinator.publish_next()
-                if isinstance(published, NoPublishableWork):
-                    break
-                if isinstance(published, WaitingForNormalization):
-                    raise RuntimeError("Fake source publication awaits normalization")
-            else:
-                raise RuntimeError("F09 publication exceeded its bound")
+            _publish_fake_history(coordinator)
 
             reader = PublicationReader(publication, installation, limits)
             manifests = _catalog_hashes(reader, limits)

@@ -71,22 +71,25 @@ def test_framed_limits_order_and_reference(tmp_path: Path) -> None:
         replace(exact, max_encoded_bytes=segment.encoded_bytes - 1),
         replace(exact, max_decoded_bytes=segment.decoded_bytes - 1),
     ):
+        prepared_operation = archive.seal(records, small)
         with pytest.raises(ArchiveError):
-            asyncio.run(archive.seal(records, small))
+            asyncio.run(prepared_operation)
         prepared_operation = archive.read(
             RawRecordRef(segment.sha256, 0, record.identity), small
         )
         with pytest.raises(ArchiveError):
             asyncio.run(prepared_operation)
     for invalid in ((), records[::-1], (record, record)):
+        prepared_operation = archive.seal(invalid, LIMITS)
         with pytest.raises(ArchiveError):
-            asyncio.run(archive.seal(invalid, LIMITS))
+            asyncio.run(prepared_operation)
     for reference in (
         RawRecordRef(segment.sha256, 2, record.identity),
         RawRecordRef(segment.sha256, 0, replace(record.identity, offset=9)),
     ):
+        prepared_operation = archive.read(reference, LIMITS)
         with pytest.raises(ArchiveError):
-            asyncio.run(archive.read(reference, LIMITS))
+            asyncio.run(prepared_operation)
 
 
 @pytest.mark.parametrize("cut", [0, 8, 24, 30, -1])

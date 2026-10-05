@@ -57,8 +57,8 @@ async def test_shared_websocket_overflow_reports_before_retry_and_releases_lease
             await anext(stream)
             await asyncio.sleep(0.03)
             assert budget.used[0] == 4
-            with pytest.raises(IngestionError, match="marker"):
-                async with asyncio.timeout(1):
+            async with asyncio.timeout(1):
+                with pytest.raises(IngestionError, match="marker"):
                     while True:
                         await anext(stream)
             assert losses[0].reason == "overflow"
@@ -86,8 +86,8 @@ async def test_rejected_subscription_requires_configuration_correction() -> None
         )
         stream = source.stream(_REQUEST)
         try:
-            with pytest.raises(ValueError, match="subscription rejected"):
-                async with asyncio.timeout(0.2):
+            async with asyncio.timeout(0.2):
+                with pytest.raises(ValueError, match="subscription rejected"):
                     await anext(stream)
             assert client.connections == 1
         finally:

@@ -215,12 +215,15 @@ class PublicationInput:
             if self.outcome.rejection_code is None:
                 raise ValueError("Rejected outcome requires rejection evidence")
         else:
-            if not isinstance(self.semantics, CandleSemantics):
-                raise ValueError("Accepted outcome requires semantics")
-            if self.outcome.semantic_revision != self.semantics.revision():
-                raise ValueError("Outcome semantics revision mismatch")
-            if self.outcome.rejection_code is not None:
-                raise ValueError("Accepted outcome must not have rejection evidence")
+            self._validate_accepted()
+
+    def _validate_accepted(self) -> None:
+        if not isinstance(self.semantics, CandleSemantics):
+            raise ValueError("Accepted outcome requires semantics")
+        if self.outcome.semantic_revision != self.semantics.revision():
+            raise ValueError("Outcome semantics revision mismatch")
+        if self.outcome.rejection_code is not None:
+            raise ValueError("Accepted outcome must not have rejection evidence")
 
     def projection(self) -> JsonObject:
         return {

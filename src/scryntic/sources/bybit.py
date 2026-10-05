@@ -68,8 +68,8 @@ _REQUEST_TIMEOUT_S = 5.0
 _REQUEST_DEADLINE_S = 6.0
 _REQUEST_INTERVAL_S = 0.5
 _CURSOR_LIMIT = 4_096
-_DECIMAL = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?", re.ASCII)
-_INTEGER = re.compile(r"[0-9]+", re.ASCII)
+_DECIMAL = re.compile(r"(?:0|[1-9]\d*)(?:\.\d+)?", re.ASCII)
+_INTEGER = re.compile(r"\d+", re.ASCII)
 
 
 class BybitError(ValueError):
@@ -124,6 +124,36 @@ def _pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
 class BybitPublicClient:
     """TLS-verified unauthenticated HTTP client pinned to api.bybit.com."""
 
+    @staticmethod
+    def _validate_response(response: aiohttp.ClientResponse, path: str) -> None:
+        expected = urllib.parse.urlsplit(_BASE_URL)
+        if (
+            response.url.scheme != expected.scheme
+            or response.url.host != expected.hostname
+            or response.url.path != path
+        ):
+            raise BybitError("Bybit response host changed")
+        if 300 <= response.status < 400:
+            raise BybitError("Bybit redirect refused")
+        if response.status == 429 or 500 <= response.status < 600:
+            raise BybitTransientError("Bybit public request temporarily failed")
+        if response.status != 200:
+            raise BybitError(_PUBLIC_REQUEST_FAILED)
+        length = response.headers.get("Content-Length")
+        if length is not None and (
+            not _INTEGER.fullmatch(length) or int(length) > _MAX_RESPONSE_BYTES
+        ):
+            raise BybitError("Bybit response exceeds configured limit")
+
+    @staticmethod
+    async def _read_response(response: aiohttp.ClientResponse) -> bytearray:
+        body = bytearray()
+        async for chunk in response.content.iter_chunked(65_536):
+            if len(body) + len(chunk) > _MAX_RESPONSE_BYTES:
+                raise BybitError("Bybit response exceeds configured limit")
+            body.extend(chunk)
+        return body
+
     async def get(self, path: str, params: dict[str, str | int]) -> dict[str, object]:
         if path not in (_INSTRUMENTS_PATH, _KLINE_PATH):
             raise BybitError("Unsupported Bybit endpoint")
@@ -132,7 +162,6 @@ class BybitPublicClient:
             await asyncio.sleep(delay)
         query = urllib.parse.urlencode(params)
         url = f"{_BASE_URL}{path}?{query}"
-        expected = urllib.parse.urlsplit(_BASE_URL)
         timeout = aiohttp.ClientTimeout(
             total=_REQUEST_DEADLINE_S,
             sock_connect=_REQUEST_TIMEOUT_S,
@@ -155,31 +184,8 @@ class BybitPublicClient:
                     },
                     allow_redirects=False,
                 ) as response:
-                    if (
-                        response.url.scheme != expected.scheme
-                        or response.url.host != expected.hostname
-                        or response.url.path != path
-                    ):
-                        raise BybitError("Bybit response host changed")
-                    if 300 <= response.status < 400:
-                        raise BybitError("Bybit redirect refused")
-                    if response.status == 429 or 500 <= response.status < 600:
-                        raise BybitTransientError(
-                            "Bybit public request temporarily failed"
-                        )
-                    if response.status != 200:
-                        raise BybitError(_PUBLIC_REQUEST_FAILED)
-                    length = response.headers.get("Content-Length")
-                    if length is not None and (
-                        not _INTEGER.fullmatch(length)
-                        or int(length) > _MAX_RESPONSE_BYTES
-                    ):
-                        raise BybitError("Bybit response exceeds configured limit")
-                    body = bytearray()
-                    async for chunk in response.content.iter_chunked(65_536):
-                        if len(body) + len(chunk) > _MAX_RESPONSE_BYTES:
-                            raise BybitError("Bybit response exceeds configured limit")
-                        body.extend(chunk)
+                    self._validate_response(response, path)
+                    body = await self._read_response(response)
         except BybitError:
             raise
         except (aiohttp.ClientError, OSError):
@@ -407,12 +413,16 @@ def _kline_row(value: object) -> tuple[int, list[str]]:
     return timestamp_ms, [cast(str, row[0]), *numeric]
 
 
+def _reject_json_constant(_value: str) -> object:
+    raise _JsonError()
+
+
 def _decode_public_result(body: bytearray) -> dict[str, object]:
     try:
         decoded = json.loads(
             body.decode("utf-8", "strict"),
             object_pairs_hook=_pairs,
-            parse_constant=lambda _: (_ for _ in ()).throw(_JsonError()),
+            parse_constant=_reject_json_constant,
         )
     except (UnicodeError, json.JSONDecodeError, _JsonError, RecursionError):
         raise BybitError(_INVALID_RESPONSE) from None
@@ -488,6 +498,28 @@ class BybitHistoricalSource:
     async def close(self) -> None:
         self._closed = True
 
+    @staticmethod
+    def _merge_instruments(
+        found: dict[str, Instrument], category: str, rows: list[object]
+    ) -> None:
+        for row in rows:
+            instrument = _instrument(category, row)
+            prior = found.get(instrument.identity.symbol)
+            if prior is not None and prior != instrument:
+                raise BybitError("Conflicting Bybit instrument metadata")
+            found[instrument.identity.symbol] = instrument
+
+    @staticmethod
+    def _discovery_params(category: str, cursor: str | None) -> dict[str, str | int]:
+        params: dict[str, str | int] = {"category": category}
+        if category == "option":
+            params["baseCoin"] = "All"
+        if category != "spot":
+            params["limit"] = _INSTRUMENT_PAGE_SIZE
+            if cursor is not None:
+                params["cursor"] = cursor
+        return params
+
     async def discover(self, category: str) -> tuple[Instrument, ...]:
         if self._closed:
             raise BybitError("Bybit adapter is closed")
@@ -497,21 +529,10 @@ class BybitHistoricalSource:
         seen: set[str] = set()
         found: dict[str, Instrument] = {}
         for _ in range(_MAX_DISCOVERY_PAGES):
-            params: dict[str, str | int] = {"category": category}
-            if category == "option":
-                params["baseCoin"] = "All"
-            if category != "spot":
-                params["limit"] = _INSTRUMENT_PAGE_SIZE
-                if cursor is not None:
-                    params["cursor"] = cursor
+            params = self._discovery_params(category, cursor)
             result = await self._get(_INSTRUMENTS_PATH, params)
             rows = _page_rows(result, category)
-            for row in rows:
-                instrument = _instrument(category, row)
-                prior = found.get(instrument.identity.symbol)
-                if prior is not None and prior != instrument:
-                    raise BybitError("Conflicting Bybit instrument metadata")
-                found[instrument.identity.symbol] = instrument
+            self._merge_instruments(found, category, rows)
             next_cursor = result.get("nextPageCursor", "")
             if type(next_cursor) is not str or len(next_cursor) > 2_048:
                 raise BybitError("Invalid Bybit instrument cursor")
@@ -569,7 +590,7 @@ class BybitHistoricalSource:
             source_event_id=f"{subject.category}-{subject.symbol}-{timestamp_ms}",
         )
 
-    async def fetch(self, request: HistoryRequest) -> RawPage:
+    def _validate_history_request(self, request: HistoryRequest) -> InstrumentId:
         if self._closed:
             raise BybitError("Bybit adapter is closed")
         subject = request.stream.subject
@@ -582,6 +603,26 @@ class BybitHistoricalSource:
         if request.page_size > _HISTORY_PAGE_MAX:
             raise BybitError("Bybit page exceeds configured limit")
         self.descriptor.require(BYBIT_CANDLE_SCHEMA, SourceOperation.HISTORY, subject)
+        return subject
+
+    @staticmethod
+    def _history_rows(
+        raw_rows: list[object], start_ms: int, before_ms: int, api_limit: int
+    ) -> dict[int, list[str]]:
+        if len(raw_rows) > api_limit:
+            raise BybitError("Bybit kline page exceeds configured limit")
+        rows: dict[int, list[str]] = {}
+        for raw_row in raw_rows:
+            timestamp_ms, values = _kline_row(raw_row)
+            if start_ms <= timestamp_ms < before_ms:
+                prior = rows.get(timestamp_ms)
+                if prior is not None and prior != values:
+                    raise BybitError("Conflicting overlapping Bybit candles")
+                rows[timestamp_ms] = values
+        return rows
+
+    async def fetch(self, request: HistoryRequest) -> RawPage:
+        subject = self._validate_history_request(request)
         start_ms = (request.start_ns + _MS_NS - 1) // _MS_NS
         end_exclusive_ms = (request.end_ns + _MS_NS - 1) // _MS_NS
         cursor = (
@@ -609,16 +650,7 @@ class BybitHistoricalSource:
         ):
             raise BybitError("Bybit kline identity mismatch")
         raw_rows = _list(result.get("list"))
-        if len(raw_rows) > api_limit:
-            raise BybitError("Bybit kline page exceeds configured limit")
-        rows: dict[int, list[str]] = {}
-        for raw_row in raw_rows:
-            timestamp_ms, values = _kline_row(raw_row)
-            if start_ms <= timestamp_ms < before_ms:
-                prior = rows.get(timestamp_ms)
-                if prior is not None and prior != values:
-                    raise BybitError("Conflicting overlapping Bybit candles")
-                rows[timestamp_ms] = values
+        rows = self._history_rows(raw_rows, start_ms, before_ms, api_limit)
         ordered = sorted(rows.items())
         selected = ordered[-request.page_size :]
         receipt = self._clock.sample()

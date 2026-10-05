@@ -168,6 +168,54 @@ def _orderbook_body(
     }
 
 
+def _synthetic_body(
+    spec: WorkloadSpec,
+    rng: random.Random,
+    kind: str,
+    symbol: str,
+    timestamp_ms: int,
+    price: float,
+    segment: int,
+    index: int,
+    sequence: int,
+) -> object:
+    if kind == "candle":
+        return _candle_body(timestamp_ms, price, rng)
+    if kind == "trade":
+        return _trade_body(spec, rng, symbol, timestamp_ms, price, segment, index)
+    return _orderbook_body(spec, rng, symbol, timestamp_ms, price, sequence)
+
+
+def _envelope(
+    spec: WorkloadSpec,
+    recorded: bool,
+    kind: str,
+    symbol: str,
+    timestamp_ms: int,
+    index: int,
+    payload: bytes,
+) -> RawEnvelope:
+    return RawEnvelope(
+        source="public-recording-replay" if recorded else "synthetic-benchmark",
+        stream="candle" if recorded else kind,
+        channel="public",
+        adapter_version="benchmark-v1",
+        receipt=ClockSample(
+            timestamp_ms * 1_000_000,
+            index * 1000,
+            "benchmark-session",
+            TimeQuality("benchmark-clock"),
+        ),
+        payload=payload,
+        payload_limit=spec.payload_limit,
+        subject=InstrumentId("bybit" if recorded else "synthetic", "spot", symbol),
+        source_time=None
+        if recorded
+        else SourceTime(timestamp_ms, TimeUnit.MILLISECOND),
+        source_sequence=index,
+    )
+
+
 def build_workload(spec: WorkloadSpec, *, segment: int = 0) -> tuple[RawRecord, ...]:
     """Materialize at most spec.records inputs; each segment has new identities."""
     if type(segment) is not int or not 0 <= segment <= 10_000:
@@ -194,19 +242,24 @@ def build_workload(spec: WorkloadSpec, *, segment: int = 0) -> tuple[RawRecord, 
             else sequence // 20
         )
         price = 100 + instrument * 10 + rng.random()
-        body: object
-        if recorded:
-            body = None
-        elif kind == "candle":
-            body = _candle_body(timestamp_ms, price, rng)
-        elif kind == "trade":
-            body = _trade_body(spec, rng, symbol, timestamp_ms, price, segment, index)
-        else:
-            body = _orderbook_body(spec, rng, symbol, timestamp_ms, price, sequence)
         payload = (
             recorded[instrument][1]
             if recorded
-            else json.dumps(body, separators=(",", ":"), ensure_ascii=True).encode()
+            else json.dumps(
+                _synthetic_body(
+                    spec,
+                    rng,
+                    kind,
+                    symbol,
+                    timestamp_ms,
+                    price,
+                    segment,
+                    index,
+                    sequence,
+                ),
+                separators=(",", ":"),
+                ensure_ascii=True,
+            ).encode()
         )
         payload_bytes += len(payload)
         if payload_bytes > spec.max_total_payload_bytes:
@@ -218,28 +271,8 @@ def build_workload(spec: WorkloadSpec, *, segment: int = 0) -> tuple[RawRecord, 
                     f"seed-{spec.seed}-segment-{segment}",
                     index + 1,
                 ),
-                RawEnvelope(
-                    source="public-recording-replay"
-                    if recorded
-                    else "synthetic-benchmark",
-                    stream="candle" if recorded else kind,
-                    channel="public",
-                    adapter_version="benchmark-v1",
-                    receipt=ClockSample(
-                        timestamp_ms * 1_000_000,
-                        index * 1000,
-                        "benchmark-session",
-                        TimeQuality("benchmark-clock"),
-                    ),
-                    payload=payload,
-                    payload_limit=spec.payload_limit,
-                    subject=InstrumentId(
-                        "bybit" if recorded else "synthetic", "spot", symbol
-                    ),
-                    source_time=None
-                    if recorded
-                    else SourceTime(timestamp_ms, TimeUnit.MILLISECOND),
-                    source_sequence=index,
+                _envelope(
+                    spec, bool(recorded), kind, symbol, timestamp_ms, index, payload
                 ),
             )
         )

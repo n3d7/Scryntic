@@ -42,5 +42,5 @@ class Partition:
         identifier(self.source)
         if self.event_family != "candle":
             raise ValueError("F07 supports only the candle event family")
-        if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", self.utc_date) is None:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", self.utc_date, re.ASCII) is None:
             raise ValueError("Expected a canonical UTC date")

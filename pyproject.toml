@@ -48,7 +48,7 @@ addopts = ["--import-mode=importlib", "--strict-config", "--strict-markers", "-r
 [tool.coverage.run]
 branch = true
 relative_files = true
-source = ["src/scryntic"]
+source = ["src/scryntic", "scripts"]
 
 [tool.coverage.xml]
 output = "coverage.xml"

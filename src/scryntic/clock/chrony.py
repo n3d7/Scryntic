@@ -38,7 +38,7 @@ def parse_tracking(report: str) -> SyncEvidence:
         raise ValueError(_INVALID_REPORT)
     row = rows[0]
     if not re.fullmatch(r"[0-9A-Fa-f]{8}", row[0]) or not re.fullmatch(
-        r"[0-9]+", row[2]
+        r"\d+", row[2], flags=re.ASCII
     ):
         raise ValueError(_INVALID_REPORT)
     stratum = int(row[2])
