@@ -94,8 +94,9 @@ def test_post_startup_writer_failure_completes_admitted_requests(
             assert accepted.envelope == envelope
 
         # Check admission first so even a broken implementation cannot hang the test.
+        status_request = spool._StatusRequest(Future())
         with pytest.raises(spool.IngestionError, match="writer failed"):
-            ingestor._submit(spool._StatusRequest(Future()))
+            ingestor._submit(status_request)
         with pytest.raises(spool.IngestionError, match="writer failed"):
             ingestor.status()
         with pytest.raises(spool.IngestionError, match="writer failed"):

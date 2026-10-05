@@ -54,6 +54,10 @@ class ValidatedForecast:
     def validate(self) -> None:
         if self.descriptor.execution != "local":
             raise ValueError("F09 accepts only trusted local fake providers")
+        self.validate_result()
+
+    def validate_result(self) -> None:
+        """Shared application-owned checks; callers separately authorize execution."""
         if self.request.target != "close" or self.request.covariates:
             raise ValueError("F09 supports only the close target without covariates")
         if self.dataset.reference != self.request.dataset:

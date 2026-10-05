@@ -14,6 +14,7 @@ from scryntic.application.analysis import ForecastArtifactRef, ValidatedForecast
 from scryntic.archive.canonical import JsonValue, canonical_json_bytes
 from scryntic.configuration.paths import Installation, directory
 from scryntic.domain.identity import SchemaRef, Version
+from scryntic.jobs.result import AdmittedForecast
 
 ARTIFACT_SCHEMA = SchemaRef("scryntic.forecast-result", Version(1, 0))
 MAX_ARTIFACT_BYTES = 1_000_000
@@ -33,7 +34,7 @@ def _payload(value: ValidatedForecast) -> dict[str, object]:
     model = descriptor.model
     result = value.result
     dataset = request.dataset
-    return {
+    payload: dict[str, object] = {
         "schema": _schema(ARTIFACT_SCHEMA),
         "dataset": {
             "manifest_sha256": dataset.manifest_sha256,
@@ -87,6 +88,20 @@ def _payload(value: ValidatedForecast) -> dict[str, object]:
         "seed": None,
         "hardware": "none; trusted deterministic fake provider",
     }
+    if isinstance(value, AdmittedForecast):
+        payload["job"] = {
+            "request_sha256": value.job.sha256,
+            "review_sha256": value.job.review.sha256,
+            "policy_sha256": value.job.policy.sha256,
+            "intended_use": value.job.intended_use,
+        }
+        payload["determinism"] = {
+            "seed": value.job.seed,
+            "hardware": value.job.review.loading.device,
+            "runtime": value.job.review.loading.runtime,
+            "limitations": "trusted deterministic F20 fixture only; no real model qualification",
+        }
+    return payload
 
 
 class ImmutableForecastStore:
