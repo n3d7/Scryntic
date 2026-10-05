@@ -23,8 +23,8 @@ from scryntic.normalization.candle import (
 
 _PAYLOAD_LIMIT = 8_192
 _MS_NS = 1_000_000
-_DECIMAL = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?", re.ASCII)
-_INTEGER = re.compile(r"[0-9]+", re.ASCII)
+_DECIMAL = re.compile(r"(?:0|[1-9]\d*)(?:\.\d+)?", re.ASCII)
+_INTEGER = re.compile(r"\d+", re.ASCII)
 _INTERVAL_NS = {
     "1": 60_000_000_000,
     "3": 180_000_000_000,
@@ -132,15 +132,20 @@ def _schema_declaration(value: object) -> SchemaRef | None:
 def _publication_time(value: object) -> SourceTime | None:
     if value is None:
         return None
+    if type(value) is not dict:
+        raise ValueError("Invalid publication time")
     if (
-        type(value) is not dict
-        or set(value) != {"value", "unit"}
+        set(value) != {"value", "unit"}
         or type(value["value"]) is not int
         or not 0 <= value["value"] < (2**63 - 1) // _MS_NS
         or value["unit"] != TimeUnit.MILLISECOND.value
     ):
         raise ValueError("Invalid publication time")
     return SourceTime(value["value"], TimeUnit.MILLISECOND)
+
+
+def _invalid_constant(value: str) -> object:
+    raise ValueError("Invalid JSON constant")
 
 
 def _inspect[Result](
@@ -154,7 +159,7 @@ def _inspect[Result](
         document = json.loads(
             payload.decode("utf-8", "strict"),
             object_pairs_hook=_object,
-            parse_constant=lambda _: (_ for _ in ()).throw(ValueError()),
+            parse_constant=_invalid_constant,
         )
     except _DuplicateKey:
         return reject(RejectionCode.DUPLICATE_JSON_KEY)
@@ -204,6 +209,12 @@ def _inspect[Result](
         or document["start_ns"] != source_time.value * _MS_NS
     ):
         return reject(RejectionCode.INVALID_TIME, RejectionField.START_NS)
+    return _inspect_values(document, row, reject)
+
+
+def _inspect_values[Result](
+    document: dict[str, object], row: list[object], reject: Callable[..., Result]
+) -> ParsedFakeCandle | Result:
     names = ("open", "high", "low", "close", "volume")
     decimals: dict[str, Decimal] = {}
     for index, name in enumerate(names, start=1):
@@ -230,8 +241,8 @@ def _inspect[Result](
         return reject(RejectionCode.INVALID_TIME, RejectionField.PUBLICATION_TIME)
     return ParsedFakeCandle(
         schema=BYBIT_CANDLE_SCHEMA,
-        start_ns=document["start_ns"],
-        interval_ns=document["interval_ns"],
+        start_ns=cast(int, document["start_ns"]),
+        interval_ns=cast(int, document["interval_ns"]),
         open=open_value,
         high=high,
         low=low,

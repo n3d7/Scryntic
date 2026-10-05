@@ -278,8 +278,39 @@ class DurableIngestor:
                 self._read(connection, request.offset, request.limit)
             )
 
+    def _next_request(self) -> tuple[queue.Queue[_Request], _Request] | None:
+        lane = self._metadata
+        try:
+            return lane, lane.get_nowait()
+        except queue.Empty:
+            lane = self._requests
+        try:
+            return lane, lane.get(timeout=0.05)
+        except queue.Empty:
+            return None
+
+    def _dispatch_request(
+        self,
+        connection: sqlite3.Connection,
+        lane: queue.Queue[_Request],
+        request: _Request,
+    ) -> bool:
+        """Deliver each writer result to its waiting caller before retiring the lane."""
+        try:
+            self._dispatch(connection, request)
+        except _WriterFatal as error:
+            request.result.set_exception(error)
+            self._fail_writer()
+            return False
+        except BaseException as error:
+            request.result.set_exception(error)
+        finally:
+            lane.task_done()
+        return True
+
     def _run(self, database: Path) -> None:
         connection: sqlite3.Connection | None = None
+        active_request: _Request | None = None
         try:
             connection = sqlite3.connect(database, autocommit=True)
             self._initialize(connection)
@@ -291,25 +322,13 @@ class DurableIngestor:
                     and self._metadata.empty()
                 ):
                     return
-                lane = self._metadata
-                try:
-                    request = lane.get_nowait()
-                except queue.Empty:
-                    lane = self._requests
-                    try:
-                        request = lane.get(timeout=0.05)
-                    except queue.Empty:
-                        continue
-                try:
-                    self._dispatch(connection, request)
-                except _WriterFatal as error:
-                    request.result.set_exception(error)
-                    self._fail_writer()
+                next_request = self._next_request()
+                if next_request is None:
+                    continue
+                lane, active_request = next_request
+                if not self._dispatch_request(connection, lane, active_request):
                     return
-                except BaseException as error:
-                    request.result.set_exception(error)
-                finally:
-                    lane.task_done()
+                active_request = None
         except BaseException as error:
             if not self._ready.done():
                 startup_error = (
@@ -318,15 +337,19 @@ class DurableIngestor:
                     else IngestionError("Unable to initialize durable ingestion")
                 )
                 self._ready.set_exception(startup_error)
+            else:
+                self._fail_writer(active_request)
         finally:
             if connection is not None:
                 connection.close()
 
-    def _fail_writer(self) -> None:
+    def _fail_writer(self, active_request: _Request | None = None) -> None:
         failure = IngestionError("Durable ingestion writer failed")
         with self._lifecycle_lock:
             self._fatal = failure
         self._shutdown.set()
+        if active_request is not None and not active_request.result.done():
+            active_request.result.set_exception(failure)
         for lane in (self._metadata, self._requests):
             while True:
                 try:
@@ -392,6 +415,25 @@ class DurableIngestor:
         if foreign_rows is None or foreign_rows[0] != 0:
             raise IngestionError("Ingestion producer does not own this spool")
 
+    def _migrate_schema(self, connection: sqlite3.Connection, *, create: bool) -> None:
+        connection.execute(_BEGIN_IMMEDIATE)
+        try:
+            if create:
+                connection.execute(_CREATE_METADATA)
+                connection.execute(_CREATE_RAW_RECORDS)
+            connection.execute(_CREATE_RECOVERY)
+            if create:
+                connection.execute(
+                    "INSERT INTO spool_metadata (singleton, producer) VALUES (1, ?)",
+                    (self._producer,),
+                )
+            connection.execute(f"PRAGMA user_version={_SCHEMA_VERSION}")
+            connection.execute("COMMIT")
+        except BaseException:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+
     def _initialize(self, connection: sqlite3.Connection) -> None:
         journal = connection.execute("PRAGMA journal_mode=WAL").fetchone()
         connection.execute("PRAGMA synchronous=FULL")
@@ -404,32 +446,10 @@ class DurableIngestor:
         version_row = connection.execute("PRAGMA user_version").fetchone()
         version = 0 if version_row is None else int(version_row[0])
         if version == 0:
-            connection.execute(_BEGIN_IMMEDIATE)
-            try:
-                connection.execute(_CREATE_METADATA)
-                connection.execute(_CREATE_RAW_RECORDS)
-                connection.execute(_CREATE_RECOVERY)
-                connection.execute(
-                    "INSERT INTO spool_metadata (singleton, producer) VALUES (1, ?)",
-                    (self._producer,),
-                )
-                connection.execute(f"PRAGMA user_version={_SCHEMA_VERSION}")
-                connection.execute("COMMIT")
-            except BaseException:
-                if connection.in_transaction:
-                    connection.execute("ROLLBACK")
-                raise
+            self._migrate_schema(connection, create=True)
         elif version == 1:
             self._validate_schema(connection, legacy=True)
-            connection.execute(_BEGIN_IMMEDIATE)
-            try:
-                connection.execute(_CREATE_RECOVERY)
-                connection.execute(f"PRAGMA user_version={_SCHEMA_VERSION}")
-                connection.execute("COMMIT")
-            except BaseException:
-                if connection.in_transaction:
-                    connection.execute("ROLLBACK")
-                raise
+            self._migrate_schema(connection, create=False)
         elif version != _SCHEMA_VERSION:
             raise IngestionError("Unsupported ingestion schema")
 
@@ -467,6 +487,17 @@ class DurableIngestor:
         if isinstance(subject, InstrumentId):
             return "instrument", subject.venue, subject.category, subject.symbol
         return "entity", subject.kind, subject.namespace, subject.value
+
+    @staticmethod
+    def _rollback_transaction(connection: sqlite3.Connection, message: str) -> None:
+        if not connection.in_transaction:
+            return
+        try:
+            connection.execute("ROLLBACK")
+        except BaseException:
+            raise _WriterFatal(message) from None
+        if connection.in_transaction:
+            raise _WriterFatal(message) from None
 
     def _accept(
         self, connection: sqlite3.Connection, envelope: RawEnvelope
@@ -545,17 +576,9 @@ class DurableIngestor:
                 raise IngestionError("SQLite did not store the accepted envelope")
             connection.execute("COMMIT")
         except BaseException as error:
-            if connection.in_transaction:
-                try:
-                    connection.execute("ROLLBACK")
-                except BaseException:
-                    raise _WriterFatal(
-                        "Durable ingestion transaction recovery failed"
-                    ) from None
-                if connection.in_transaction:
-                    raise _WriterFatal(
-                        "Durable ingestion transaction recovery failed"
-                    ) from None
+            self._rollback_transaction(
+                connection, "Durable ingestion transaction recovery failed"
+            )
             if not isinstance(error, Exception):
                 raise
             raise IngestionError("Unable to commit raw envelope") from None
@@ -657,6 +680,25 @@ class DurableIngestor:
         request.result.result()
 
     @staticmethod
+    def _write_recovery(
+        connection: sqlite3.Connection, request: _RecoveryRequest, prior: bytes | None
+    ) -> None:
+        if prior != request.expected:
+            raise IngestionError("Recovery metadata changed")
+        count = connection.execute("SELECT count(*) FROM recovery_state").fetchone()
+        if prior is None and (count is None or count[0] >= _METADATA_STREAMS):
+            raise IngestionError("Recovery metadata stream quota reached")
+        connection.execute(
+            "INSERT INTO recovery_state VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (request.key, request.value),
+        )
+        stored = connection.execute(
+            "SELECT value FROM recovery_state WHERE key=?", (request.key,)
+        ).fetchone()
+        if stored is None or bytes(stored[0]) != request.value:
+            raise IngestionError("Recovery metadata readback failed")
+
+    @staticmethod
     def _recovery(
         connection: sqlite3.Connection, request: _RecoveryRequest
     ) -> bytes | None:
@@ -667,30 +709,13 @@ class DurableIngestor:
             ).fetchone()
             prior = None if row is None else bytes(row[0])
             if request.value is not None:
-                if prior != request.expected:
-                    raise IngestionError("Recovery metadata changed")
-                count = connection.execute(
-                    "SELECT count(*) FROM recovery_state"
-                ).fetchone()
-                if prior is None and (count is None or count[0] >= _METADATA_STREAMS):
-                    raise IngestionError("Recovery metadata stream quota reached")
-                connection.execute(
-                    "INSERT INTO recovery_state VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-                    (request.key, request.value),
-                )
-                stored = connection.execute(
-                    "SELECT value FROM recovery_state WHERE key=?", (request.key,)
-                ).fetchone()
-                if stored is None or bytes(stored[0]) != request.value:
-                    raise IngestionError("Recovery metadata readback failed")
+                DurableIngestor._write_recovery(connection, request, prior)
             connection.execute("COMMIT")
             return prior
         except BaseException as error:
-            try:
-                if connection.in_transaction:
-                    connection.execute("ROLLBACK")
-            except BaseException:
-                raise _WriterFatal("Unable to roll back recovery metadata") from None
+            DurableIngestor._rollback_transaction(
+                connection, "Unable to roll back recovery metadata"
+            )
             if not isinstance(error, Exception):
                 raise
             raise IngestionError(

@@ -1119,12 +1119,15 @@ def test_read_decoder_rejects_zero_committed_offsets(tmp_path: Path, read: str) 
             }[read]
             clause = " WHERE offset=2" if read == "outcome" else ""
             db.execute(f"UPDATE {table} SET offset=0{clause}")
-        with pytest.raises(NormalizationError):
-            if read == "outcome":
-                store.outcome(IngestionId("collector-a", "epoch-a", 0))
-            elif read == "checkpoint":
+        identity = IngestionId("collector-a", "epoch-a", 0)
+        if read == "outcome":
+            with pytest.raises(NormalizationError):
+                store.outcome(identity)
+        elif read == "checkpoint":
+            with pytest.raises(NormalizationError):
                 store.checkpoint()
-            else:
+        else:
+            with pytest.raises(NormalizationError):
                 store.barrier()
 
 

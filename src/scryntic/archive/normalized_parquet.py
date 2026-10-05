@@ -165,6 +165,52 @@ def _time_values(value: SourceTime | None) -> tuple[int | None, str | None]:
     return value.value, value.unit.value
 
 
+def _semantic_row(semantics: CandleSemantics | None) -> dict[str, object]:
+    if semantics is None:
+        return dict.fromkeys(
+            (
+                "semantic_venue",
+                "semantic_category",
+                "semantic_symbol",
+                "semantic_start_ns",
+                "semantic_interval_ns",
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
+                "volume_unit",
+                "finalized",
+                "source_time_value",
+                "source_time_unit",
+                "publication_time_value",
+                "publication_time_unit",
+                "quality_flags",
+            )
+        )
+    source_time = _time_values(semantics.source_time)
+    publication_time = _time_values(semantics.publication_time)
+    return {
+        "semantic_venue": semantics.key.instrument.venue,
+        "semantic_category": semantics.key.instrument.category,
+        "semantic_symbol": semantics.key.instrument.symbol,
+        "semantic_start_ns": semantics.key.start_ns,
+        "semantic_interval_ns": semantics.key.interval_ns,
+        "open": semantics.open,
+        "high": semantics.high,
+        "low": semantics.low,
+        "close": semantics.close,
+        "volume": semantics.volume,
+        "volume_unit": semantics.volume_unit,
+        "finalized": semantics.finalized,
+        "source_time_value": source_time[0],
+        "source_time_unit": source_time[1],
+        "publication_time_value": publication_time[0],
+        "publication_time_unit": publication_time[1],
+        "quality_flags": list(semantics.quality_flags),
+    }
+
+
 def _row(value: PublicationInput) -> dict[str, object]:
     outcome = value.outcome
     predecessor = outcome.predecessor
@@ -172,11 +218,6 @@ def _row(value: PublicationInput) -> dict[str, object]:
     instrument_schema = _schema_values(outcome.instrument_schema)
     output_schema = _schema_values(outcome.output_schema)
     quality = outcome.receipt.quality
-    semantics = value.semantics
-    source_time = _time_values(None if semantics is None else semantics.source_time)
-    publication_time = _time_values(
-        None if semantics is None else semantics.publication_time
-    )
     return {
         "producer": outcome.identity.producer,
         "epoch": outcome.identity.epoch,
@@ -213,29 +254,7 @@ def _row(value: PublicationInput) -> dict[str, object]:
         "quality_uncertainty_ns": quality.uncertainty_ns,
         "quality_evidence_age_ns": quality.evidence_age_ns,
         "normalized_at_ns": outcome.normalized_at_ns,
-        "semantic_venue": None if semantics is None else semantics.key.instrument.venue,
-        "semantic_category": (
-            None if semantics is None else semantics.key.instrument.category
-        ),
-        "semantic_symbol": None
-        if semantics is None
-        else semantics.key.instrument.symbol,
-        "semantic_start_ns": None if semantics is None else semantics.key.start_ns,
-        "semantic_interval_ns": None
-        if semantics is None
-        else semantics.key.interval_ns,
-        "open": None if semantics is None else semantics.open,
-        "high": None if semantics is None else semantics.high,
-        "low": None if semantics is None else semantics.low,
-        "close": None if semantics is None else semantics.close,
-        "volume": None if semantics is None else semantics.volume,
-        "volume_unit": None if semantics is None else semantics.volume_unit,
-        "finalized": None if semantics is None else semantics.finalized,
-        "source_time_value": source_time[0],
-        "source_time_unit": source_time[1],
-        "publication_time_value": publication_time[0],
-        "publication_time_unit": publication_time[1],
-        "quality_flags": None if semantics is None else list(semantics.quality_flags),
+        **_semantic_row(value.semantics),
     }
 
 
@@ -402,6 +421,30 @@ def _metadata_integer(value: bytes | None) -> int:
     return converted
 
 
+def _validated_logical_bytes(
+    values: tuple[PublicationInput, ...], limits: ArchiveLimits
+) -> int:
+    if type(values) is not tuple or not values:
+        raise NormalizedArchiveError("Normalized archive inputs are empty")
+    if len(values) > limits.max_records:
+        raise NormalizedArchiveError(_LIMITS_EXCEEDED)
+    producer = values[0].raw.identity.producer
+    previous = 0
+    logical_bytes = 0
+    for value in values:
+        if (
+            not isinstance(value, PublicationInput)
+            or value.raw.identity.producer != producer
+            or value.raw.identity.offset <= previous
+        ):
+            raise NormalizedArchiveError("Invalid normalized archive order")
+        previous = value.raw.identity.offset
+        logical_bytes += _logical(value)
+        if logical_bytes > limits.max_decoded_bytes:
+            raise NormalizedArchiveError(_LIMITS_EXCEEDED)
+    return logical_bytes
+
+
 class NormalizedParquetArchive:
     def __init__(
         self, installation: Installation, *, fault: Callable[[str], None] | None = None
@@ -413,24 +456,7 @@ class NormalizedParquetArchive:
         self, values: tuple[PublicationInput, ...], limits: ArchiveLimits
     ) -> ArchiveObject:
         try:
-            if type(values) is not tuple or not values:
-                raise NormalizedArchiveError("Normalized archive inputs are empty")
-            if len(values) > limits.max_records:
-                raise NormalizedArchiveError(_LIMITS_EXCEEDED)
-            producer = values[0].raw.identity.producer
-            previous = 0
-            logical_bytes = 0
-            for value in values:
-                if (
-                    not isinstance(value, PublicationInput)
-                    or value.raw.identity.producer != producer
-                    or value.raw.identity.offset <= previous
-                ):
-                    raise NormalizedArchiveError("Invalid normalized archive order")
-                previous = value.raw.identity.offset
-                logical_bytes += _logical(value)
-                if logical_bytes > limits.max_decoded_bytes:
-                    raise NormalizedArchiveError(_LIMITS_EXCEEDED)
+            logical_bytes = _validated_logical_bytes(values, limits)
             table = pa.Table.from_pylist(
                 [_row(value) for value in values],
                 schema=_schema(len(values), logical_bytes),
@@ -576,12 +602,9 @@ def _validate_normalized_metadata(
     return record_count, logical_bytes
 
 
-def decode_normalized_path(
-    path: Path, descriptor: ArchiveObject, limits: ArchiveLimits, owner_uid: int
-) -> tuple[ArchivedNormalization, ...]:
-    _validate_normalized_file(path, descriptor, limits, owner_uid)
-    if file_sha256(path, owner_uid) != descriptor.sha256:
-        raise NormalizedArchiveError("Normalized object hash mismatch")
+def _validate_normalized_descriptor(
+    descriptor: ArchiveObject, limits: ArchiveLimits
+) -> None:
     if (
         descriptor.format != NORMALIZED_PARQUET_SCHEMA
         or descriptor.codec != PARQUET_CODEC
@@ -592,6 +615,15 @@ def decode_normalized_path(
         or descriptor.decoded_bytes > limits.max_decoded_bytes
     ):
         raise NormalizedArchiveError(_LIMITS_EXCEEDED)
+
+
+def decode_normalized_path(
+    path: Path, descriptor: ArchiveObject, limits: ArchiveLimits, owner_uid: int
+) -> tuple[ArchivedNormalization, ...]:
+    _validate_normalized_file(path, descriptor, limits, owner_uid)
+    if file_sha256(path, owner_uid) != descriptor.sha256:
+        raise NormalizedArchiveError("Normalized object hash mismatch")
+    _validate_normalized_descriptor(descriptor, limits)
     parquet = pq.ParquetFile(path, memory_map=False, pre_buffer=False)
     record_count, logical_bytes = _validate_normalized_metadata(
         parquet, descriptor, limits

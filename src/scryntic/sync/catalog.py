@@ -24,6 +24,7 @@ from scryntic.publication.manifest import (
 from scryntic.sync.model import Anchor, Enrollment, PullError, PullLimits
 
 _BACKUP_LIMIT = "Backup limit"
+_HISTORY_LIMIT = "History limit"
 type _EpochHistory = tuple[Anchor, Anchor, tuple[bytes, ...]]
 type _EnrollmentHistory = tuple[Enrollment, list[_EpochHistory]]
 
@@ -224,7 +225,7 @@ class PullCatalog(ImportCatalog):
             self._db.execute("SELECT count(*) FROM pull_manifests").fetchone()[0]
             >= self.pull_limits.max_manifests
         ):
-            raise ValueError("History limit")
+            raise ValueError(_HISTORY_LIMIT)
         self._db.execute(
             "INSERT INTO pull_manifests VALUES (?,?,?,?,?)",
             (
@@ -491,7 +492,7 @@ class PullCatalog(ImportCatalog):
         if type(epochs) is not list or not epochs:
             raise ValueError("Missing epochs")
         if len(epochs) > remaining_epochs:
-            raise ValueError("History limit")
+            raise ValueError(_HISTORY_LIMIT)
         retained: list[_EpochHistory] = []
         seen: set[str] = set()
         prior_checkpoint: IngestionId | None = None
@@ -530,7 +531,7 @@ class PullCatalog(ImportCatalog):
         if type(manifests) is not list:
             raise ValueError("Invalid retained manifests")
         if len(manifests) > remaining_manifests:
-            raise ValueError("History limit")
+            raise ValueError(_HISTORY_LIMIT)
         history, checkpoint = self._parse_history(
             bootstrap, accepted, manifests, prior_checkpoint
         )

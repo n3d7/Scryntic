@@ -10,6 +10,7 @@ import sys
 import sysconfig
 import time
 from pathlib import Path
+from typing import IO, Any
 
 from scryntic.imports.protocol import ImportError, ImportLimits
 
@@ -25,6 +26,52 @@ def _terminate_process(process: subprocess.Popen[bytes]) -> None:
     for pipe in (process.stdout, process.stderr):
         if pipe is not None:
             pipe.close()
+
+
+def _read_process_chunk(
+    selector: selectors.BaseSelector,
+    key: selectors.SelectorKey,
+    stdout: IO[Any],
+    output: bytearray,
+    max_message_bytes: int,
+) -> int:
+    data = os.read(key.fd, min(4096, max_message_bytes + 1))
+    if not data:
+        selector.unregister(key.fd)
+        return 0
+    if key.fileobj is stdout:
+        output.extend(data)
+        return 0
+    return len(data)
+
+
+def _read_process_output(
+    process: subprocess.Popen[bytes], limits: ImportLimits, output_limit: int
+) -> bytes:
+    if process.stdin is None or process.stdout is None or process.stderr is None:
+        raise ImportError("Decoder IPC unavailable")
+    process.stdin.close()
+    deadline = time.monotonic() + limits.wall_seconds
+    output = bytearray()
+    errors = 0
+    with selectors.DefaultSelector() as selector:
+        for stream in (process.stdout, process.stderr):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ)
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ImportError("Decoder deadline exceeded")
+            for key, _ in selector.select(min(remaining, 0.1)):
+                errors += _read_process_chunk(
+                    selector, key, process.stdout, output, limits.max_message_bytes
+                )
+                if len(output) > output_limit or errors > limits.max_message_bytes:
+                    raise ImportError("Decoder message limit exceeded")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or process.wait(timeout=remaining) != 0:
+            raise ImportError("Restricted decoder failed")
+    return bytes(output)
 
 
 def bounded_process(
@@ -53,35 +100,7 @@ def bounded_process(
             env={},
             cwd="/",
         )
-        if process.stdin is None or process.stdout is None or process.stderr is None:
-            raise ImportError("Decoder IPC unavailable")
-        process.stdin.close()
-        deadline = time.monotonic() + limits.wall_seconds
-        output = bytearray()
-        errors = 0
-        with selectors.DefaultSelector() as selector:
-            for stream in (process.stdout, process.stderr):
-                os.set_blocking(stream.fileno(), False)
-                selector.register(stream, selectors.EVENT_READ)
-            while selector.get_map():
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    raise ImportError("Decoder deadline exceeded")
-                for key, _ in selector.select(min(remaining, 0.1)):
-                    data = os.read(key.fd, min(4096, limits.max_message_bytes + 1))
-                    if not data:
-                        selector.unregister(key.fd)
-                        continue
-                    if key.fileobj is process.stdout:
-                        output.extend(data)
-                    else:
-                        errors += len(data)
-                    if len(output) > output_limit or errors > limits.max_message_bytes:
-                        raise ImportError("Decoder message limit exceeded")
-            remaining = deadline - time.monotonic()
-            if remaining <= 0 or process.wait(timeout=remaining) != 0:
-                raise ImportError("Restricted decoder failed")
-        return bytes(output)
+        return _read_process_output(process, limits, output_limit)
     except Exception:
         raise ImportError("Restricted decoder failed") from None
     finally:

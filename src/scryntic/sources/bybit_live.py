@@ -46,7 +46,7 @@ _FRAME_LIMIT = 65_536
 _EVENT_LIMIT = 8_192
 _INTAKE_RECORD_LIMIT = 32
 _WRITE_TIMEOUT_S = 3.0
-_DECIMAL = re.compile(r"(?:0|[1-9][0-9]*)(?:\.[0-9]+)?", re.ASCII)
+_DECIMAL = re.compile(r"(?:0|[1-9]\d*)(?:\.\d+)?", re.ASCII)
 
 
 def _is_pong(document: dict[str, object]) -> bool:
@@ -197,6 +197,10 @@ def _pairs(items: list[tuple[str, object]]) -> dict[str, object]:
     return result
 
 
+def _reject_json_constant(_value: str) -> object:
+    raise ValueError()
+
+
 def _document(message: aiohttp.WSMessage) -> dict[str, object]:
     if message.type not in (aiohttp.WSMsgType.TEXT, aiohttp.WSMsgType.BINARY):
         raise BybitLiveError("Bybit WebSocket closed or invalid frame")
@@ -209,7 +213,7 @@ def _document(message: aiohttp.WSMessage) -> dict[str, object]:
         value = json.loads(
             raw,
             object_pairs_hook=_pairs,
-            parse_constant=lambda _: (_ for _ in ()).throw(ValueError()),
+            parse_constant=_reject_json_constant,
         )
     except (ValueError, RecursionError):
         raise BybitLiveError("Invalid Bybit WebSocket JSON") from None
@@ -434,12 +438,7 @@ class BybitLiveSource:
         )
         return envelope, key
 
-    async def _connected(
-        self,
-        socket: _Socket,
-        topic: str,
-        subject: InstrumentId,
-    ) -> AsyncGenerator[tuple[RawEnvelope, tuple[object, ...]], None]:
+    async def _subscribe(self, socket: _Socket, topic: str) -> None:
         await self._send(socket, {"op": "subscribe", "args": [topic]})
         try:
             ack = _document(
@@ -454,23 +453,52 @@ class BybitLiveSource:
         data = ack.get("data")
         if isinstance(data, dict) and data.get("failTopics"):
             raise BybitLiveConfigurationError(_SUBSCRIPTION_REJECTED)
+
+    @staticmethod
+    def _candle_batch(document: dict[str, object], topic: str) -> list[object]:
+        if document.get("topic") != topic or document.get("type") != "snapshot":
+            raise BybitLiveError("Unexpected Bybit subscription message")
+        candles = document.get("data")
+        if not isinstance(candles, list) or not 1 <= len(candles) <= 8:
+            raise BybitLiveError("Invalid Bybit candle batch")
+        return candles
+
+    async def _heartbeat_deadline(
+        self,
+        socket: _Socket,
+        next_ping: float,
+        last_data: float,
+        pong_deadline: float | None,
+    ) -> tuple[float, float | None, float]:
+        now = time.monotonic()
+        if pong_deadline is not None and now >= pong_deadline:
+            raise BybitLiveError("Bybit heartbeat timed out")
+        if now - last_data >= self._limits.data_stall_s:
+            raise BybitLiveError("Bybit candle stream stalled")
+        if now >= next_ping and pong_deadline is None:
+            await self._send(socket, {"op": "ping"})
+            pong_deadline = now + self._limits.pong_timeout_s
+            next_ping = now + self._limits.ping_interval_s
+        deadline = min(
+            next_ping if pong_deadline is None else float("inf"),
+            last_data + self._limits.data_stall_s,
+            pong_deadline if pong_deadline is not None else float("inf"),
+        )
+        return next_ping, pong_deadline, deadline
+
+    async def _connected(
+        self,
+        socket: _Socket,
+        topic: str,
+        subject: InstrumentId,
+    ) -> AsyncGenerator[tuple[RawEnvelope, tuple[object, ...]], None]:
+        await self._subscribe(socket, topic)
         next_ping = time.monotonic() + self._limits.ping_interval_s
         last_data = time.monotonic()
         pong_deadline: float | None = None
         while not self._closed.is_set():
-            now = time.monotonic()
-            if pong_deadline is not None and now >= pong_deadline:
-                raise BybitLiveError("Bybit heartbeat timed out")
-            if now - last_data >= self._limits.data_stall_s:
-                raise BybitLiveError("Bybit candle stream stalled")
-            if now >= next_ping and pong_deadline is None:
-                await self._send(socket, {"op": "ping"})
-                pong_deadline = now + self._limits.pong_timeout_s
-                next_ping = now + self._limits.ping_interval_s
-            deadline = min(
-                next_ping if pong_deadline is None else float("inf"),
-                last_data + self._limits.data_stall_s,
-                pong_deadline if pong_deadline is not None else float("inf"),
+            next_ping, pong_deadline, deadline = await self._heartbeat_deadline(
+                socket, next_ping, last_data, pong_deadline
             )
             try:
                 message = await socket.receive(
@@ -485,14 +513,92 @@ class BybitLiveSource:
             if _is_pong(document):
                 pong_deadline = None
                 continue
-            if document.get("topic") != topic or document.get("type") != "snapshot":
-                raise BybitLiveError("Unexpected Bybit subscription message")
-            candles = document.get("data")
-            if not isinstance(candles, list) or not 1 <= len(candles) <= 8:
-                raise BybitLiveError("Invalid Bybit candle batch")
+            candles = self._candle_batch(document, topic)
             last_data = time.monotonic()
             for candle in candles:
                 yield self._envelope(candle, document, subject)
+
+    def _enqueue(
+        self,
+        envelope: RawEnvelope,
+        key: tuple[object, ...],
+        seen: OrderedDict[tuple[object, ...], None],
+        queue: asyncio.Queue[tuple[RawEnvelope, SourceBufferLease | None]],
+    ) -> None:
+        lease = (
+            self._buffer_admission(len(envelope.payload))
+            if self._buffer_admission is not None
+            else None
+        )
+        if self._buffer_admission is not None and lease is None:
+            raise BybitLiveError("Bybit shared intake overflow")
+        try:
+            queue.put_nowait((envelope, lease))
+        except asyncio.QueueFull:
+            if lease is not None:
+                lease.release()
+            raise BybitLiveError("Bybit bounded intake overflow") from None
+        # Never suppress a reconnect replay of the overflow record.
+        seen[key] = None
+        if len(seen) > 1024:
+            seen.popitem(last=False)
+
+    async def _pump(
+        self,
+        socket: _Socket,
+        topic: str,
+        subject: InstrumentId,
+        seen: OrderedDict[tuple[object, ...], None],
+        queue: asyncio.Queue[tuple[RawEnvelope, SourceBufferLease | None]],
+        wake: asyncio.Event,
+    ) -> None:
+        try:
+            async for envelope, key in self._connected(socket, topic, subject):
+                if self._closed.is_set():
+                    break
+                if key in seen:
+                    seen.move_to_end(key)
+                    continue
+                self._enqueue(envelope, key, seen, queue)
+                wake.set()
+        except BybitLiveError as exc:
+            self.last_error = str(exc)
+            raise
+        finally:
+            try:
+                await socket.close()
+            finally:
+                wake.set()
+
+    async def _consume_intake(
+        self,
+        queue: asyncio.Queue[tuple[RawEnvelope, SourceBufferLease | None]],
+        reader: asyncio.Task[None],
+        wake: asyncio.Event,
+    ) -> AsyncGenerator[RawEnvelope, None]:
+        while not self._closed.is_set():
+            if not queue.empty():
+                envelope, lease = queue.get_nowait()
+                try:
+                    yield envelope
+                finally:
+                    if lease is not None:
+                        lease.release()
+                continue
+            if reader.done():
+                reader.result()
+                return
+            wake.clear()
+            await wake.wait()
+
+    @staticmethod
+    def _release_intake(
+        queue: asyncio.Queue[tuple[RawEnvelope, SourceBufferLease | None]],
+    ) -> None:
+        while not queue.empty():
+            _, lease = queue.get_nowait()
+            if lease is not None:
+                lease.release()
 
     async def _bounded(
         self,
@@ -508,68 +614,84 @@ class BybitLiveSource:
         )
         wake = asyncio.Event()
 
-        async def pump() -> None:
-            try:
-                async for envelope, key in self._connected(socket, topic, subject):
-                    if self._closed.is_set():
-                        break
-                    if key in seen:
-                        seen.move_to_end(key)
-                        continue
-                    lease = (
-                        self._buffer_admission(len(envelope.payload))
-                        if self._buffer_admission is not None
-                        else None
-                    )
-                    if self._buffer_admission is not None and lease is None:
-                        raise BybitLiveError("Bybit shared intake overflow")
-                    try:
-                        queue.put_nowait((envelope, lease))
-                    except asyncio.QueueFull:
-                        if lease is not None:
-                            lease.release()
-                        raise BybitLiveError("Bybit bounded intake overflow") from None
-                    # Never suppress a reconnect replay of the overflow record.
-                    seen[key] = None
-                    if len(seen) > 1024:
-                        seen.popitem(last=False)
-                    wake.set()
-            except BybitLiveError as exc:
-                self.last_error = str(exc)
-                raise
-            finally:
-                try:
-                    await socket.close()
-                finally:
-                    wake.set()
-
-        reader = asyncio.create_task(pump())
+        reader = asyncio.create_task(
+            self._pump(socket, topic, subject, seen, queue, wake)
+        )
         self._reader_task = reader
         try:
-            while not self._closed.is_set():
-                if not queue.empty():
-                    envelope, lease = queue.get_nowait()
-                    try:
-                        yield envelope
-                    finally:
-                        if lease is not None:
-                            lease.release()
-                    continue
-                if reader.done():
-                    reader.result()
-                    return
-                wake.clear()
-                await wake.wait()
+            async with aclosing(self._consume_intake(queue, reader, wake)) as intake:
+                async for envelope in intake:
+                    yield envelope
         finally:
             reader.cancel()
             await asyncio.gather(reader, return_exceptions=True)
             self._reader_task = None
-            while not queue.empty():
-                _, lease = queue.get_nowait()
-                if lease is not None:
-                    lease.release()
+            self._release_intake(queue)
 
-    async def stream(self, request: StreamRequest) -> AsyncGenerator[RawEnvelope, None]:
+    async def _stream_connection(
+        self,
+        topic: str,
+        subject: InstrumentId,
+        seen: OrderedDict[tuple[object, ...], None],
+    ) -> AsyncGenerator[RawEnvelope, None]:
+        socket = await self._connect(subject.category)
+        self._socket = socket
+        try:
+            async with aclosing(self._bounded(socket, topic, subject, seen)) as intake:
+                async for envelope in intake:
+                    if self._closed.is_set():
+                        break
+                    yield envelope
+        finally:
+            await socket.close()
+            self._socket = None
+        self.last_error = "Bybit WebSocket disconnected"
+
+    def _internal_close_cancellation(self) -> bool:
+        owner = asyncio.current_task()
+        return self._closed.is_set() and owner is not None and not owner.cancelling()
+
+    async def _report_loss(
+        self, exc: BybitLiveError | aiohttp.ClientError | OSError
+    ) -> None:
+        self.last_error = (
+            str(exc)
+            if isinstance(exc, BybitLiveError)
+            else "Bybit WebSocket transport failed"
+        )
+        if self._loss_handler is not None and not self._closed.is_set():
+            reason = _loss_reason(exc, self.last_error)
+            await self._loss_handler(SourceLoss(reason, self._clock.sample()))
+
+    async def _stream_attempt(
+        self,
+        topic: str,
+        subject: InstrumentId,
+        seen: OrderedDict[tuple[object, ...], None],
+    ) -> AsyncGenerator[RawEnvelope, None]:
+        try:
+            async with aclosing(
+                self._stream_connection(topic, subject, seen)
+            ) as intake:
+                async for envelope in intake:
+                    yield envelope
+        except BybitLiveConfigurationError:
+            self.last_error = _SUBSCRIPTION_REJECTED
+            raise
+        except asyncio.CancelledError:
+            if self._internal_close_cancellation():
+                # close() cancels owned connection/reader tasks. End iteration only
+                # when the stream owner itself has received no cancellation request.
+                return
+            raise
+        except (
+            BybitLiveError,
+            aiohttp.ClientError,
+            OSError,
+        ) as exc:
+            await self._report_loss(exc)
+
+    def _validate_stream(self, request: StreamRequest) -> InstrumentId:
         if self._closed.is_set():
             raise BybitLiveError("Bybit live source is closed")
         if self._running:
@@ -578,6 +700,15 @@ class BybitLiveSource:
         if not isinstance(subject, InstrumentId) or subject.venue != "bybit":
             raise ValueError("Expected Bybit instrument")
         self.descriptor.require(request.schema, SourceOperation.STREAM, subject)
+        return subject
+
+    async def _close_socket(self) -> None:
+        if self._socket is not None:
+            await self._socket.close()
+            self._socket = None
+
+    async def stream(self, request: StreamRequest) -> AsyncGenerator[RawEnvelope, None]:
+        subject = self._validate_stream(request)
         topic = f"kline.{self._interval}.{subject.symbol}"
         self._running = True
         seen: OrderedDict[tuple[object, ...], None] = OrderedDict()
@@ -586,62 +717,25 @@ class BybitLiveSource:
             while not self._closed.is_set():
                 if self._start_gate is not None and not self._start_gate():
                     try:
-                        await asyncio.wait_for(self._closed.wait(), timeout=0.05)
+                        async with asyncio.timeout(0.05):
+                            await self._closed.wait()
                     except TimeoutError:
                         pass
                     continue
-                try:
-                    socket = await self._connect(subject.category)
-                    self._socket = socket
-                    try:
-                        async with aclosing(
-                            self._bounded(socket, topic, subject, seen)
-                        ) as intake:
-                            async for envelope in intake:
-                                if self._closed.is_set():
-                                    break
-                                delay = self._limits.reconnect_initial_s
-                                yield envelope
-                    finally:
-                        await socket.close()
-                        self._socket = None
-                    self.last_error = "Bybit WebSocket disconnected"
-                except BybitLiveConfigurationError:
-                    self.last_error = _SUBSCRIPTION_REJECTED
-                    raise
-                except asyncio.CancelledError:
-                    owner = asyncio.current_task()
-                    if (
-                        self._closed.is_set()
-                        and owner is not None
-                        and not owner.cancelling()
-                    ):
-                        break
-                    raise
-                except (
-                    BybitLiveError,
-                    aiohttp.ClientError,
-                    OSError,
-                ) as exc:
-                    self.last_error = (
-                        str(exc)
-                        if isinstance(exc, BybitLiveError)
-                        else "Bybit WebSocket transport failed"
-                    )
-                    if self._loss_handler is not None and not self._closed.is_set():
-                        reason = _loss_reason(exc, self.last_error)
-                        await self._loss_handler(
-                            SourceLoss(reason, self._clock.sample())
-                        )
+                async with aclosing(
+                    self._stream_attempt(topic, subject, seen)
+                ) as intake:
+                    async for envelope in intake:
+                        delay = self._limits.reconnect_initial_s
+                        yield envelope
                 if self._closed.is_set():
                     break
                 try:
-                    await asyncio.wait_for(self._closed.wait(), timeout=delay)
+                    async with asyncio.timeout(delay):
+                        await self._closed.wait()
                 except TimeoutError:
                     pass
                 delay = min(delay * 2, self._limits.reconnect_max_s)
         finally:
             self._running = False
-            if self._socket is not None:
-                await self._socket.close()
-                self._socket = None
+            await self._close_socket()

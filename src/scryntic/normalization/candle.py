@@ -38,9 +38,9 @@ _TOP_LEVEL_FIELDS = frozenset(
 )
 _SCHEMA_FIELDS = frozenset({"name", "major", "minor"})
 _PUBLICATION_TIME_FIELDS = frozenset({"value", "unit"})
-_DECIMAL_PATTERN = re.compile(r"[0-9]+(?:\.[0-9]+)?", flags=re.ASCII)
+_DECIMAL_PATTERN = re.compile(r"\d+(?:\.\d+)?", flags=re.ASCII)
 _CANONICAL_DECIMAL_PATTERN = re.compile(
-    r"(?:0|[1-9][0-9]*|(?:0|[1-9][0-9]*)\.[0-9]*[1-9])", flags=re.ASCII
+    r"(?:0|[1-9]\d*|(?:0|[1-9]\d*)\.\d*[1-9])", flags=re.ASCII
 )
 
 

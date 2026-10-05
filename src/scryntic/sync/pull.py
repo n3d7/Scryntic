@@ -105,7 +105,7 @@ class _Discovery:
     async def _slot(self, epoch: str, slot: RemoteEntry) -> _Committed | None:
         if (
             not stat.S_ISDIR(slot.mode)
-            or re.fullmatch(r"[0-9]{20}", slot.name) is None
+            or re.fullmatch(r"\d{20}", slot.name, re.ASCII) is None
             or not 0 < int(slot.name) <= 2**63 - 1
         ):
             raise PullError("Invalid committed sequence namespace")
@@ -130,6 +130,20 @@ class _Discovery:
             raise PullError("Committed namespace identity mismatch")
         return _Committed(document, data)
 
+    def _retain_committed(
+        self, result: dict[tuple[str, int], _Committed], item: _Committed
+    ) -> None:
+        ref = item.document.ref
+        if ref.producer != self.remote.enrollment.producer:
+            return
+        parse_request(item.data, self.catalog.limits)
+        if ref.epoch not in self.catalog.epochs(self.remote.enrollment.name):
+            raise PullError("Unexpected producer epoch")
+        key = ref.epoch, ref.sequence
+        if key in result or len(result) >= self.limits.max_manifests:
+            raise PullError("Committed history quota or identity conflict")
+        result[key] = item
+
     async def scan(self) -> dict[tuple[str, int], _Committed]:
         result: dict[tuple[str, int], _Committed] = {}
         for epoch in await self.entries("manifests"):
@@ -143,16 +157,7 @@ class _Discovery:
                 item = await self._slot(epoch.name, slot)
                 if item is None:
                     continue
-                ref = item.document.ref
-                if ref.producer != self.remote.enrollment.producer:
-                    continue
-                parse_request(item.data, self.catalog.limits)
-                if ref.epoch not in self.catalog.epochs(self.remote.enrollment.name):
-                    raise PullError("Unexpected producer epoch")
-                key = ref.epoch, ref.sequence
-                if key in result or len(result) >= self.limits.max_manifests:
-                    raise PullError("Committed history quota or identity conflict")
-                result[key] = item
+                self._retain_committed(result, item)
         return result
 
     async def hint(self) -> tuple[ManifestRef | None, bool]:

@@ -8,6 +8,7 @@ from scryntic.configuration.clock import ClockLimits
 from scryntic.domain.market import CandleKey
 from scryntic.domain.time import ClockSample
 from scryntic.domain.validation import digest, integer
+from scryntic.normalization.candle import CandleSemantics
 from scryntic.normalization.sqlite_store import OutcomeKind
 
 
@@ -72,6 +73,50 @@ def strict_eligible(
     return tuple(eligible), tuple(exclusions)
 
 
+def _apply_revision(
+    state: _KeyState, source: SourceInput, semantics: CandleSemantics, revision: str
+) -> None:
+    kind = source.value.outcome.kind
+    previous = state.selected.value.semantics
+    if (
+        previous is None
+        or previous.finalized
+        or revision in state.revisions
+        or (kind is OutcomeKind.OPEN_REVISION and semantics.finalized)
+        or (kind is OutcomeKind.FINALIZATION and not semantics.finalized)
+        or kind not in (OutcomeKind.OPEN_REVISION, OutcomeKind.FINALIZATION)
+    ):
+        raise SelectionError("Invalid dataset revision transition")
+    state.selected = source
+    state.evidence.append(source)
+    state.revisions.add(revision)
+
+
+def _select_source(states: dict[CandleKey, _KeyState], source: SourceInput) -> None:
+    value = source.value
+    kind = value.outcome.kind
+    semantics = value.semantics
+    if kind in (OutcomeKind.CONFLICT, OutcomeKind.REJECTED):
+        raise SelectionError("Conflicting or rejected dataset input")
+    if semantics is None or value.outcome.semantic_revision is None:
+        raise SelectionError("Missing dataset candle semantics")
+    revision = value.outcome.semantic_revision
+    state = states.get(semantics.key)
+    if kind is OutcomeKind.ACCEPTED:
+        if state is not None:
+            raise SelectionError("Repeated accepted logical candle")
+        states[semantics.key] = _KeyState(source, [source], {revision})
+        return
+    if state is None:
+        raise SelectionError("Dataset revision has no accepted predecessor")
+    if kind is OutcomeKind.DUPLICATE:
+        if revision not in state.revisions:
+            raise SelectionError("Duplicate lacks a matching revision")
+        state.evidence.append(source)
+        return
+    _apply_revision(state, source, semantics, revision)
+
+
 def select_candles(inputs: tuple[SourceInput, ...]) -> tuple[SelectedCandle, ...]:
     """Select the latest non-conflicting revision per key in ingestion order."""
     if not inputs:
@@ -94,39 +139,7 @@ def select_candles(inputs: tuple[SourceInput, ...]) -> tuple[SelectedCandle, ...
         if identity.producer != producer or ingestion_key in seen:
             raise SelectionError("Overlapping or mixed-producer dataset inputs")
         seen.add(ingestion_key)
-        kind = value.outcome.kind
-        semantics = value.semantics
-        if kind in (OutcomeKind.CONFLICT, OutcomeKind.REJECTED):
-            raise SelectionError("Conflicting or rejected dataset input")
-        if semantics is None or value.outcome.semantic_revision is None:
-            raise SelectionError("Missing dataset candle semantics")
-        revision = value.outcome.semantic_revision
-        state = states.get(semantics.key)
-        if kind is OutcomeKind.ACCEPTED:
-            if state is not None:
-                raise SelectionError("Repeated accepted logical candle")
-            states[semantics.key] = _KeyState(source, [source], {revision})
-            continue
-        if state is None:
-            raise SelectionError("Dataset revision has no accepted predecessor")
-        if kind is OutcomeKind.DUPLICATE:
-            if revision not in state.revisions:
-                raise SelectionError("Duplicate lacks a matching revision")
-            state.evidence.append(source)
-            continue
-        previous = state.selected.value.semantics
-        if (
-            previous is None
-            or previous.finalized
-            or revision in state.revisions
-            or (kind is OutcomeKind.OPEN_REVISION and semantics.finalized)
-            or (kind is OutcomeKind.FINALIZATION and not semantics.finalized)
-            or kind not in (OutcomeKind.OPEN_REVISION, OutcomeKind.FINALIZATION)
-        ):
-            raise SelectionError("Invalid dataset revision transition")
-        state.selected = source
-        state.evidence.append(source)
-        state.revisions.add(revision)
+        _select_source(states, source)
     return tuple(
         SelectedCandle(state.selected, tuple(state.evidence))
         for key, state in sorted(

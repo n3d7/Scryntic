@@ -3,13 +3,11 @@
 import fcntl
 import os
 import sqlite3
-import stat
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import ExitStack
 from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import Path
 from types import TracebackType
 from typing import cast
 
@@ -29,6 +27,7 @@ from scryntic.publication.manifest import (
     ManifestRef,
     parse_manifest,
 )
+from scryntic.sqlite_state import connect_pinned, open_private_file, schema_matches
 
 _BEGIN_IMMEDIATE = "BEGIN IMMEDIATE"
 _STORE_FAILED = "Durable publication store failed"
@@ -104,6 +103,14 @@ class PublicationReservation:
             raise TypeError("Invalid publication predecessor")
         if type(self.inputs) is not tuple or not self.inputs:
             raise ValueError("Publication reservation requires inputs")
+        self._validate_inputs()
+        if self.sequence == 1:
+            if self.previous_manifest_hash != GENESIS_MANIFEST_HASH:
+                raise ValueError("Invalid publication genesis")
+        elif self.previous_manifest_hash == GENESIS_MANIFEST_HASH:
+            raise ValueError("Invalid publication predecessor")
+
+    def _validate_inputs(self) -> None:
         producer = self.checkpoint_after.producer
         previous_offset = 0
         for identity, fingerprint in self.inputs:
@@ -125,11 +132,6 @@ class PublicationReservation:
             raise ValueError("Invalid publication checkpoint order")
         if ordered_digest_from_pairs(self.inputs) != self.ordered_input_digest:
             raise ValueError("Ordered publication digest mismatch")
-        if self.sequence == 1:
-            if self.previous_manifest_hash != GENESIS_MANIFEST_HASH:
-                raise ValueError("Invalid publication genesis")
-        elif self.previous_manifest_hash == GENESIS_MANIFEST_HASH:
-            raise ValueError("Invalid publication predecessor")
 
 
 @dataclass(frozen=True, slots=True)
@@ -295,14 +297,13 @@ class PublicationStore:
                 state_fd, _DATABASE_NAME, installation.owner_uid
             )
             self._resources.callback(os.close, database_fd)
-            database = Path(f"/proc/self/fd/{state_fd}/{_DATABASE_NAME}")
-            self._connection = sqlite3.connect(database, autocommit=True)
-            self._resources.callback(self._connection.close)
-            for name, fd in ((_LOCK_NAME, lock_fd), (_DATABASE_NAME, database_fd)):
-                pinned = os.fstat(fd)
-                current = os.stat(name, dir_fd=state_fd, follow_symlinks=False)
-                if (pinned.st_dev, pinned.st_ino) != (current.st_dev, current.st_ino):
-                    raise PublicationError("Unsafe publication state file")
+            self._connection = connect_pinned(
+                state_fd,
+                _DATABASE_NAME,
+                ((_LOCK_NAME, lock_fd), (_DATABASE_NAME, database_fd)),
+                self._resources,
+                unsafe_file_error=PublicationError("Unsafe publication state file"),
+            )
             self._initialize()
         except BaseException as error:
             self._closed = True
@@ -317,25 +318,10 @@ class PublicationStore:
 
     @staticmethod
     def _open_file(state_fd: int, name: str, owner_uid: int) -> int:
-        fd = os.open(
-            name,
-            os.O_RDWR | os.O_CREAT | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK,
-            0o600,
-            dir_fd=state_fd,
-        )
         try:
-            info = os.fstat(fd)
-            if (
-                not stat.S_ISREG(info.st_mode)
-                or info.st_uid != owner_uid
-                or info.st_nlink != 1
-                or stat.S_IMODE(info.st_mode) != 0o600
-            ):
-                raise PublicationError("Unsafe publication state file")
-            return fd
-        except BaseException:
-            os.close(fd)
-            raise
+            return open_private_file(state_fd, name, owner_uid)
+        except ValueError:
+            raise PublicationError("Unsafe publication state file") from None
 
     def _initialize(self) -> None:
         connection = self._connection
@@ -355,20 +341,7 @@ class PublicationStore:
                 is not None
             ):
                 raise PublicationError("Invalid publication schema")
-            connection.execute(_BEGIN_IMMEDIATE)
-            try:
-                for _, _, _, sql in _SCHEMA:
-                    connection.execute(sql)
-                connection.execute(
-                    "INSERT INTO publication_metadata VALUES (1, ?)",
-                    (self._producer,),
-                )
-                connection.execute("PRAGMA user_version=1")
-                connection.execute("COMMIT")
-            except BaseException:
-                if connection.in_transaction:
-                    connection.execute("ROLLBACK")
-                raise
+            self._create_schema()
         elif version != (_SCHEMA_VERSION,):
             raise PublicationError("Unsupported publication schema")
         self._validate_schema()
@@ -378,22 +351,25 @@ class PublicationStore:
             raise PublicationError("Publication database foreign key check failed")
         self._validate_rows()
 
-    def _validate_schema(self) -> None:
-        rows = self._connection.execute(
-            "SELECT type, name, tbl_name, sql FROM sqlite_schema "
-            "WHERE name NOT GLOB 'sqlite_*' ORDER BY name"
-        ).fetchall()
-        actual = tuple((r[0], r[1], r[2], " ".join(r[3].split())) for r in rows)
-        expected = tuple(
-            sorted(
-                (
-                    (kind, name, table, " ".join(sql.split()))
-                    for kind, name, table, sql in _SCHEMA
-                ),
-                key=lambda row: row[1],
+    def _create_schema(self) -> None:
+        connection = self._connection
+        connection.execute(_BEGIN_IMMEDIATE)
+        try:
+            for _, _, _, sql in _SCHEMA:
+                connection.execute(sql)
+            connection.execute(
+                "INSERT INTO publication_metadata VALUES (1, ?)",
+                (self._producer,),
             )
-        )
-        if actual != expected:
+            connection.execute("PRAGMA user_version=1")
+            connection.execute("COMMIT")
+        except BaseException:
+            if connection.in_transaction:
+                connection.execute("ROLLBACK")
+            raise
+
+    def _validate_schema(self) -> None:
+        if not schema_matches(self._connection, _SCHEMA):
             raise PublicationError("Invalid publication schema")
         metadata = self._connection.execute(
             "SELECT singleton, producer FROM publication_metadata"
@@ -401,15 +377,7 @@ class PublicationStore:
         if metadata != [(1, self._producer)]:
             raise PublicationError("Publication producer does not own this state")
 
-    def _validate_rows(self) -> None:
-        if (
-            self._row(
-                "SELECT 1 FROM publication_catalog WHERE producer<>? LIMIT 1",
-                (self._producer,),
-            )
-            is not None
-        ):
-            raise PublicationError("Foreign publication catalog history")
+    def _validate_catalog_chain(self) -> IngestionId | None:
         previous = 0
         previous_checkpoint: IngestionId | None = None
         epoch_heads: dict[str, tuple[int, str]] = {}
@@ -432,6 +400,18 @@ class PublicationStore:
             )
             previous = entry.checkpoint_after.offset
             previous_checkpoint = entry.checkpoint_after
+        return previous_checkpoint
+
+    def _validate_rows(self) -> None:
+        if (
+            self._row(
+                "SELECT 1 FROM publication_catalog WHERE producer<>? LIMIT 1",
+                (self._producer,),
+            )
+            is not None
+        ):
+            raise PublicationError("Foreign publication catalog history")
+        previous_checkpoint = self._validate_catalog_chain()
         checkpoint = self._checkpoint_entry()
         if previous_checkpoint is not None and checkpoint is None:
             raise PublicationError("Missing publication checkpoint")
@@ -582,6 +562,20 @@ class PublicationStore:
         row = self._row("SELECT * FROM pending_publication WHERE singleton=1")
         return None if row is None else self._decode_pending(row)
 
+    def _validate_reservation_link(self, value: PublicationReservation) -> None:
+        checkpoint = self._checkpoint_entry()
+        expected = None if checkpoint is None else checkpoint.checkpoint_after
+        if value.checkpoint_before != expected:
+            raise PublicationError("Publication checkpoint changed")
+        if value.checkpoint_after.producer != self._producer:
+            raise PublicationError("Publication producer mismatch")
+        next_sequence, previous_hash = self.next_epoch_link(value.epoch)
+        if (value.sequence, value.previous_manifest_hash) != (
+            next_sequence,
+            previous_hash,
+        ):
+            raise PublicationError("Publication epoch chain changed")
+
     def reserve(self, value: PublicationReservation) -> PendingPublication:
         self._require_open()
         if not isinstance(value, PublicationReservation):
@@ -595,18 +589,7 @@ class PublicationStore:
                     connection.execute("COMMIT")
                     return existing
                 raise PublicationError("A different publication is pending")
-            checkpoint = self._checkpoint_entry()
-            expected = None if checkpoint is None else checkpoint.checkpoint_after
-            if value.checkpoint_before != expected:
-                raise PublicationError("Publication checkpoint changed")
-            if value.checkpoint_after.producer != self._producer:
-                raise PublicationError("Publication producer mismatch")
-            next_sequence, previous_hash = self.next_epoch_link(value.epoch)
-            if (value.sequence, value.previous_manifest_hash) != (
-                next_sequence,
-                previous_hash,
-            ):
-                raise PublicationError("Publication epoch chain changed")
+            self._validate_reservation_link(value)
             connection.execute(
                 "INSERT INTO pending_publication VALUES "
                 "(1, 'reserved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)",
@@ -712,6 +695,31 @@ class PublicationStore:
                 raise PublicationError("Unable to prepare publication") from None
             raise
 
+    def _advance_checkpoint(self, document: ManifestDocument) -> None:
+        connection = self._connection
+        body = document.body
+        checkpoint = self._checkpoint_entry()
+        if checkpoint is None:
+            connection.execute(
+                "INSERT INTO publication_checkpoint VALUES (1, ?, ?, ?, ?)",
+                (*_identity_values(body.checkpoint_after), document.manifest_hash),
+            )
+        else:
+            before = body.checkpoint_before
+            if before != checkpoint.checkpoint_after:
+                raise PublicationError("Publication checkpoint changed")
+            updated = connection.execute(
+                "UPDATE publication_checkpoint SET producer=?, epoch=?, offset=?, "
+                "manifest_hash=? WHERE singleton=1 AND manifest_hash=?",
+                (
+                    *_identity_values(body.checkpoint_after),
+                    document.manifest_hash,
+                    checkpoint.ref.manifest_hash,
+                ),
+            )
+            if updated.rowcount != 1:
+                raise PublicationError("Publication checkpoint did not advance")
+
     def commit_prepared(self, pending: PendingPublication) -> CatalogEntry:
         self._require_open()
         if (
@@ -745,27 +753,7 @@ class PublicationStore:
                 ),
             )
             self._fault("after_catalog_insert")
-            checkpoint = self._checkpoint_entry()
-            if checkpoint is None:
-                connection.execute(
-                    "INSERT INTO publication_checkpoint VALUES (1, ?, ?, ?, ?)",
-                    (*_identity_values(body.checkpoint_after), document.manifest_hash),
-                )
-            else:
-                before = body.checkpoint_before
-                if before != checkpoint.checkpoint_after:
-                    raise PublicationError("Publication checkpoint changed")
-                updated = connection.execute(
-                    "UPDATE publication_checkpoint SET producer=?, epoch=?, offset=?, "
-                    "manifest_hash=? WHERE singleton=1 AND manifest_hash=?",
-                    (
-                        *_identity_values(body.checkpoint_after),
-                        document.manifest_hash,
-                        checkpoint.ref.manifest_hash,
-                    ),
-                )
-                if updated.rowcount != 1:
-                    raise PublicationError("Publication checkpoint did not advance")
+            self._advance_checkpoint(document)
             self._fault("after_checkpoint_update")
             connection.execute("DELETE FROM pending_publication WHERE singleton=1")
             self._fault("before_catalog_commit")

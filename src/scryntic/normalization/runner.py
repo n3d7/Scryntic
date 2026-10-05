@@ -45,6 +45,35 @@ class Blocked:
     barrier: ProcessingBarrier
 
 
+def _read_next(
+    reader: RawRecordReader,
+    offset: int,
+    producer: str,
+    checkpoint: IngestionId | None,
+    barrier: ProcessingBarrier | None,
+) -> tuple[RawRecord, ...]:
+    try:
+        records = reader.records_after(offset, limit=1)
+    except Exception:
+        raise NormalizationError("Unable to read next normalization record") from None
+    if not isinstance(records, tuple) or len(records) > 1:
+        raise NormalizationError("Invalid normalization reader result")
+    if records and (
+        not isinstance(records[0], RawRecord)
+        or records[0].identity.producer != producer
+        or records[0].identity.offset <= offset
+    ):
+        raise NormalizationError("Invalid normalization record order")
+    if barrier is not None and (
+        not records
+        or barrier.blocker != records[0].identity
+        or barrier.raw_sha256 != records[0].envelope.content_sha256
+        or barrier.predecessor != checkpoint
+    ):
+        raise NormalizationError("Normalization record does not match barrier")
+    return records
+
+
 def process_next(
     reader: RawRecordReader,
     store: NormalizationStore,
@@ -59,26 +88,7 @@ def process_next(
     status = store.status()
     checkpoint = status.checkpoint
     offset = 0 if checkpoint is None else checkpoint.offset
-    try:
-        records = reader.records_after(offset, limit=1)
-    except Exception:
-        raise NormalizationError("Unable to read next normalization record") from None
-    if not isinstance(records, tuple) or len(records) > 1:
-        raise NormalizationError("Invalid normalization reader result")
-    if records and (
-        not isinstance(records[0], RawRecord)
-        or records[0].identity.producer != status.producer
-        or records[0].identity.offset <= offset
-    ):
-        raise NormalizationError("Invalid normalization record order")
-    barrier = status.barrier
-    if barrier is not None and (
-        not records
-        or barrier.blocker != records[0].identity
-        or barrier.raw_sha256 != records[0].envelope.content_sha256
-        or barrier.predecessor != checkpoint
-    ):
-        raise NormalizationError("Normalization record does not match barrier")
+    records = _read_next(reader, offset, status.producer, checkpoint, status.barrier)
     if not records:
         return NoWork(checkpoint)
     record = records[0]

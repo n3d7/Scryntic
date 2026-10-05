@@ -150,6 +150,24 @@ def _decode(data: bytes, payload_limit: int) -> RawRecord:
     return record
 
 
+def _validated_logical_bytes(
+    records: tuple[RawRecord, ...], limits: ArchiveLimits
+) -> int:
+    if type(records) is not tuple or not records or len(records) > limits.max_records:
+        raise ArchiveError(_LIMITS_EXCEEDED)
+    logical = 0
+    previous = 0
+    producer = records[0].identity.producer
+    for record in records:
+        if record.identity.producer != producer or record.identity.offset <= previous:
+            raise ArchiveError("Invalid archive record order")
+        previous = record.identity.offset
+        logical += len(canonical_json_bytes({"raw": raw_projection(record)}))
+        if logical > limits.max_decoded_bytes:
+            raise ArchiveError(_LIMITS_EXCEEDED)
+    return logical
+
+
 class FramedZlibRawArchive:
     """Locally approved F10 codec candidate; same durable RawArchive contract."""
 
@@ -165,25 +183,7 @@ class FramedZlibRawArchive:
         self, records: tuple[RawRecord, ...], limits: ArchiveLimits
     ) -> RawSegment:
         try:
-            if (
-                type(records) is not tuple
-                or not records
-                or len(records) > limits.max_records
-            ):
-                raise ArchiveError(_LIMITS_EXCEEDED)
-            logical = 0
-            previous = 0
-            producer = records[0].identity.producer
-            for record in records:
-                if (
-                    record.identity.producer != producer
-                    or record.identity.offset <= previous
-                ):
-                    raise ArchiveError("Invalid archive record order")
-                previous = record.identity.offset
-                logical += len(canonical_json_bytes({"raw": raw_projection(record)}))
-                if logical > limits.max_decoded_bytes:
-                    raise ArchiveError(_LIMITS_EXCEEDED)
+            logical = _validated_logical_bytes(records, limits)
             staging = self._storage.create_staging("raw-framed")
             try:
                 with staging.open("wb") as stream:

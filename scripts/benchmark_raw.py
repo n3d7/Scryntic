@@ -37,6 +37,7 @@ from scryntic.benchmarks.workloads import (
     workload_digest,
 )
 from scryntic.configuration.paths import Installation
+from scryntic.domain.raw import RawRecord
 from scryntic.ingestion.sqlite_spool import DurableIngestor
 
 
@@ -243,6 +244,30 @@ def _measure_ingestion(
     }
 
 
+async def _verify_point_reads(
+    archive: ParquetRawArchive | FramedZlibRawArchive,
+    digest: str,
+    limits: ArchiveLimits,
+    records: tuple[RawRecord, ...],
+    points: int,
+    rng: random.Random,
+    sequential: list[float],
+    random_reads: list[float],
+) -> None:
+    for indices, timings in (
+        (range(min(points, len(records))), sequential),
+        (rng.sample(range(len(records)), min(points, len(records))), random_reads),
+    ):
+        for index in indices:
+            started = time.perf_counter()
+            actual = await archive.read(
+                RawRecordRef(digest, index, records[index].identity), limits
+            )
+            timings.append(time.perf_counter() - started)
+            if actual != records[index]:
+                raise RuntimeError("Public point read changed raw bytes or identity")
+
+
 async def _measure(
     spec: WorkloadSpec,
     codec: str,
@@ -289,20 +314,16 @@ async def _measure(
             raise RuntimeError("Verified scan changed raw bytes or identity")
         if segment_index not in {0, segments - 1}:
             continue
-        for indices, timings in (
-            (range(min(points, len(records))), sequential),
-            (rng.sample(range(len(records)), min(points, len(records))), random_reads),
-        ):
-            for index in indices:
-                started = time.perf_counter()
-                actual = await archive.read(
-                    RawRecordRef(segment.sha256, index, records[index].identity), limits
-                )
-                timings.append(time.perf_counter() - started)
-                if actual != records[index]:
-                    raise RuntimeError(
-                        "Public point read changed raw bytes or identity"
-                    )
+        await _verify_point_reads(
+            archive,
+            segment.sha256,
+            limits,
+            records,
+            points,
+            rng,
+            sequential,
+            random_reads,
+        )
     # Codec peak includes generated input, sealing, scan and point reads only.
     peak_rss = _rss_bytes()
     measured_wall_seconds = time.perf_counter() - case_started
@@ -547,20 +568,9 @@ def _case_command(
     return command
 
 
-def main() -> None:
-    parser = _parser()
-    args = parser.parse_args()
-    if not sys.platform.startswith("linux"):
-        parser.error(
-            "This measurement runner requires Linux ru_maxrss/proc/fork semantics"
-        )
-    if (
-        not 1 <= args.segments <= 256
-        or not 1 <= args.repeats <= 10
-        or not 1 <= args.point_reads <= 1024
-        or not 1 <= args.timeout <= 3600
-    ):
-        parser.error("segments/repeats/point reads/timeout outside benchmark bounds")
+def _workload_specs(
+    args: argparse.Namespace, parser: argparse.ArgumentParser
+) -> list[WorkloadSpec]:
     specs = []
     try:
         for workload in args.workloads:
@@ -580,6 +590,24 @@ def main() -> None:
                 )
     except ValueError as error:
         parser.error(str(error))
+    return specs
+
+
+def main() -> None:
+    parser = _parser()
+    args = parser.parse_args()
+    if not sys.platform.startswith("linux"):
+        parser.error(
+            "This measurement runner requires Linux ru_maxrss/proc/fork semantics"
+        )
+    if (
+        not 1 <= args.segments <= 256
+        or not 1 <= args.repeats <= 10
+        or not 1 <= args.point_reads <= 1024
+        or not 1 <= args.timeout <= 3600
+    ):
+        parser.error("segments/repeats/point reads/timeout outside benchmark bounds")
+    specs = _workload_specs(args, parser)
     if len(specs) * len(args.codecs) * args.repeats > 160:
         parser.error("At most 160 isolated cases per invocation")
     total_records = args.records * args.segments

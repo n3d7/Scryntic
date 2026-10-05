@@ -111,7 +111,9 @@ def test_offsets_may_have_gaps_and_epoch_chains_continue_independently(
 def test_reservation_is_idempotent_but_immutable(tmp_path: Path) -> None:
     with PublicationStore(installation(tmp_path), producer="producer-a") as store:
         value = reservation(offset=3)
-        assert store.reserve(value) == store.reserve(value)
+        first = store.reserve(value)
+        second = store.reserve(value)
+        assert second == first
         prepared_reservation = reservation(offset=4)
         with pytest.raises(PublicationError, match="pending"):
             store.reserve(prepared_reservation)

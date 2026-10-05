@@ -110,10 +110,9 @@ class ClockMonitor:
         self._refresh_after = None
         return "healthy", "bounded_evidence", offset, radius, age
 
-    def sample(self) -> ClockSample:
-        before = self._reader.read()
-        evidence = self._status.read()
-        after = self._reader.read()
+    def _update_continuity(
+        self, before: ClockReading, after: ClockReading, evidence: SyncEvidence | None
+    ) -> str | None:
         disruption = self._discontinuity(before, after)
         if self._previous is not None:
             disruption = self._discontinuity(self._previous, before) or disruption
@@ -148,6 +147,34 @@ class ClockMonitor:
                 self._previous.wall_time_ns if self._previous else before.wall_time_ns,
                 self._last_reference or 0,
             )
+        return disruption
+
+    def _record_transition(
+        self, status: QualityStatus, reason: str, disruption: str | None
+    ) -> None:
+        previous_health = self.health
+        if (
+            previous_health is None
+            or disruption is not None
+            or (previous_health.sample.quality.status, previous_health.reason)
+            != (status, reason)
+        ):
+            self._epoch += 1
+            _LOG.log(
+                logging.INFO if status == "healthy" else logging.WARNING,
+                "clock_quality status=%s previous=%s reason=%s epoch=%s:%d",
+                status,
+                previous_health.sample.quality.status if previous_health else "none",
+                reason,
+                self._instance,
+                self._epoch,
+            )
+
+    def sample(self) -> ClockSample:
+        before = self._reader.read()
+        evidence = self._status.read()
+        after = self._reader.read()
+        disruption = self._update_continuity(before, after, evidence)
         status, reason, offset, radius, age = self._quality(
             after, evidence, max(0, after.monotonic_ns - before.monotonic_ns)
         )
@@ -173,23 +200,7 @@ class ClockMonitor:
             reason = disruption
         elif self._previous is None and status == "healthy":
             status, reason = "unknown", "startup"
-        previous_health = self.health
-        if (
-            previous_health is None
-            or disruption is not None
-            or (previous_health.sample.quality.status, previous_health.reason)
-            != (status, reason)
-        ):
-            self._epoch += 1
-            _LOG.log(
-                logging.INFO if status == "healthy" else logging.WARNING,
-                "clock_quality status=%s previous=%s reason=%s epoch=%s:%d",
-                status,
-                previous_health.sample.quality.status if previous_health else "none",
-                reason,
-                self._instance,
-                self._epoch,
-            )
+        self._record_transition(status, reason, disruption)
         quality = TimeQuality(
             f"{self._instance}:{self._epoch}", status, offset, radius, age
         )

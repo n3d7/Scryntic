@@ -157,8 +157,7 @@ def test_startup_rejects_corrupt_chain_without_repair(
     # A second attempt also fails: startup neither repairs nor fabricates progress.
     for _ in range(2):
         with pytest.raises(NormalizationError, match=f"^{message}$"):
-            with NormalizationStore(target, producer="collector-a"):
-                pytest.fail(f"Accepted corruption: {corruption}")
+            NormalizationStore(target, producer="collector-a")
     with closing(sqlite3.connect(database, autocommit=True)) as db:
         assert tuple(db.iterdump()) == before
 

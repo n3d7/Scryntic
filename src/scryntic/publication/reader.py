@@ -14,6 +14,7 @@ from scryntic.archive.canonical import (
 )
 from scryntic.archive.model import ArchiveRole
 from scryntic.archive.normalized_parquet import (
+    ArchivedNormalization,
     NormalizedParquetArchive,
     archived_normalization,
 )
@@ -108,7 +109,7 @@ class PublicationReader:
             raise PublicationReaderError("Publication catalog disagrees with manifest")
         return entry
 
-    def _continuity(self, document: ManifestDocument) -> Continuity:
+    def _epoch_continuity(self, document: ManifestDocument) -> Continuity:
         body = document.body
         continuity = Continuity.SELF
         if body.sequence == 1:
@@ -138,6 +139,11 @@ class PublicationReader:
             ):
                 raise PublicationReaderError(_INVALID_PREDECESSOR)
             continuity = Continuity.EPOCH
+        return continuity
+
+    def _continuity(self, document: ManifestDocument) -> Continuity:
+        body = document.body
+        continuity = self._epoch_continuity(document)
         if body.checkpoint_before is not None:
             global_predecessor = self._store.catalog_by_checkpoint(
                 body.checkpoint_before
@@ -156,6 +162,23 @@ class PublicationReader:
                     )
                 continuity = Continuity.GLOBAL
         return continuity
+
+    @staticmethod
+    def _validated_inputs(
+        records: tuple[RawRecord, ...], normalized: tuple[ArchivedNormalization, ...]
+    ) -> tuple[PublicationInput, ...]:
+        values: list[PublicationInput] = []
+        for record, archived in zip(records, normalized, strict=True):
+            if archived.identity != record.identity:
+                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE)
+            try:
+                value = PublicationInput(record, archived.outcome, archived.semantics)
+            except (TypeError, ValueError):
+                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE) from None
+            if archived != archived_normalization(value):
+                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE)
+            values.append(value)
+        return tuple(values)
 
     def _read_objects(self, document: ManifestDocument) -> tuple[PublicationInput, ...]:
         body = document.body
@@ -203,17 +226,7 @@ class PublicationReader:
             != raw_descriptor.decoded_bytes
         ):
             raise PublicationReaderError(_INVALID_OBJECT_DESCRIPTOR)
-        values: list[PublicationInput] = []
-        for record, archived in zip(records, normalized, strict=True):
-            if archived.identity != record.identity:
-                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE)
-            try:
-                value = PublicationInput(record, archived.outcome, archived.semantics)
-            except (TypeError, ValueError):
-                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE) from None
-            if archived != archived_normalization(value):
-                raise PublicationReaderError(_OBJECT_ROWS_DISAGREE)
-            values.append(value)
+        values = self._validated_inputs(records, normalized)
         if ordered_input_digest(tuple(values)) != body.ordered_input_digest:
             raise PublicationReaderError("Publication ordered input digest mismatch")
         if any(

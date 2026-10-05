@@ -246,6 +246,30 @@ def _canonical_decimal_metadata(value: bytes | None) -> int:
     return converted
 
 
+def _validated_logical_bytes(
+    records: tuple[RawRecord, ...], limits: ArchiveLimits
+) -> int:
+    if type(records) is not tuple or not records:
+        raise ArchiveError("Archive records must be non-empty")
+    if len(records) > limits.max_records:
+        raise ArchiveError(_LIMITS_EXCEEDED)
+    producer = records[0].identity.producer
+    previous = 0
+    logical_bytes = 0
+    for record in records:
+        if (
+            not isinstance(record, RawRecord)
+            or record.identity.producer != producer
+            or record.identity.offset <= previous
+        ):
+            raise ArchiveError("Invalid archive record order")
+        previous = record.identity.offset
+        logical_bytes += len(canonical_json_bytes({"raw": raw_projection(record)}))
+        if logical_bytes > limits.max_decoded_bytes:
+            raise ArchiveError(_LIMITS_EXCEEDED)
+    return logical_bytes
+
+
 class ParquetRawArchive:
     """Locally trusted codec-v1 archive using generated immutable paths."""
 
@@ -263,26 +287,7 @@ class ParquetRawArchive:
         self, records: tuple[RawRecord, ...], limits: ArchiveLimits
     ) -> RawSegment:
         try:
-            if type(records) is not tuple or not records:
-                raise ArchiveError("Archive records must be non-empty")
-            if len(records) > limits.max_records:
-                raise ArchiveError(_LIMITS_EXCEEDED)
-            producer = records[0].identity.producer
-            previous = 0
-            logical_bytes = 0
-            for record in records:
-                if (
-                    not isinstance(record, RawRecord)
-                    or record.identity.producer != producer
-                    or record.identity.offset <= previous
-                ):
-                    raise ArchiveError("Invalid archive record order")
-                previous = record.identity.offset
-                logical_bytes += len(
-                    canonical_json_bytes({"raw": raw_projection(record)})
-                )
-                if logical_bytes > limits.max_decoded_bytes:
-                    raise ArchiveError(_LIMITS_EXCEEDED)
+            logical_bytes = _validated_logical_bytes(records, limits)
             schema = _schema(len(records), logical_bytes)
             table = pa.Table.from_pylist(
                 [_row(record) for record in records], schema=schema
@@ -414,6 +419,26 @@ def _validate_raw_metadata(
     return record_count, logical_bytes
 
 
+def _decode_raw_batches(
+    parquet: pq.ParquetFile, limits: ArchiveLimits
+) -> tuple[tuple[RawRecord, ...], int]:
+    rows: list[RawRecord] = []
+    observed_logical = 0
+    for batch in parquet.iter_batches(
+        batch_size=min(_BATCH_ROWS, limits.max_records), use_threads=False
+    ):
+        for stored in batch.to_pylist():
+            if len(rows) >= limits.max_records:
+                raise ArchiveError(_LIMITS_EXCEEDED)
+            record = _decode_row(stored, limits.max_decoded_bytes)
+            size = len(canonical_json_bytes({"raw": raw_projection(record)}))
+            if observed_logical + size > limits.max_decoded_bytes:
+                raise ArchiveError(_LIMITS_EXCEEDED)
+            observed_logical += size
+            rows.append(record)
+    return tuple(rows), observed_logical
+
+
 def decode_raw_path(
     path: Path, expected_sha256: str, limits: ArchiveLimits, owner_uid: int
 ) -> tuple[RawRecord, ...]:
@@ -423,23 +448,10 @@ def decode_raw_path(
             raise ArchiveError("Archive object hash mismatch")
         parquet = pq.ParquetFile(path, memory_map=False, pre_buffer=False)
         record_count, logical_bytes = _validate_raw_metadata(parquet, path, limits)
-        rows: list[RawRecord] = []
-        observed_logical = 0
-        for batch in parquet.iter_batches(
-            batch_size=min(_BATCH_ROWS, limits.max_records), use_threads=False
-        ):
-            for stored in batch.to_pylist():
-                if len(rows) >= limits.max_records:
-                    raise ArchiveError(_LIMITS_EXCEEDED)
-                record = _decode_row(stored, limits.max_decoded_bytes)
-                size = len(canonical_json_bytes({"raw": raw_projection(record)}))
-                if observed_logical + size > limits.max_decoded_bytes:
-                    raise ArchiveError(_LIMITS_EXCEEDED)
-                observed_logical += size
-                rows.append(record)
+        rows, observed_logical = _decode_raw_batches(parquet, limits)
         if len(rows) != record_count or observed_logical != logical_bytes:
             raise ArchiveError("Raw archive logical size mismatch")
-        return tuple(rows)
+        return rows
     except BaseException as error:
         if isinstance(error, ArchiveError):
             raise
