@@ -76,7 +76,7 @@ pre-existing dirty documentation; all new attributable findings were inspected.
 
 Seventeen initial findings were repaired: fixed policy path/result constants,
 explicit busy-loop behavior, safe final bootstrap exit, dictionary comprehension,
-ASCII-preserving regex, test exception scopes and assertions. Three attributable
+ASCII-preserving regex, test exception scopes and assertions. Four attributable
 findings remain **open**, with no server disposition or suppression:
 
 | Rule / key | Source-grounded review |
@@ -84,11 +84,19 @@ findings remain **open**, with no server disposition or suppression:
 | S5443 / 9205d06c-1821-47ec-9707-023a9184b1f3 | WRITABLE_MOUNTS contains `/tmp` as an expected mount name, not creation of a temporary file in a public host directory. Worker storage is private tmpfs; coordinator staging uses TemporaryDirectory's private ancestor. Actual mount qualification is still pending. |
 | S7497 / e9ffdfd3-6c7e-46f5-9f7e-52f46b396338 | Shielded cleanup catches repeated cancellation until bounded cleanup finishes, then propagates CancelledError; it does not resume provider work. Removing the join would orphan cleanup and violate F21. |
 | S7497 / e0bf360c-0659-47d2-92d5-c35e7f3e815a | Cancellation during spawn is retained while the spawn task is joined, followed by shielded cleanup and propagation of the original cancellation. Real subprocess repeated-cancel tests exercise this path. |
+| S8997 / b08463be-4c60-4dff-b777-053e79ed12f2 | The flagged line is literally `monkeypatch.setattr(sys, "path", sys.path.copy())`; pytest's fixture restores the original list. The test does not manually assign global state. Keeping a copy prevents bootstrap path mutation from leaking into other tests. |
 
 These are proposed reviewer dispositions, not authorization to change the server.
 The zero-new-violations gate therefore remains **ERROR**. Restricted-worker code
 has genuine uncovered lines; no tracing hooks or extra authority were added to
 inflate coverage. No Security Hotspots awaited review in the inspected snapshot.
+The final code-commit analysis (`d692d70794f924ed13f10a1a290c1188d4c94cd6`)
+was recorded on the Community Build `main` component at
+`2026-10-06T11:02:37Z`: gate ERROR, new coverage **85.8%** (threshold 80%),
+new duplication **0.0%** (threshold 3%), four new violations (threshold zero).
+This is the F21 branch's local code snapshot, not published main. Coverage.py
+recorded 84.53% line and 70.61% branch coverage globally. Synthetic preflight
+rejection covers part of bootstrap; privileged boundary execution remains a gap.
 
 Semgrep 1.179.0: local official Python security snapshot, metrics/version checks
 off, explicit model_worker/import bootstrap/test paths, **0 findings / 0 errors**.
