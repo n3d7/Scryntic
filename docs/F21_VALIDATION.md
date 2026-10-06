@@ -40,31 +40,50 @@ no-GPU decision and residual limitations, including staging after SIGKILL.
 
 ## Commands and checks
 
-The installed uv was 0.12.19; the mandatory 0.12.13 wheel/executable was downloaded
-into `/tmp` and checked against both SHA-256 values in RUNTIME.md. No project pin,
-lockfile, scanner rule, exclusion, threshold or security control was weakened.
+The initial qualification used hash-verified uv 0.12.13. Both PR/push CI runs
+passed all tests and packaging but failed its provisioning-tool audit. The user
+approved a narrow repair: the exact uv CLI pin in `pyproject.toml` and the CI
+setup step now use **0.12.18**. The independently pinned `uv_build==0.12.13`,
+its reviewed build wheel/hash, Python pin and runtime lockfile are unchanged.
+No audit exception, scanner rule, exclusion, threshold or security control
+was weakened.
+
+The new Linux x86_64 provisioning artifact was downloaded over HTTPS into `/tmp`
+and its wheel SHA-256 checked against
+[PyPI release metadata](https://pypi.org/pypi/uv/0.12.18/json) before execution.
+This inventory supersedes the previous F01 uv CLI artifact only:
+
+| Input artifact | SHA-256 |
+| --- | --- |
+| [uv 0.12.18 Linux x86_64 wheel](https://files.pythonhosted.org/packages/67/67/def11543e7bd3b4219ca29afd66f3accab641324bd2e426cb788083c56c5/uv-0.12.18-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl) | `fbe0489871e74ebfb70379a32526c62b9fb615acf13576b9f19bc09a142f62b0` |
+| Extracted `uv` executable | `b97ae0e1ed3661fcd0c446cc59d81f5720c24d35627b21814a7581fb67eba673` |
 
 ```sh
-PATH=/tmp/f21-bin:$PATH bash scripts/check.sh
-PATH=/tmp/f21-bin:$PATH uv run --locked --no-sync python scripts/check_negative.py
+PATH=/tmp/f21-repair-bin:$PATH bash scripts/check.sh
+PATH=/tmp/f21-repair-bin:$PATH uv run --locked --no-sync python scripts/check_negative.py
 .venv/bin/python -m pytest tests/model_worker tests/jobs tests/imports/test_launcher.py
 ```
 
 Focused final snapshot: **167 passed, 15 privileged host tests skipped**. Portable
 tests and mocks are not isolation qualification. The full gates passed locked
 sync, lint/format, strict typing, tests and packaging/installed-profile checks;
-the final suite snapshot was **1578 passed, 15 host tests skipped** in 94.08 s.
+the repaired-tooling suite snapshot was **1578 passed, 15 host tests skipped**
+in 94.66 s. `scripts/check.sh` exited **0** with uv 0.12.18: locked sync,
+lint/format, strict typing, packaging/installed profiles and all six complete
+pip-audit closures (base, collector, analysis, dev, build and provisioning uv)
+passed. The runtime lock and build-backend pin/hash did not change.
 All seven disposable negative gate
 controls passed (test, lint, format, type, lock, missing resource, unavailable audit).
 
-The normal gate **fails** at provisioning uv's audit:
+The initial normal gate failed at provisioning uv's audit:
 `CVE-2026-104843` / `GHSA-2cv4-cqwr-gwf7`, fixed in uv 0.12.18. The
 [upstream advisory](https://github.com/astral-sh/uv/security/advisories/GHSA-2cv4-cqwr-gwf7)
 states that only Windows hosts are affected. This Linux implementation is not an
-affected wheel-installation environment, but the current gate has no platform
-exception and remains failed. Changing F01's uv/uv_build pins, hashes and release
-inventory or approving a scoped risk disposition requires separate work/approval.
-Base, collector, analysis, dev and build-backend pip-audit closures passed.
+affected wheel-installation environment. The strict gate remains platform
+independent: the approved uv update addresses the advisory without an exception.
+The complete gate passed with the reviewed new CLI, including provisioning uv's
+report with an empty vulnerability list. The initial failed CI runs were
+`37454035353` (push) and `37454157027` (PR), both with the same audit cause.
 
 ## Scanner evidence and disposition
 
@@ -106,6 +125,8 @@ Trivy 0.75.0: `fs --scanners vuln,misconfig,secret --format json`, unchanged loc
 configuration, **0 findings** for current uv.lock/selected repository files.
 The scan also encountered two existing worktree lockfiles; they were not edited.
 DB updated `2026-10-06T07:04:23Z`, downloaded `2026-10-06T10:39:55Z`.
+The configuration/tooling repair was rescanned with the same Trivy command;
+dependency vulnerabilities, misconfigurations and secrets remained **0**.
 Trivy does not inventory the custom provisioning uv pin as a lock dependency,
 which explains the separate pip-audit finding. This repository scan is not an
 OS/kernel/driver CVE inventory. There are no new Python dependencies or GPU inputs.
