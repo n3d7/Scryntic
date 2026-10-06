@@ -21,6 +21,11 @@ def restrict(memory: int, cpu: int) -> None:
         resource.setrlimit(kind, (limit, limit))
         if resource.getrlimit(kind) != (limit, limit):
             raise RuntimeError("Missing resource control")
+    restrict_syscalls()
+
+
+def restrict_syscalls() -> None:
+    """Shared fail-closed syscall policy; callers install their own rlimits."""
     libc = ctypes.CDLL(None, use_errno=True)
     if libc.prctl(38, 1, 0, 0, 0) != 0:  # PR_SET_NO_NEW_PRIVS
         raise RuntimeError("Missing privilege control")

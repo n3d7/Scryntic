@@ -10,6 +10,10 @@ The executable profile contains fixed persistence/trend fixtures and a bounded
 loopback HTTP test double. There is no model discovery, weight loader, downloaded
 code, arbitrary URL, credentials, platform integration or financial authority.
 Real models and hostile-worker isolation belong to F22 and F21 respectively.
+The F21 fixed `IsolatedFakeProvider` adapter preserves this contract while moving
+the pinned fixture into the fail-closed CPU launcher. Its privileged qualification
+is still pending; see [MODEL_WORKERS.md](MODEL_WORKERS.md) and
+[F21_VALIDATION.md](F21_VALIDATION.md).
 
 ## Admission
 

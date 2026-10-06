@@ -33,7 +33,7 @@ requires = ["uv_build==0.12.13"]
 build-backend = "uv_build"
 
 [tool.uv]
-required-version = "==0.12.13"
+required-version = "==0.12.18"
 default-groups = []
 python-preference = "only-managed"
 python-downloads = "manual"
