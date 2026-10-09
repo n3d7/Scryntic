@@ -27,7 +27,7 @@ from scryntic.model_worker.profile import (
 from scryntic.model_worker.wire import document
 from tests.jobs.helpers import job, review
 from tests.jobs.test_execution import services
-from tests.model_worker.helpers import host
+from tests.model_worker.helpers import host, report
 
 
 def attempt() -> JobAttempt:
@@ -154,8 +154,10 @@ def test_request_mount_point_exists_before_unit_launch(
     assert len(launched) == 1
 
 
+@pytest.mark.parametrize("failure_stage", [73, 84])
 def test_missing_effective_controls_never_invoke_provider(
     monkeypatch: pytest.MonkeyPatch,
+    failure_stage: int,
 ) -> None:
     from scryntic.imports import bootstrap as parser_bootstrap
     from scryntic.jobs import fake
@@ -171,7 +173,11 @@ def test_missing_effective_controls_never_invoke_provider(
         }
     )
 
-    def missing(owner: dict[str, Any]) -> dict[str, Any]:
+    def missing(owner: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+        if failure_stage == 84:
+            evidence = report()
+            evidence["cgroup"] = {}
+            controls.verify_controls(evidence, owner, stage=kwargs["stage"])
         raise IsolationError("Missing control")
 
     monkeypatch.setattr(sys, "path", sys.path.copy())
@@ -183,7 +189,7 @@ def test_missing_effective_controls_never_invoke_provider(
     with pytest.raises(IsolationError):
         bootstrap.main(stage)
     assert not calls
-    assert stage == [73]
+    assert stage == [failure_stage]
 
 
 @pytest.mark.parametrize(
@@ -215,7 +221,9 @@ def test_bootstrap_entrypoint_preserves_failure_and_silent_exit(
     assert captured.err == ""
 
 
-@pytest.mark.parametrize("stage", [70, 73, 75, 77, 0, 999, "secret-sentinel"])
+@pytest.mark.parametrize(
+    "stage", [70, 73, 75, 77, 80, 84, 95, 96, 106, 79, 107, 0, 999, "secret-sentinel"]
+)
 def test_bootstrap_failure_stage_never_exposes_exception_or_accepts_success(
     stage: int | str,
 ) -> None:
@@ -234,7 +242,11 @@ def test_bootstrap_failure_stage_never_exposes_exception_or_accepts_success(
         timeout=5,
         check=False,
     )
-    expected = stage if type(stage) is int and 70 <= stage <= 77 else 78
+    expected = (
+        stage
+        if type(stage) is int and (70 <= stage <= 77 or 80 <= stage <= 106)
+        else 78
+    )
     assert result.returncode == expected
     assert result.stdout == b""
     assert result.stderr == b""

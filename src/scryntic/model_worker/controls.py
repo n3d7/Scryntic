@@ -91,7 +91,18 @@ def _fork() -> None:
     os.waitpid(child, 0)
 
 
-def probe_boundaries(host_canary: str, profile: CPUProfile = SYNTHETIC_CPU) -> None:
+def _stage(stage: list[int] | None, code: int) -> None:
+    if stage is not None:
+        stage[0] = code
+
+
+def probe_boundaries(
+    host_canary: str,
+    profile: CPUProfile = SYNTHETIC_CPU,
+    *,
+    stage: list[int] | None = None,
+) -> None:
+    _stage(stage, 96)
     for path in (
         host_canary,
         "/etc/shadow",
@@ -102,14 +113,20 @@ def probe_boundaries(host_canary: str, profile: CPUProfile = SYNTHETIC_CPU) -> N
         "/dev/nvidia0",
     ):
         denied(lambda path=path: _read_file(path))
+    _stage(stage, 97)
     denied(_write_input)
+    _stage(stage, 98)
     for family in (socket.AF_INET, socket.AF_INET6, socket.AF_UNIX):
         denied(lambda family=family: socket.socket(family, socket.SOCK_STREAM))
+    _stage(stage, 99)
     denied(_fork)
     if profile.allow_threads:
+        _stage(stage, 100)
         for name in ("/model/model.safetensors", "/runtime/torch/__init__.py"):
             denied(lambda name=name: _append(name))
+        _stage(stage, 101)
         _thread_boundary(profile.tasks)
+    _stage(stage, 102)
     try:
         bytearray(profile.address_space * 2)
     except MemoryError:
@@ -158,28 +175,36 @@ def _thread_boundary(maximum: int) -> None:
 
 
 def effective_controls(
-    host: dict[str, Any], profile: CPUProfile = SYNTHETIC_CPU
+    host: dict[str, Any],
+    profile: CPUProfile = SYNTHETIC_CPU,
+    *,
+    stage: list[int] | None = None,
 ) -> dict[str, Any]:
     profile.require_owned()
+    _stage(stage, 103)
     status = {
         key: value
         for line in Path("/proc/self/status").read_text().splitlines()
         for key, value in [line.split(":", 1)]
     }
+    _stage(stage, 104)
     mounts = {
         fields[4]: fields[5].split(",")
         for line in Path("/proc/self/mountinfo").read_text().splitlines()
         if len(fields := line.split()) > 6
     }
+    _stage(stage, 105)
     cgroup = {
         name: Path(CONTROL_PATH, name).read_text().strip()
         for name in ("memory.max", "memory.swap.max", "pids.max", "cpu.max")
     }
+    _stage(stage, 104)
     filesystems = {
         fields[4]: fields[fields.index("-") + 1]
         for line in Path("/proc/self/mountinfo").read_text().splitlines()
         if len(fields := line.split()) > 6
     }
+    _stage(stage, 106)
     report = {
         "uid": os.getuid(),
         "gid": os.getgid(),
@@ -213,13 +238,17 @@ def effective_controls(
     }
     if profile.allow_threads:
         report["thread_policy"] = "pthread-only-bounded"
-    verify_controls(report, host, profile)
-    probe_boundaries(host["canary"], profile)
+    verify_controls(report, host, profile, stage=stage)
+    probe_boundaries(host["canary"], profile, stage=stage)
     return report
 
 
 def verify_controls(
-    report: dict[str, Any], host: dict[str, Any], profile: CPUProfile = SYNTHETIC_CPU
+    report: dict[str, Any],
+    host: dict[str, Any],
+    profile: CPUProfile = SYNTHETIC_CPU,
+    *,
+    stage: list[int] | None = None,
 ) -> None:
     """Recheck bounded evidence in coordinator; evidence is not remote attestation."""
     profile.require_owned()
@@ -244,46 +273,73 @@ def verify_controls(
     }
     if profile.allow_threads:
         expected.add("thread_policy")
-    if (
-        type(report) is not dict
-        or set(report) != expected
-        or type(report["uid"]) is not int
-        or not 61184 <= report["uid"] <= 65519
-        or report["uid"] == host["uid"]
-        or report["gid"] != report["uid"]
-        or report["groups"] not in ([], [report["gid"]])
-        or type(report["namespaces"]) is not dict
-        or set(report["namespaces"]) != set(NAMESPACES)
-        or any(
-            type(report["namespaces"][name]) is not str
-            or report["namespaces"][name] == host["namespaces"][name]
-            for name in NAMESPACES
-        )
-        or report["limits"] != expected_limits(profile)
-        or report["cgroup"]
-        != {
+    _require(type(report) is dict and set(report) == expected, stage, 80)
+    _require(
+        not (
+            type(report["uid"]) is not int
+            or not 61184 <= report["uid"] <= 65519
+            or report["uid"] == host["uid"]
+            or report["gid"] != report["uid"]
+            or report["groups"] not in ([], [report["gid"]])
+        ),
+        stage,
+        81,
+    )
+    _require(
+        not (
+            type(report["namespaces"]) is not dict
+            or set(report["namespaces"]) != set(NAMESPACES)
+            or any(
+                type(report["namespaces"][name]) is not str
+                or report["namespaces"][name] == host["namespaces"][name]
+                for name in NAMESPACES
+            )
+        ),
+        stage,
+        82,
+    )
+    _require(report["limits"] == expected_limits(profile), stage, 83)
+    _require(
+        report["cgroup"]
+        == {
             "memory.max": str(profile.memory),
             "memory.swap.max": "0",
             "pids.max": str(profile.tasks),
             "cpu.max": "100000 100000",
-        }
-        or report["no_new_privs"] != "1"
-        or report["seccomp"] != "2"
-        or report["capabilities"]
-        != dict.fromkeys(
+        },
+        stage,
+        84,
+    )
+    _require(report["no_new_privs"] == "1", stage, 85)
+    _require(report["seccomp"] == "2", stage, 86)
+    _require(
+        report["capabilities"]
+        == dict.fromkeys(
             ("CapInh", "CapPrm", "CapEff", "CapBnd", "CapAmb"), "0000000000000000"
-        )
-        or report["readonly"] != dict.fromkeys(profile.readonly, True)
-        or report["private_writable"] != dict.fromkeys(WRITABLE_MOUNTS, True)
-        or report["tmpfs_bytes"] != TMPFS_BYTES
-        or report["environment"] != dict(profile.environment)
-        or report["pid"] != 1
-        or report["visible_pids"] != ["1"]
-        or report["extra_fds"] != []
-        or report["probes"] != "passed"
-        or (
-            profile.allow_threads
-            and report.get("thread_policy") != "pthread-only-bounded"
-        )
-    ):
+        ),
+        stage,
+        87,
+    )
+    _require(report["readonly"] == dict.fromkeys(profile.readonly, True), stage, 88)
+    _require(
+        report["private_writable"] == dict.fromkeys(WRITABLE_MOUNTS, True),
+        stage,
+        89,
+    )
+    _require(report["tmpfs_bytes"] == TMPFS_BYTES, stage, 90)
+    _require(report["environment"] == dict(profile.environment), stage, 91)
+    _require(report["pid"] == 1 and report["visible_pids"] == ["1"], stage, 92)
+    _require(report["extra_fds"] == [], stage, 93)
+    _require(report["probes"] == "passed", stage, 94)
+    _require(
+        not profile.allow_threads
+        or report.get("thread_policy") == "pthread-only-bounded",
+        stage,
+        95,
+    )
+
+
+def _require(condition: bool, stage: list[int] | None, code: int) -> None:
+    if not condition:
+        _stage(stage, code)
         raise IsolationError("Required effective CPU controls unavailable")

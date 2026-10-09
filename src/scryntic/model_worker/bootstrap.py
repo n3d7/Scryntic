@@ -45,9 +45,9 @@ def main(stage: list[int] | None = None) -> None:
     # Fail closed before even the trusted fixture is executed.
     stage[0] = 73
     controls = (
-        effective_controls(request["host"], profile)
+        effective_controls(request["host"], profile, stage=stage)
         if model is not None
-        else effective_controls(request["host"])
+        else effective_controls(request["host"], stage=stage)
     )
     stage[0] = 74
     mode = request["mode"]
@@ -174,7 +174,9 @@ def entrypoint() -> None:
         # Includes BaseException paths; never publish tracebacks or payloads.
         exit_code = (
             stage[0]
-            if len(stage) == 1 and type(stage[0]) is int and 70 <= stage[0] <= 77
+            if len(stage) == 1
+            and type(stage[0]) is int
+            and (70 <= stage[0] <= 77 or 80 <= stage[0] <= 106)
             else 78
         )
         if completed:

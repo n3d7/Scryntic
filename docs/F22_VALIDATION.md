@@ -617,6 +617,81 @@ Host qualification, actual offline TimesFM/Bybit comparison, reproducibility,
 resource/artifact evidence and Sonar closure still block completion. Do not
 interpret portable stage diagnostics as successful isolation or start F23.
 
+#### Effective-controls stage rejected on the operator host
+
+The operator's next positive pair on `e8a29a1ad36a0bf4f982b1d84e5d89a119ef7b03`
+is retained in ignored
+`state/f22-qualification/operator-results-scryntic-f22-stage-20261009T231436Z/`.
+JUnit records **two failures**, no passes/errors/skips, **2.614 seconds**, and
+the pipeline status is 1. Both units started at 2026-10-09 23:14:38/40 UTC and
+then exited **73**: effective-control inspection/verification or boundary probes
+failed before inference. systemd's `CANTCREAT` label is its conventional name
+for numeric exit 73, not evidence of a failed file-creation operation. No units
+remained; staging before/after contained the same two pre-existing paths
+(`a7x8wijv`, `2nmqle25`). No additional SELinux change or root execution by Codex
+is recorded. The failing control is still unknown; this pair does not qualify
+either profile.
+
+To distinguish the actual failure without exposing values, the trusted
+bootstrap now passes its internal stage marker through control inspection,
+verification and boundary probes. The existing checks remain in their original
+order with the same rejection conditions; missing fields are rejected before
+member access, and the coordinator still verifies successful evidence without
+a diagnostic marker. Only fixed integers cross process exit; no report values,
+environment keys/values, host paths, exception text or payloads are printed.
+
+| Exit status | Fixed effective-control category |
+| --- | --- |
+| 80 | Evidence field set/type |
+| 81 | Per-job UID/GID/groups |
+| 82 | Namespace separation |
+| 83 | Resource limits |
+| 84 | cgroup memory/swap/tasks/CPU controls |
+| 85 / 86 / 87 | NoNewPrivileges / seccomp / capabilities |
+| 88 / 89 / 90 | Read-only mounts / private writable mounts / tmpfs bounds |
+| 91 | Exact allowlisted environment |
+| 92 / 93 | PID visibility / extra inherited descriptors |
+| 94 / 95 | Probe completion / real profile thread policy |
+| 96 / 97 / 98 / 99 | Denied host paths / immutable request / sockets / fork |
+| 100 / 101 / 102 | Immutable model/runtime / bounded threads / allocation limit |
+| 103 / 104 / 105 / 106 | Status read / mount inspection / cgroup read / evidence collection |
+
+Statuses 70–77 keep their earlier meanings; 78 remains the fallback for invalid
+stage state, and 79 or values outside the two allowed ranges cannot become
+success. The narrower statuses are diagnostic hints only, not successful
+qualification or attestation. Native termination and failures outside this
+entrypoint can still produce other statuses. Repeat the positive pair on the
+reviewed candidate; do not run the evaluation or grant new host permissions
+until it succeeds and the mandatory 31-probe suite is independently reviewed.
+
+Control-diagnostic candidate validation (ordinary UID; no root jobs):
+
+- Regression-red log records 21 expected failures before instrumentation;
+  final focused run has 36 passing cases. A separate portable comparison of
+  172 synthetic evidence variants against the preceding committed checker
+  gives identical acceptance/exception outcomes, not host evidence.
+- Final `scripts/check.sh`, reviewed uv 0.12.18: status 0, **1,718 passed /
+  31 host skips**, 97.45 seconds; locks, lint/format, strict typing (273 files),
+  packaging and all dependency audits pass. All seven negative controls reject
+  their deliberate defects and preserve their inputs, status 0.
+- Semgrep 1.179.0: 151 local Python rules / four changed files, zero findings
+  or errors. Trivy root/forecast locks including dev plus configuration/secret
+  scanning: zero findings; no supported IaC files detected, status 0.
+- The first full local Sonar analysis raised three attributable S5778 test
+  clarity findings. Fixture creation moved outside `pytest.raises`; all 57
+  control-file tests and the final full gates pass afterward. Reanalysis at
+  **2026-10-09 23:31 UTC** reports **81.2%** coverage, **0%** duplication,
+  **ERROR** gate / scanner status 3, and exactly the same six previously
+  recorded open issue keys. The three new findings are absent from the final
+  open findings. No rule, exclusion, threshold or disposition was weakened.
+
+Logs and scanner metadata are ignored in
+`state/f22-qualification/control-diagnostic-validation/`. Sonar is a full local
+default/main candidate analysis based on `e8a29a1` plus these source edits,
+not a published GitHub/main/PR validation. Missing successful host controls,
+the full 31 probes, real offline comparison and the existing Sonar gate remain
+completion blockers.
+
 ### Operator prerequisites and stage 1: all 31 probes
 
 The commands below are for this reviewed host and retained enrollment. Another
@@ -640,7 +715,7 @@ set +u
 set -o pipefail
 cd /home/void/Project/Scryntic/.worktrees/ker26
 F22_REPO="$PWD"
-F22_REV="$(git rev-parse HEAD)"  # reviewed candidate commit supplied in the handoff
+F22_REV=REPLACE_WITH_REVIEWED_COMMIT  # exact commit supplied in the handoff
 F22_QROOT="/var/tmp/scryntic-f22-qualification-$(date -u +%Y%m%dT%H%M%SZ)"
 test "$(git rev-parse HEAD)" = "$F22_REV" || exit 1
 git diff --exit-code HEAD -- src tests scripts runtimes pyproject.toml uv.lock || exit 1
