@@ -19,18 +19,31 @@ from scryntic.jobs.contracts import JobAttempt
 from scryntic.jobs.fake import require_fixture
 from scryntic.model_worker.controls import namespace_ids, verify_controls
 from scryntic.model_worker.profile import (
-    ENVIRONMENT,
     PROPERTIES,
-    WALL_SECONDS,
+    SYNTHETIC_CPU,
     WIRE_BYTES,
+    CPUProfile,
     IsolationError,
 )
 from scryntic.model_worker.wire import document
+from scryntic.models.definitions import definition
+from scryntic.models.inventory import RuntimeBundle
+from scryntic.models.window import ForecastWindow
 
 _MANAGER = ["/usr/bin/systemctl", "--system", "--no-ask-password"]
 _PATH = re.compile(r"/[A-Za-z0-9_./-]+")
 _MODES = frozenset(
-    {"execute", "probe", "hold", "cpu", "symlink", "hardlink", "flood", "crash"}
+    {
+        "execute",
+        "probe",
+        "hold",
+        "cpu",
+        "memory",
+        "symlink",
+        "hardlink",
+        "flood",
+        "crash",
+    }
 )
 
 
@@ -56,7 +69,11 @@ def _manager_environment() -> set[str]:
     return names
 
 
-def _command(root: Path, request: Path, unit: str) -> list[str]:
+def _command(
+    root: Path, request: Path, unit: str, profile: CPUProfile = SYNTHETIC_CPU
+) -> list[str]:
+    profile.require_owned()
+    environment = dict(profile.environment)
     python = Path(sys.base_prefix).resolve()
     application = Path(__file__).resolve().parents[1]
     sources = [python, application, root, request]
@@ -84,7 +101,7 @@ def _command(root: Path, request: Path, unit: str) -> list[str]:
             "PYTHONPATH",
             "PYTHONHOME",
         }
-    ) - ENVIRONMENT.keys()
+    ) - environment.keys()
     binds = (
         f"{python}:/python {application}:/app/scryntic "
         f"{request}:/input/request /usr/lib:/usr/lib "
@@ -92,12 +109,14 @@ def _command(root: Path, request: Path, unit: str) -> list[str]:
     )
     if Path("/usr/lib64").is_dir():
         binds += " /usr/lib64:/usr/lib64"
+    if profile != SYNTHETIC_CPU:
+        binds += f" {root / 'model'}:/model {root / 'runtime'}:/runtime"
     properties = [
-        *PROPERTIES,
+        *(PROPERTIES if profile == SYNTHETIC_CPU else profile.properties),
         f"RootDirectory={root}",
         f"BindReadOnlyPaths={binds}",
         "Environment="
-        + " ".join(f"{name}={value}" for name, value in ENVIRONMENT.items()),
+        + " ".join(f"{name}={value}" for name, value in environment.items()),
         "UnsetEnvironment=" + " ".join(sorted(unset)),
     ]
     return [
@@ -218,8 +237,27 @@ async def _join_cleanup(
 class CPUWorker:
     """Operator-owned system-manager permission required; no elevation fallback."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, *, bundle: RuntimeBundle | None = None, model_id: str | None = None
+    ) -> None:
+        if (bundle is None) != (model_id is None):
+            raise IsolationError("Incomplete fixed model workload")
+        self._bundle = bundle
+        self._model = definition(model_id) if model_id is not None else None
+        if self._model is not None and self._model.adapter is None:
+            raise IsolationError("Runtime workload requires a registered adapter")
         self.last_controls: dict[str, Any] | None = None
+        self.last_usage: dict[str, int] | None = None
+
+    @property
+    def profile(self) -> CPUProfile:
+        return self._model.profile if self._model is not None else SYNTHETIC_CPU
+
+    async def execute_window(
+        self, attempt: JobAttempt, window: ForecastWindow
+    ) -> bytes:
+        window.validate(attempt.job)
+        return await self._run(attempt, "execute", window)
 
     async def execute(self, attempt: JobAttempt) -> bytes:
         return await self._run(attempt, "execute")
@@ -229,20 +267,64 @@ class CPUWorker:
             raise IsolationError("Unknown fixed qualification operation")
         return await self._run(attempt, mode)
 
-    async def _run(self, attempt: JobAttempt, mode: str) -> bytes:
+    async def probe_window(
+        self, attempt: JobAttempt, window: ForecastWindow, mode: str = "probe"
+    ) -> bytes:
+        if mode not in _MODES - {"execute"}:
+            raise IsolationError("Unknown fixed qualification operation")
+        window.validate(attempt.job)
+        return await self._run(attempt, mode, window)
+
+    def _verify_workload(
+        self, attempt: JobAttempt, window: ForecastWindow | None
+    ) -> None:
+        # Only application-owned fixed workloads reach the launcher.
+        algorithm: Literal["persistence", "trend"] = (
+            "trend"
+            if attempt.job.review.descriptor.model.revision == "f20-fixed-trend-v1"
+            else "persistence"
+        )
+        if self._model is None:
+            require_fixture(attempt.job.review, algorithm)
+        elif (
+            self._bundle is None
+            or window is None
+            or self._bundle.assets != self._model.assets
+            or attempt.job.review != self._model.review(self._bundle.inventory_sha256)
+        ):
+            raise IsolationError("Unverified registered model workload")
+        if attempt.job.review.descriptor.execution != "local":
+            raise IsolationError("CPU worker requires local admission")
+
+    async def _snapshot(self, root: Path) -> None:
+        if self._bundle is not None:
+            # Join cancellation during snapshotting before removing its
+            # private ancestor; no orphan thread can recreate staging.
+            snapshot = asyncio.create_task(
+                asyncio.to_thread(self._bundle.snapshot, root)
+            )
+            try:
+                await asyncio.shield(snapshot)
+            except asyncio.CancelledError:
+                while not snapshot.done():
+                    try:
+                        await asyncio.shield(snapshot)
+                    except asyncio.CancelledError:
+                        pass
+                    except Exception:
+                        break
+                snapshot.exception()  # Observe snapshot failure; preserve caller cancellation.
+                raise
+
+    async def _run(
+        self, attempt: JobAttempt, mode: str, window: ForecastWindow | None = None
+    ) -> bytes:
         self.last_controls = None
+        self.last_usage = None
         try:
             if platform.system() != "Linux" or platform.machine() != "x86_64":
                 raise IsolationError("Unsupported CPU worker host")
-            # F21 executes only a pinned built-in fixture. No F22 loader exists.
-            algorithm: Literal["persistence", "trend"] = (
-                "trend"
-                if attempt.job.review.descriptor.model.revision == "f20-fixed-trend-v1"
-                else "persistence"
-            )
-            require_fixture(attempt.job.review, algorithm)
-            if attempt.job.review.descriptor.execution != "local":
-                raise IsolationError("CPU worker requires local admission")
+            self._verify_workload(attempt, window)
             data = encode_attempt(attempt)
             with tempfile.TemporaryDirectory(prefix="scryntic-model-") as temporary:
                 staging = Path(temporary)
@@ -262,6 +344,7 @@ class CPUWorker:
                     (root / name).mkdir(parents=True, exist_ok=True)
                 (root / "lib").symlink_to("usr/lib")
                 (root / "lib64").symlink_to("usr/lib64")
+                await self._snapshot(root)
                 canary = staging / "host-secret"
                 canary.write_bytes(b"F21-private-host-canary")
                 host: dict[str, Any] = {
@@ -270,23 +353,32 @@ class CPUWorker:
                     "canary": str(canary),
                 }
                 request = staging / "request"
-                request.write_bytes(
-                    canonical_json_bytes(
-                        {
-                            "attempt": data.decode("utf-8"),
-                            "host": host,
-                            "mode": mode,
-                        }
+                request_value: dict[str, Any] = {
+                    "attempt": data.decode("utf-8"),
+                    "host": host,
+                    "mode": mode,
+                }
+                if self._model is not None and window is not None:
+                    request_value.update(
+                        model=self._model.name, context=window.projection()
                     )
-                )
+                request.write_bytes(canonical_json_bytes(request_value))
                 request.chmod(0o444)  # private 0700 ancestor; read-only unit bind
                 unit = "scryntic-model-" + uuid4().hex + ".service"
-                command = await asyncio.to_thread(_command, root, request, unit)
+                if self._model is None:
+                    command = await asyncio.to_thread(_command, root, request, unit)
+                else:
+                    command = await asyncio.to_thread(
+                        _command, root, request, unit, self.profile
+                    )
                 return await self._launch(command, unit, host, attempt)
         except asyncio.CancelledError:
+            self.last_controls = None
+            self.last_usage = None
             raise
         except Exception:
             self.last_controls = None
+            self.last_usage = None
             raise IsolationError(
                 "Required CPU worker isolation or execution failed"
             ) from None
@@ -330,24 +422,49 @@ class CPUWorker:
                 asyncio.create_task(_drain(process.stdout, WIRE_BYTES)),
                 asyncio.create_task(_drain(process.stderr, 4096)),
             ]
-            async with asyncio.timeout(WALL_SECONDS + 5):
+            async with asyncio.timeout(self.profile.wall_seconds + 5):
                 output, _ = await asyncio.gather(*drains)
                 if await process.wait() != 0:
                     raise IsolationError("Worker failed")
-            value = document(output, "version controls response")
-            if (
-                type(value["version"]) is not int
-                or value["version"] != 1
-                or type(value["response"]) is not str
-            ):
-                raise IsolationError("Unsupported worker response")
-            verify_controls(value["controls"], host)
-            response = value["response"].encode("utf-8", "strict")
-            decode_response(response, attempt)
-            self.last_controls = value["controls"]
-            return response
+            return self._decode_worker(output, host, attempt)
         finally:
             await _join_cleanup(process, unit, drains)
+
+    def _decode_worker(
+        self, output: bytes, host: dict[str, Any], attempt: JobAttempt
+    ) -> bytes:
+        fields = "version controls response" + (
+            " usage" if self._model is not None else ""
+        )
+        value = document(output, fields)
+        if (
+            type(value["version"]) is not int
+            or value["version"] != (2 if self._model is not None else 1)
+            or type(value["response"]) is not str
+        ):
+            raise IsolationError("Unsupported worker response")
+        verify_controls(value["controls"], host, self.profile)
+        if self._model is not None:
+            usage = value["usage"]
+            maxima = {
+                "elapsed_ns": (self.profile.wall_seconds + 5) * 10**9,
+                "cpu_ns": self.profile.cpu_seconds * 10**9,
+                "max_rss_kib": self.profile.memory // 1024,
+            }
+            if (
+                type(usage) is not dict
+                or set(usage) != set(maxima)
+                or any(
+                    type(usage[k]) is not int or not 0 <= usage[k] <= maximum
+                    for k, maximum in maxima.items()
+                )
+            ):
+                raise IsolationError("Invalid bounded worker resource report")
+            self.last_usage = usage
+        response = value["response"].encode("utf-8", "strict")
+        decode_response(response, attempt)
+        self.last_controls = value["controls"]
+        return response
 
 
 class IsolatedFakeProvider:

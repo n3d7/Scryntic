@@ -51,17 +51,24 @@ class LoadingRequirements:
     max_memory_bytes: int = 32 * 1024 * 1024
 
     def require_safe(self) -> None:
+        builtin = (
+            (self.runtime, self.format, self.code, self.device)
+            == ("cpython-3.12", "primitive-json", "builtin", "cpu")
+            and type(self.max_memory_bytes) is int
+            and 1 <= self.max_memory_bytes <= 64 * 1024 * 1024
+        )
+        reviewed_cpu = (
+            (self.runtime, self.format, self.code, self.device)
+            == ("cpython-3.12-cpu-v1", "safetensors", "reviewed-adapter", "cpu")
+            and type(self.max_memory_bytes) is int
+            and self.max_memory_bytes == 4 * 1024**3
+        )
         if (
-            self.runtime != "cpython-3.12"
-            or self.format != "primitive-json"
-            or self.code != "builtin"
+            not (builtin or reviewed_cpu)
             or type(self.network) is not bool
             or self.network
             or type(self.downloads) is not bool
             or self.downloads
-            or self.device != "cpu"
-            or type(self.max_memory_bytes) is not int
-            or not 1 <= self.max_memory_bytes <= 64 * 1024 * 1024
         ):
             raise ValueError("Unsafe or unknown model loading requirements")
 
@@ -148,7 +155,12 @@ class ModelReview:
             or model.artifact_sha256 != self.verified_artifacts
         ):
             raise ValueError("Unverified model artifacts")
-        if model.loading_requirements != ("builtin-json-only",):
+        declared = (
+            ("builtin-json-only",)
+            if self.loading.code == "builtin"
+            else ("offline-safetensors-v1",)
+        )
+        if model.loading_requirements != declared:
             raise ValueError("Unsafe or unknown loading declaration")
         self.loading.require_safe()
 

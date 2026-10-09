@@ -122,6 +122,10 @@ archive/
 # =========================
 
 models/
+!src/scryntic/models/
+!src/scryntic/models/*.py
+!tests/models/
+!tests/models/*.py
 checkpoints/
 artifacts/
 

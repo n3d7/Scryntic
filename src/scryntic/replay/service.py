@@ -43,7 +43,7 @@ class ReplayService:
             "implementation": platform.python_implementation(),
         }
 
-    def evaluate(self, reference: DatasetRef, config: ReplayConfig) -> EvaluationReport:
+    def prepare(self, reference: DatasetRef, config: ReplayConfig) -> "PreparedReplay":
         if (
             reference.schema != EVOLVED_DATASET_SCHEMA
             or reference.row_count > MAX_REPLAY_ROWS
@@ -58,15 +58,31 @@ class ReplayService:
         # Empty snapshots still validate the native artifact in the restricted worker.
         if not reference.row_count:
             self._datasets.inspect(reference)
-        report = evaluate(CandleReplayReader(manifest, rows, config))
-        report["environment"] = self._environment
-        report["dataset"] = {
+        evidence = {
             "manifest_sha256": reference.manifest_sha256,
             "parquet_sha256": manifest["parquet"]["sha256"],
             "provenance": manifest,
             "pins": pins,
         }
+        return PreparedReplay(
+            CandleReplayReader(manifest, rows, config),
+            evidence,
+            dict(self._environment),
+        )
+
+    def evaluate(self, reference: DatasetRef, config: ReplayConfig) -> EvaluationReport:
+        prepared = self.prepare(reference, config)
+        report = evaluate(prepared.reader)
+        report["environment"] = prepared.environment
+        report["dataset"] = prepared.dataset
         data = canonical_json_bytes(report)
         if len(data) > MAX_RESULT_BYTES:
             raise ValueError("Evaluation report exceeds analytical byte limit")
         return EvaluationReport(data)
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedReplay:
+    reader: CandleReplayReader
+    dataset: dict[str, Any]
+    environment: dict[str, Any]

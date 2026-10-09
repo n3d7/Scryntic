@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 uv lock --check
+uv lock --project runtimes/forecast_cpu --check
 uv sync --locked --no-default-groups --group dev --group collector --group analysis
 uv run --locked --no-sync ruff check .
 uv run --locked --no-sync ruff format --check .

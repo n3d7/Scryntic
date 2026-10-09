@@ -11,6 +11,34 @@ from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
 ROOT = Path(__file__).resolve().parents[1]
+CPU_WHEEL_SHA256 = "a09987c95ec4cffdb6df798d3d641558110a334cfccce22f2f046d83142bc260"
+
+
+def advisory_requirements(requirements: str) -> str:
+    """Map one source-reviewed CPU build to its public advisory identity.
+
+    PyPI forbids local version labels. The official CPU build's source commit
+    differs from v2.14.0 only by a test import (see F22 validation). No dependency
+    or vulnerability is omitted. Unreviewed versions/hashes fail closed.
+    """
+    lines = requirements.splitlines()
+    candidates = [i for i, line in enumerate(lines) if line.startswith("torch==")]
+    if len(candidates) != 1:
+        raise ValueError("Missing reviewed CPU distribution")
+    index = candidates[0]
+    if not lines[index].startswith("torch==2.14.0+cpu "):
+        raise ValueError("Unreviewed CPU build version")
+    hashes = []
+    for line in lines[index + 1 :]:
+        if not line.strip().startswith("--hash=sha256:"):
+            break
+        hashes.append(
+            line.strip().removesuffix("\\").strip().removeprefix("--hash=sha256:")
+        )
+    if hashes != [CPU_WHEEL_SHA256]:
+        raise ValueError("Unreviewed CPU build artifact")
+    lines[index] = lines[index].replace("torch==2.14.0+cpu", "torch==2.14.0", 1)
+    return "\n".join(lines) + "\n"
 
 
 def expected_packages(requirements: str) -> set[tuple[str, str]]:
@@ -74,7 +102,9 @@ def export_profile(profile: str, requirements: Path) -> None:
             "--output-file",
             str(requirements),
         ]
-        if profile != "base":
+        if profile == "forecast-cpu":
+            args += ["--project", str(ROOT / "runtimes/forecast_cpu")]
+        elif profile != "base":
             args += ["--group", profile]
         subprocess.run(args, cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
 
@@ -83,9 +113,20 @@ def main() -> None:
     subprocess.run(["uv", "lock", "--check"], cwd=ROOT, check=True)
     with tempfile.TemporaryDirectory(prefix="scryntic-audit-") as scratch:
         temp = Path(scratch)
-        for profile in ("base", "collector", "analysis", "dev", "build", "uv"):
+        for profile in (
+            "base",
+            "collector",
+            "analysis",
+            "dev",
+            "build",
+            "uv",
+            "forecast-cpu",
+        ):
             requirements = temp / f"{profile}.txt"
             export_profile(profile, requirements)
+            locked_expected = expected_packages(requirements.read_text())
+            if profile == "forecast-cpu":
+                requirements.write_text(advisory_requirements(requirements.read_text()))
             expected = expected_packages(requirements.read_text())
             output = temp / f"{profile}.json"
             # Empty profiles have no third-party packages to query, but still get evidence.
@@ -115,7 +156,14 @@ def main() -> None:
             else:
                 report = {"dependencies": [], "fixes": []}
             validate_report(report, expected)
-            print(json.dumps({"profile": profile, "audit": report}), flush=True)
+            evidence = {"profile": profile, "audit": report}
+            if profile == "forecast-cpu":
+                evidence["locked_identities"] = sorted(locked_expected)
+                evidence["advisory_identity_mapping"] = {
+                    "torch==2.14.0+cpu": "torch==2.14.0",
+                    "wheel_sha256": CPU_WHEEL_SHA256,
+                }
+            print(json.dumps(evidence), flush=True)
 
 
 if __name__ == "__main__":
