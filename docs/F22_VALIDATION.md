@@ -253,6 +253,218 @@ Local command logs/scanner JSON are retained under ignored
 does not qualify either worker profile or prove the repair works on the host.
 All 31 actual host probes and the offline Bybit model comparison remain pending.
 
+### Second operator attempt: executable access denied
+
+The operator repeated the suite on `dedf6798a76d73d9b950dabbce34d825526d2753`
+at 19:38 UTC on October 9. Returned evidence is in
+`state/f22-qualification/operator-results-scryntic-f22-qualification-20261009T193744Z`.
+JUnit confirms **31 tests / 25 passed / 6 failed / 0 skipped / 0 errors**,
+42.312 seconds, exit 1. Prerequisites exited 0 and enrollment/artifact/lock
+hashes remained unchanged. The same six positive/lifecycle tests failed.
+
+The scoped journal records **30 executable lookup failures, 203/EXEC**:
+`/python/bin/python3.12` is denied before bootstrap runs. The previous missing
+request-mount diagnostic is absent. No actual TimesFM forecasts or effective
+worker-control evidence were produced. The negative passes are still not
+scenario qualification. Units-after is empty; staging-before and staging-after
+contain the same two pre-existing directories, not evidence of newly leaked
+staging from this run. They were not deleted.
+
+Read-only inspection as the real UID 1000 outside Codex's synthetic namespace
+found SELinux **Enforcing**, CPython executable and immediate directories mode
+0755, executable label `unconfined_u:object_r:data_home_t:s0`, and no `noexec`
+on the containing host filesystem. Sandbox-reported SELinux/mount state does
+not represent this host. SELinux denial is a hypothesis, not a confirmed cause:
+the ordinary UID cannot read `/var/log/audit` (root-owned 0700), and scoped
+journald queries returned no AVC. systemd v259
+[executable lookup source](https://github.com/systemd/systemd/blob/v259/src/core/exec-invoke.c)
+places this error after namespace setup. Context7 supplied upstream context;
+current source and actual audit evidence govern any subsequent repair.
+
+Before another worker run or source/policy change, the operator must collect
+the retained AVCs for the first synthetic and real-profile failing processes.
+The installed upstream `ausearch(8)` documents PID/time/type filtering. These
+commands only read the existing audit records; no worker/unit is launched:
+
+```bash
+F22_AUDIT_RETURN="/home/void/Project/Scryntic/.worktrees/ker26/state/f22-qualification/operator-results-scryntic-f22-qualification-20261009T193744Z"
+F22_AUDIT_DATE="$(LC_ALL=C TZ=UTC date --date=2026-10-09 +%x)"
+for F22_PID in 1503865 1504775; do
+  sudo -- env TZ=UTC LC_ALL=C /usr/bin/ausearch \
+    --message AVC,USER_AVC \
+    --start "$F22_AUDIT_DATE" 19:38:37 --end "$F22_AUDIT_DATE" 19:39:21 \
+    --pid "$F22_PID" --interpret \
+    > "$F22_AUDIT_RETURN/avc-$F22_PID.txt" 2>&1
+  F22_AUDIT_STATUS=$?
+  printf 'ausearch exit status: %s\n' "$F22_AUDIT_STATUS" \
+    >> "$F22_AUDIT_RETURN/avc-$F22_PID.txt"
+  cat "$F22_AUDIT_RETURN/avc-$F22_PID.txt"
+done
+```
+
+Required evidence is the denied operation and `scontext`, `tcontext`, `tclass`,
+PID/path and enforcing/permissive indicator, or an explicit no-match/error
+result. The original four-digit-year date was rejected by this host's C locale;
+the corrected `%x` date (`10/09/26`) passed an unprivileged parser check against
+an empty audit input. This check is not actual AVC evidence. No match does not
+clear SELinux or prove a DAC failure. Do not disable
+SELinux, add broad allow rules/capabilities, change labels or make private
+ancestors traversable as a diagnostic workaround. The exact remaining boundary
+is privileged audit-log access; implementation changes await this evidence.
+No gates were rerun for this documentation-only update, no source change or new
+commit/PR was made, and the six open Sonar findings remain unresolved.
+
+### Confirmed SELinux cause and exact executable-label repair
+
+Returned `avc-1503865.txt` and `avc-1504775.txt` both record enforcing
+(`permissive=0`) denials of file `execute`: subject `init_t`, target
+`data_home_t`, interpreter `python3.12`, inode 2897660. Audit queries exited 0.
+This confirms the executable-label cause for both profiles; it does not qualify
+any subsequent runtime behavior.
+
+The operator requested a SELinux adjustment. This host's `matchpathcon
+/usr/bin/python3` reports `bin_t`. The scoped repair is one persistent regular-file
+context for the exact approved CPython executable, then `restorecon` for that
+file only. No new allow rule, domain exception, permissive mode, recursive home
+relabel or capability is introduced. The systemd mount/identity/network/resource
+contract is unchanged. SHA-256 of the inspected interpreter is
+`f7c6210eb40fadcd3c2889dddd24a15fc2c9f926aec5a03bf9da66e12d581526`.
+It is an installation identity, not a substitute for upstream runtime provenance.
+The interpreter remains operator-user-owned trusted code; this label is not an
+integrity guarantee against that user, a host administrator or source replacement.
+
+[Red Hat's labeling guidance](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/using_selinux/troubleshooting-problems-related-to-selinux_using-selinux)
+and the installed `semanage-fcontext(8)` require persistent context configuration
+plus label application; the latter requires precise regexes to avoid unrelated
+matches. Context7 had no directly applicable SELinux entry, and a targeted SOFA
+search found no applicable second opinion. No community workaround was adopted.
+`sudo -n -l` requires a password, so Codex has not applied a host change.
+
+Run manually on this installation in the existing Bash session. The exact regex
+escapes dots and selects only a regular file. If adding the record fails (for
+example, an existing customization), stop and return the error rather than
+overwriting another rule. Before/after hashes must match; require `Enforcing`,
+`bin_t`, successful `matchpathcon -V` and unchanged 0755 mode:
+
+```bash
+set +u
+set -o pipefail
+F22_PY='/home/void/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/bin/python3.12'
+F22_PY_CONTEXT='/home/void/\.local/share/uv/python/cpython-3\.12\.14-linux-x86_64-gnu/bin/python3\.12'
+(
+  set -e -o pipefail
+  test ! -L "$F22_PY"
+  test "$(getenforce)" = Enforcing
+  printf '%s  %s\n' \
+    f7c6210eb40fadcd3c2889dddd24a15fc2c9f926aec5a03bf9da66e12d581526 \
+    "$F22_PY" | sha256sum --check
+  ls -lZ "$F22_PY"
+  sudo -- /usr/bin/semanage fcontext -a -f f -t bin_t "$F22_PY_CONTEXT"
+  sudo -- /usr/bin/restorecon -v "$F22_PY"
+  /usr/bin/matchpathcon -V "$F22_PY"
+  ls -lZ "$F22_PY"
+  printf '%s  %s\n' \
+    f7c6210eb40fadcd3c2889dddd24a15fc2c9f926aec5a03bf9da66e12d581526 \
+    "$F22_PY" | sha256sum --check
+  getenforce
+)
+```
+
+Return the outcome before another run. If successful, first rerun only the two
+positive host tests with fresh JUnit/journal evidence, then all 31 mandatory
+probes. More denials require examination of their actual AVCs; do not expand the
+label scope automatically. Runtime libraries, staging and application labels
+have not been qualified by this single executable change. The comparison stays
+blocked. To undo only this newly added record and restore the default type:
+
+```bash
+sudo -- /usr/bin/semanage fcontext -d -f f "$F22_PY_CONTEXT"
+sudo -- /usr/bin/restorecon -v "$F22_PY"
+```
+
+The operator applied the exact file-context adjustment and returned successful
+before/after hash checks, `bin_t`, unchanged 0755 mode and `Enforcing`. Read-only
+inspection by Codex outside the synthetic namespace independently reproduced
+the same hash/label/mode, successful `matchpathcon -V` and `Enforcing`.
+No allow module, other label change or successful worker execution is claimed.
+Source remains `dedf6798a76d73d9b950dabbce34d825526d2753`; only validation
+documentation is locally modified. No source checks/scanners were repeated.
+
+The next manual step is two positive probes, using a fresh evidence directory
+and the same reviewed runtime/model configuration. This diagnostic pair cannot
+replace the full 31-test qualification or actual Bybit comparison:
+
+```bash
+set +u
+set -o pipefail
+cd /home/void/Project/Scryntic/.worktrees/ker26 || exit 1
+F22_REPO="$PWD"
+F22_REV=dedf6798a76d73d9b950dabbce34d825526d2753
+test "$(git rev-parse HEAD)" = "$F22_REV" || exit 1
+git diff --exit-code HEAD -- src tests scripts runtimes pyproject.toml uv.lock || exit 1
+F22_POSITIVE_ROOT="/var/tmp/scryntic-f22-positive-$(date -u +%Y%m%dT%H%M%SZ)"
+sudo -- mkdir -m 0700 "$F22_POSITIVE_ROOT" || exit 1
+sudo -- find /tmp -maxdepth 1 -type d -name 'scryntic-model-*' -print \
+  | sudo -- tee "$F22_POSITIVE_ROOT/staging-before.txt"
+F22_POSITIVE_STARTED="$(date -u --iso-8601=seconds)"
+sudo -- env SCRYNTIC_F21_HOST=1 SCRYNTIC_F22_HOST=1 \
+  SCRYNTIC_F22_CONFIG="$F22_REPO/state/f22-timesfm.toml" \
+  "$F22_REPO/.venv/bin/python" -m pytest -v -s \
+  -o addopts=--import-mode=importlib \
+  -o "cache_dir=$F22_POSITIVE_ROOT/pytest-cache" \
+  --junitxml="$F22_POSITIVE_ROOT/positive.xml" \
+  tests/model_worker/test_host.py::test_effective_host_controls_and_f20_result \
+  tests/models/test_host.py::test_real_runtime_offline_inference_and_effective_controls \
+  2>&1 | sudo -- tee "$F22_POSITIVE_ROOT/positive.log"
+F22_POSITIVE_STATUS=$?
+F22_POSITIVE_FINISHED="$(date -u --iso-8601=seconds)"
+printf 'Positive probe exit status: %s\n' "$F22_POSITIVE_STATUS" \
+  | sudo -- tee "$F22_POSITIVE_ROOT/positive-status.txt"
+sudo -- journalctl --utc --no-pager --since "$F22_POSITIVE_STARTED" \
+  --until "$F22_POSITIVE_FINISHED" --unit='scryntic-model-*' \
+  | sudo -- tee "$F22_POSITIVE_ROOT/worker-journal.log"
+/usr/bin/systemctl --system --no-ask-password list-units --all \
+  'scryntic-model-*' --no-pager \
+  | sudo -- tee "$F22_POSITIVE_ROOT/units-after.txt"
+sudo -- find /tmp -maxdepth 1 -type d -name 'scryntic-model-*' -print \
+  | sudo -- tee "$F22_POSITIVE_ROOT/staging-after.txt"
+F22_POSITIVE_RETURN="$F22_REPO/state/f22-qualification/operator-results-$(basename "$F22_POSITIVE_ROOT")"
+test ! -e "$F22_POSITIVE_RETURN" || exit 1
+sudo -- cp -a -- "$F22_POSITIVE_ROOT" "$F22_POSITIVE_RETURN" || exit 1
+sudo -- chown -hR -- "$(id -u):$(id -g)" "$F22_POSITIVE_RETURN" || exit 1
+printf 'Results ready: %s\n' "$F22_POSITIVE_RETURN"
+```
+
+Require both tests passed, zero skipped/failures/errors, status 0, actual
+effective-control evidence and two equal native offline TimesFM executions.
+Return logs/JUnit/journal after any outcome; inspect fresh AVCs for further
+denials. Full qualification and evaluation remain blocked pending review.
+
+### Pause checkpoint — 2026-10-09 20:00 UTC
+
+After the exact interpreter relabel, the operator ran the diagnostic pair on
+`dedf6798a76d73d9b950dabbce34d825526d2753`. Returned JUnit independently confirms
+**2 failed / 0 passed / 0 skipped / 0 errors**, 2.516 seconds, exit 1. Evidence:
+`state/f22-qualification/operator-results-scryntic-f22-positive-20261009T195959Z`.
+The retained journal now says **Failed to execute** `/python/bin/python3.12`,
+`203/EXEC: Permission denied`, PID **1630894** at 19:59:59 UTC. This differs from
+the earlier executable lookup denial; no cause for the new execution failure
+has been established. The journal export ends at second precision and contains
+only the synthetic unit; do not infer the real unit's failure stage from it.
+Units-after is empty and staging-before/after contain the same two pre-existing
+directories. No successful worker/control/model/resource evidence was produced.
+
+The operator requested stopping until tomorrow. Work is paused, not completed.
+Do not start another qualification run, alter more labels or rules, or begin
+F23. The next step after explicit resumption is the retained new AVC for PID
+1630894 in **2026-10-09 19:59:58–20:00:10 UTC**, plus a complete journal interval
+for the real-profile attempt. Use the corrected C-locale date `10/09/26`; retain
+actual denied permission and subject/target contexts before choosing any repair.
+The existing `bin_t` adjustment remains applied; it did not qualify execution.
+All 31 host probes, offline same-case Bybit evaluation/reproducibility/resource
+evidence and six Sonar dispositions remain incomplete. KER-26 stays In Progress.
+No new source change, allow module, gate exception, push or PR was introduced.
+
 ### Operator prerequisites and stage 1: all 31 probes
 
 The commands below are for this reviewed host and retained enrollment. Another
