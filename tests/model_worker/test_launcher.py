@@ -81,6 +81,37 @@ def test_missing_manager_rejects_before_spawn(monkeypatch: pytest.MonkeyPatch) -
     assert "sentinel" not in str(error.value)
 
 
+def test_request_mount_point_exists_before_unit_launch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    launched: list[str] = []
+
+    def command(root: Path, request: Path, unit: str) -> list[str]:
+        target = root / "input/request"
+        assert target.is_file()
+        assert not target.is_symlink()
+        assert target.read_bytes() == b""
+        assert target.stat().st_mode & 0o222 == 0
+        assert request.read_bytes()
+        assert root.parent.stat().st_mode & 0o777 == 0o700
+        return [unit]
+
+    async def launch(
+        self: CPUWorker,
+        specification: list[str],
+        unit: str,
+        owner: dict[str, Any],
+        value: JobAttempt,
+    ) -> bytes:
+        launched.append(unit)
+        return b"portable-launch-sentinel"
+
+    monkeypatch.setattr(launcher, "_command", command)
+    monkeypatch.setattr(CPUWorker, "_launch", launch)
+    assert asyncio.run(CPUWorker().execute(attempt())) == b"portable-launch-sentinel"
+    assert len(launched) == 1
+
+
 def test_missing_effective_controls_never_invoke_provider(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

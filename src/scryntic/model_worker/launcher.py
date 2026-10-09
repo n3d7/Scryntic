@@ -342,6 +342,9 @@ class CPUWorker:
                     "output",
                 ):
                     (root / name).mkdir(parents=True, exist_ok=True)
+                # Namespace setup cannot always create an inode beneath the
+                # protected root. BindReadOnlyPaths replaces this empty target.
+                (root / "input/request").touch(mode=0o444, exist_ok=False)
                 (root / "lib").symlink_to("usr/lib")
                 (root / "lib64").symlink_to("usr/lib64")
                 await self._snapshot(root)

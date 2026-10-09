@@ -1,11 +1,15 @@
 # F22 / KER-26 validation — 2026-10-09
 
-**Status: implementation available, qualification incomplete. Draft PR / In
-Progress; not In Review or Done.** Base main:
+**Status: implementation merged, qualification incomplete. KER-26 is In
+Progress; not In Review or Done.** PR #26 was merged by the operator; the main
+merge revision used for the first qualification attempt is
+`4be4ea2c3ee171f5d76e72ad6bbe00c62b4523f1`. Original implementation base:
 `62f9aee731dbac3eadcac03422413e329174498f`.
-Branch: `ker-26-f22-timesfm`. The approved architecture and F19/F20/F21 contracts
-were inspected. F21 is merged/Done in the tracker, but its 15 mandatory host
-probes remain unperformed, as explicitly confirmed by the operator.
+Original branch: `ker-26-f22-timesfm`; current candidate repair branch:
+`ker-26-f22-host-mount-repair`. The approved architecture and F19/F20/F21
+contracts were inspected. F21 is merged/Done in the tracker, but its host
+qualification was missing at implementation delivery. The first operator
+attempt below failed; neither profile is qualified yet.
 
 ## Implementation and available boundary evidence
 
@@ -78,7 +82,7 @@ resource use are **pending**, not zero or inferred from mocks. Unknown pretraini
 overlap and this small sample preclude a model-training holdout/general quality
 claim even after execution. The model need not beat persistence.
 
-## Commands and scanner results
+## Commands and scanner results before the mount repair
 
 Normal gates and focused tests use the reviewed uv 0.12.18 executable:
 
@@ -155,48 +159,265 @@ It returned access denied: interactive authentication is required but disabled.
 No sudo, host installation/polkit change, weaker isolation or unisolated model
 run was used by Codex. All 15 F21 plus 16 F22 host probes remain mandatory.
 
-On an operator-authorized disposable/reviewed Linux host, provision the locked
-runtime/artifacts and approved TOML according to F22_MODELS.md. From this reviewed
-checkout, use an account already authorized for fixed system-manager units.
-If the operator explicitly chooses manual root qualification, the following
-sudo invocations are manual actions, not an elevated launcher shipped in Scryntic:
+### Follow-up verification on merged main
 
-```sh
-sudo -- env SCRYNTIC_F21_HOST=1 "$PWD/.venv/bin/python" -m pytest -s \
-  -o cache_dir=/tmp/scryntic-f21-qualification-cache tests/model_worker/test_host.py
-sudo -- env SCRYNTIC_F22_HOST=1 SCRYNTIC_F22_CONFIG=/absolute/reviewed-model.toml \
-  "$PWD/.venv/bin/python" -m pytest -s \
-  -o cache_dir=/tmp/scryntic-f22-qualification-cache tests/models/test_host.py
+The clean F22 worktree was fast-forwarded to merged main without source changes.
+The unrelated dirty F21 checkout was preserved. On October 9, safe verification
+on that revision produced:
+
+- `.venv/bin/python -m pytest tests/models tests/model_worker -q`: **157 passed,
+  31 host skipped**, exit 0; log `/tmp/f22-qualification-portable.log`.
+- All three admitted model artifacts verified; recomputing the complete installed
+  runtime inventory reproduced
+  `66228d61bd3f01d44c836cf7b1a99ade417bce5dd52240d95d7b82d6dd6c96ec`.
+- F16/F18 verified the retained Bybit objects/publications/manifest. F19 reproduced
+  the original canonical baseline twice byte-for-byte, including the recorded
+  historical baseline environment. A relocated, quiescent private copy also
+  reproduced it twice. Same-case rows/contexts/metrics remain those above.
+- The actual UID is 1000; system-manager is running. Cgroup v2 exposes CPU,
+  memory and pids controllers, Bubblewrap is `0.12.0-1.fc44`, and approximately
+  29 GiB memory / 24 GiB `/tmp` space were available. These prerequisites do not
+  establish effective controls.
+- `pkcheck --action-id org.freedesktop.systemd1.manage-units --process "$$"`,
+  without `--allow-user-interaction`, exited **2** (not authorized). This agrees
+  with the installed upstream `pkcheck(1)` manual. No unit or root action was
+  attempted in this follow-up.
+- Read-only SonarQube queries still report the six reviewed findings and gate
+  `ERROR` above. No disposition, rule, exclusion or gate was changed.
+
+Local, ignored evidence is under `state/f22-qualification`: `verified-bybit.json`,
+`bybit-copy-verification.json`, the verified `bybit-copy`, and a reviewed local
+`verify_bybit.py` helper. The helper checks bounded JSON, fixed dataset/baseline
+hashes, active F16/F18 pins, the unchanged lock and two exact F19 reproductions.
+It does not load a model or launch a unit. The model-specific execution/resource
+fields remain explicitly pending authorization. The source has not changed, so
+the full gates/scans above and successful PR CI remain prior revision-equivalent
+evidence; they were not rerun as though host qualification had occurred.
+
+### First operator attempt and candidate mount repair
+
+The operator ran all 31 tests on October 9 at 19:09 UTC, on the recorded Fedora
+host and merged revision `4be4ea2c3ee171f5d76e72ad6bbe00c62b4523f1`. Prerequisites
+exited 0; all model/runtime/lock hashes matched. The returned JUnit records
+**25 passed / 6 failed / 0 skipped / 0 errors**, 41.828 seconds, host exit 1.
+The failures are both profiles' positive execution, cancellation/restart and
+abrupt-death tests. Evaluation exited 1 at its host-status guard; no dataset
+copy or model evaluation reports were created. There is no new model/resource
+success evidence. Returned private files are in
+`state/f22-qualification/operator-results`; preserve this first attempt.
+
+The accessible unit journal identifies `226/NAMESPACE`: systemd could not
+create the missing destination inode at `/input/request` (permission denied),
+then the bind mount failed with ENOENT before bootstrap execution. The launcher
+prepared the input directory but omitted the file mount point. The systemd 259
+[bind-mount contract](https://github.com/systemd/systemd/blob/v259/man/systemd.exec.xml)
+and [namespace implementation](https://github.com/systemd/systemd/blob/v259/src/core/namespace.c)
+require an existing destination or permission to create it. Context7 confirmed
+the upstream mount preparation behavior; two targeted SOFA searches yielded no
+directly applicable systemd evidence, so no community workaround was adopted.
+
+The candidate repair pre-creates an empty read-only regular file inside the
+coordinator's private staging root, before the existing fixed read-only request
+bind. Namespace, identity, mount, credential, network and resource properties
+remain unchanged. The focused regression fails against the original launcher
+and requires the file/type/permissions/private ancestor to exist before launch.
+Portable tests are not host proof: all 31 probes must be repeated against the
+reviewed repair revision. The 25 initial negative-test passes are not credited
+as scenario qualification, because a common startup failure could satisfy their
+expected failure. Model comparison remains blocked until both positive profiles
+and the entire host suite pass. KER-26 remains In Progress.
+
+Candidate validation on October 9, before committing the reviewed source:
+
+- Focused `tests/models tests/model_worker`: **158 passed / 31 host skipped**,
+  exit 0; regression first failed against the original launcher.
+- `PATH=/tmp/f22-tools/bin:$PATH bash scripts/check.sh`: **1676 passed / 31
+  host skipped** in 96.80 seconds, exit 0, including typing, lint/format, locks,
+  installed/package checks and all seven dependency-audit closures.
+- `PATH=/tmp/f22-tools/bin:$PATH uv run --locked --no-sync python
+  scripts/check_negative.py`: all seven negative controls rejected their defects;
+  inputs remained unchanged, exit 0.
+- Semgrep affected production file `src/scryntic/model_worker/launcher.py`:
+  **0 findings / 0 errors**. Trivy root/runtime locks, configuration and secrets:
+  **0 CVEs / misconfigurations / secrets**. Both commands exited 0; rules and
+  exclusions remained unchanged.
+- Full Sonar analysis at **19:30 UTC** used the same local `Scryntic` main
+  component and unchanged quality policy: coverage **80.8%**, duplication
+  **0.0%**, six previously recorded open violations, gate **ERROR** (scanner
+  exit 3). New test finding S9073 / `dc6c49ea-2cdd-4d66-aaa7-89d98643004f`
+  was repaired by splitting assertions; the rescan confirmed it **CLOSED**.
+  None of the six earlier findings were suppressed or dispositioned.
+
+Local command logs/scanner JSON are retained under ignored
+`state/f22-qualification/mount-repair-validation/`. This portable evidence
+does not qualify either worker profile or prove the repair works on the host.
+All 31 actual host probes and the offline Bybit model comparison remain pending.
+
+### Operator prerequisites and stage 1: all 31 probes
+
+The commands below are for this reviewed host and retained enrollment. Another
+host requires independent provisioning/inventory approval according to
+[F22_MODELS.md](F22_MODELS.md), and qualifies only that host. Review the tests,
+coordinator and local helper before executing them with root authority. Stop all
+other Scryntic model jobs/coordinators first; cleanup assertions inspect the fixed
+worker-unit prefix. Preserve the existing source/dataset while copying it.
+Use a fresh qualification directory; do not reuse an earlier run or disable a
+failed control. Budget ample `/tmp` space for verified per-job snapshots and the
+configured CPU/memory limits. This is manual qualification, not a generic
+elevated launcher or permission change shipped in Scryntic.
+
+Run in a Bash terminal (the pipelines retain command failures). Leave interactive
+`nounset` disabled: Fedora's prompt can expand unset `PROMPT_*` variables. If a
+previous attempt enabled it, run `set +u` first; these shell settings do not change
+the worker profile. Use a fresh qualification directory for each run:
+
+```bash
+set +u
+set -o pipefail
+cd /home/void/Project/Scryntic/.worktrees/ker26
+F22_REPO="$PWD"
+F22_REV="$(git rev-parse HEAD)"  # reviewed candidate commit supplied in the handoff
+F22_QROOT="/var/tmp/scryntic-f22-qualification-$(date -u +%Y%m%dT%H%M%SZ)"
+test "$(git rev-parse HEAD)" = "$F22_REV" || exit 1
+git diff --exit-code HEAD -- src tests scripts runtimes pyproject.toml uv.lock || exit 1
+test -f "$F22_REPO/state/f22-timesfm.toml" || exit 1
+sudo -- mkdir -m 0700 "$F22_QROOT" || exit 1
+(
+  set -e -o pipefail
+  {
+  date -u --iso-8601=seconds
+  git rev-parse HEAD
+  id
+  sudo -- id
+  uname -a
+  rpm -q systemd glibc libseccomp bubblewrap
+  "$F22_REPO/.venv/bin/python" --version
+  stat -fc %T /sys/fs/cgroup
+  cat /sys/fs/cgroup/cgroup.controllers
+  df -h /tmp "$F22_REPO"
+  sha256sum uv.lock runtimes/forecast_cpu/uv.lock \
+    runtimes/forecast_cpu/.venv/inventory.json state/f22-timesfm.toml \
+    state/f22-qualification/verify_bybit.py \
+    models/f22/approved/model.safetensors models/f22/approved/config.json \
+    models/f22/approved/README.md
+  } 2>&1 | sudo -- tee "$F22_QROOT/prerequisites.log"
+)
+F22_PREREQ_STATUS=$?
+printf 'Prerequisites exit status: %s\n' "$F22_PREREQ_STATUS" \
+  | sudo -- tee "$F22_QROOT/prerequisites-status.txt"
+test "$F22_PREREQ_STATUS" -eq 0 || exit 1
+sudo -- find /tmp -maxdepth 1 -type d -name 'scryntic-model-*' -print \
+  | sudo -- tee "$F22_QROOT/staging-before.txt"
+F22_HOST_STARTED="$(date -u --iso-8601=seconds)"
+sudo -- env SCRYNTIC_F21_HOST=1 SCRYNTIC_F22_HOST=1 \
+  SCRYNTIC_F22_CONFIG="$F22_REPO/state/f22-timesfm.toml" \
+  "$F22_REPO/.venv/bin/python" -m pytest -v -s \
+  -o addopts=--import-mode=importlib \
+  -o "cache_dir=$F22_QROOT/pytest-cache" \
+  --junitxml="$F22_QROOT/host.xml" \
+  tests/model_worker/test_host.py tests/models/test_host.py \
+  2>&1 | sudo -- tee "$F22_QROOT/host.log"
+F22_HOST_STATUS=$?
+F22_HOST_FINISHED="$(date -u --iso-8601=seconds)"
+sudo -- journalctl --utc --no-pager --since "$F22_HOST_STARTED" \
+  --until "$F22_HOST_FINISHED" --unit='scryntic-model-*' \
+  | sudo -- tee "$F22_QROOT/worker-journal.log"
+/usr/bin/systemctl --system --no-ask-password list-units --all \
+  'scryntic-model-*' --no-pager \
+  | sudo -- tee "$F22_QROOT/units-after.txt"
+sudo -- find /tmp -maxdepth 1 -type d -name 'scryntic-model-*' -print \
+  | sudo -- tee "$F22_QROOT/staging-after.txt"
+printf 'Host pipeline exit status: %s\n' "$F22_HOST_STATUS" \
+  | sudo -- tee "$F22_QROOT/host-status.txt"
 ```
 
-Require all 31 host tests pass, none skipped. Retain full logs, printed effective
-controls/resource JSON, exact code/model/runtime hashes, kernel/systemd/glibc/
-libseccomp/CPython identity, unit cleanup/restart and bounded abrupt-death
-evidence. Review/remove only identified stale staging after the death probe;
-do not call its mere existence cleanup success. A different host qualifies only
-that host. Any missing control/failing probe requires repair and rerun.
+Require **31 passed, zero skipped/errors/failures and status 0**. Retain full logs
+and JUnit, printed effective-control/resource JSON, denied host files/sockets/
+network, immutable inputs, credentials/descriptors, symlink/hardlink/flood,
+process/thread/memory/CPU exhaustion, missing-control rejection, cancellation,
+restart and bounded abrupt-death evidence. The real-runtime positive probe must
+perform two equal offline native TimesFM executions with 512 context rows and
+horizon 24. A passing synthetic profile cannot replace it. Compare staging
+before/after and review/remove only newly identified stale staging after the
+death probe. Its existence is a documented coordinator-death limitation, not
+proof of cleanup. Do not remove unrelated paths or grant broader unit authority.
+If any prerequisite/probe fails, stop before stage 2 and return that evidence.
 
-Create a **fresh** qualification dataset installation under the same UID that
-will evaluate it. Do not reuse user-owned private catalog state under root:
+### Stage 2: offline evaluation of the same retained Bybit cases
 
-```sh
-sudo -- mkdir -m 0700 /var/tmp/scryntic-f22-qualification
-sudo -- "$PWD/.venv/bin/python" -m scripts.prepare_f22_bybit \
-  --root /var/tmp/scryntic-f22-qualification/bybit --code-revision "$(git rev-parse HEAD)"
-sudo -- "$PWD/.venv/bin/python" -m scripts.check_f22_model \
-  --dataset-root /var/tmp/scryntic-f22-qualification/bybit \
-  --configuration /absolute/reviewed-model.toml \
-  --output /var/tmp/scryntic-f22-qualification/timesfm.json \
-  --code-revision "$(git rev-parse HEAD)"
+Only after stage 1 passes, make a **new root-owned copy** of the already verified,
+quiescent installation; do not recapture a different market sample and do not
+open user-owned private catalogs under root. Ownership changes below apply only
+to that new copy. Keep the Bash variables/cwd from stage 1:
+
+```bash
+(
+  set -e -o pipefail
+  test "$F22_HOST_STATUS" -eq 0
+  sudo -- test ! -e "$F22_QROOT/bybit"
+  sudo -- cp -a -- "$F22_REPO/state/f22-qualification/bybit-copy" "$F22_QROOT/bybit"
+  sudo -- chown -hR -- root:root "$F22_QROOT/bybit"
+  sudo -- "$F22_REPO/.venv/bin/python" \
+    "$F22_REPO/state/f22-qualification/verify_bybit.py" "$F22_QROOT/bybit" \
+    2>&1 | sudo -- tee "$F22_QROOT/dataset-verification.json"
+  sudo -- "$F22_REPO/.venv/bin/python" -m scripts.check_f22_model \
+    --dataset-root "$F22_QROOT/bybit" \
+    --configuration "$F22_REPO/state/f22-timesfm.toml" \
+    --output "$F22_QROOT/timesfm.json" --code-revision "$F22_REV" --per-partition 2 \
+    2>&1 | sudo -- tee "$F22_QROOT/timesfm.log"
+  sudo -- "$F22_REPO/.venv/bin/python" -m scripts.check_f22_model \
+    --dataset-root "$F22_QROOT/bybit" \
+    --configuration "$F22_REPO/examples/local-model.toml" \
+    --output "$F22_QROOT/fake.json" --code-revision "$F22_REV" --per-partition 2 \
+    2>&1 | sudo -- tee "$F22_QROOT/fake.log"
+  sudo -- "$F22_REPO/.venv/bin/python" -m scripts.check_f22_model \
+    --dataset-root "$F22_QROOT/bybit" \
+    --configuration "$F22_REPO/state/f22-timesfm.toml" \
+    --output "$F22_QROOT/timesfm-repeat.json" --code-revision "$F22_REV" --per-partition 2 \
+    2>&1 | sudo -- tee "$F22_QROOT/timesfm-repeat.log"
+)
+F22_EVAL_STATUS=$?
+printf 'Evaluation exit status: %s\n' "$F22_EVAL_STATUS" \
+  | sudo -- tee "$F22_QROOT/evaluation-status.txt"
 ```
 
-This needs real healthy F12 clock evidence during capture; stale/uncertain data
-must remain excluded. Then run the **same** evaluation command with a TOML
-containing only `[model] selected = "fake-persistence"` and a new `--output` path.
-Retain both reports and pinned dataset/publications/objects plus F20 accepted
-forecast artifacts. Require identical comparison rows/labels/splits/exclusions,
-finite bounded outputs, independent repeat equality, recorded effective
-controls/resource use and model-vs-persistence metrics on the same cases.
-Repeat normal gates/scans after any repair. Only after this evidence and the
-unchanged quality gate are resolved may KER-26 move to **In Review**. Do not merge
-the PR or mark Done automatically.
+The scripts execute the fixed offline worker, not an unisolated vendor import.
+Every report must contain six same-case predictions and two distinct F20 jobs
+per case (12 accepted artifacts); the repeat report uses fresh qualification/job
+identities. Require the manifest/baseline hashes and rows/contexts above,
+identical labels/splits/exclusions/provenance and baseline metrics in all three
+reports, finite bounded points, equal TimesFM predictions/metrics across reruns,
+valid accepted artifact hashes/sizes/identities and effective controls. Expect
+fake persistence to match the same-case F19 persistence baseline. Record measured
+per-job elapsed time, CPU time and maximum RSS from `resource_use`; configured
+limits are not measurements. Artifact/job identities and resource measurements
+may differ between equal prediction reruns. A failed job/report is a blocker,
+not a zero metric. Preserve the copied dataset, catalogs and accepted artifacts
+under `bybit/home/.local/state/scryntic/forecasts` for independent validation.
+No runtime downloads, remote code, exchange credentials or execution authority
+are authorized. This small historical sample and unknown pretraining overlap
+retain the limitations in F22_MODELS.md; no absolute containment claim follows.
+
+### Return evidence and await review
+
+After either a failed stage 1 or completion of stage 2, export a **new copy** of
+the evidence for the ordinary operator UID. Leave the root qualification source
+intact. The returned directory must not already exist:
+
+```bash
+F22_RETURN="$F22_REPO/state/f22-qualification/operator-results-$(basename "$F22_QROOT")"
+test ! -e "$F22_RETURN" || exit 1
+sudo -- cp -a -- "$F22_QROOT" "$F22_RETURN" || exit 1
+sudo -- chown -hR -- "$(id -u):$(id -g)" "$F22_RETURN" || exit 1
+```
+
+Return the directory path and terminal exit status; Codex must inspect the logs,
+31 JUnit outcomes, actual reports and artifacts before recording qualification.
+The copied installation is evidence, not an instruction to run new root jobs
+from user-owned catalogs. The six Sonar findings need an authorized review of
+the stated source evidence and any host evidence relevant to mount/cancellation
+behavior; proposed dispositions are not resolved findings. The configured MCP
+is read-only. Validate any actual defect before repair; repeat relevant host
+probes and normal gates/scans after source changes. Only when all mandatory
+evidence and the unchanged quality gate are resolved may KER-26 move to **In
+Review**. Do not start F23, create a documentation-only PR or mark Done.
