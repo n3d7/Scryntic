@@ -1,4 +1,4 @@
-# F22 / KER-26 validation — 2026-10-09
+# F22 / KER-26 validation — 2026-10-10
 
 **Status: implementation merged, qualification incomplete. KER-26 is In
 Progress; not In Review or Done.** PR #26 was merged by the operator; the main
@@ -464,6 +464,75 @@ The existing `bin_t` adjustment remains applied; it did not qualify execution.
 All 31 host probes, offline same-case Bybit evaluation/reproducibility/resource
 evidence and six Sonar dispositions remain incomplete. KER-26 stays In Progress.
 No new source change, allow module, gate exception, push or PR was introduced.
+
+### Resumed: loader symlink AVC and candidate directory-bind repair
+
+On October 10 the operator returned the retained audit record for PID 1630894:
+`audit(10/09/26 19:59:59.427:2367)`, denied **read**, `name=lib64`,
+`scontext=system_u:system_r:init_t:s0`,
+`tcontext=unconfined_u:object_r:user_tmp_t:s0`, `tclass=lnk_file`,
+`permissive=0`; ausearch status 0. The journal query returned no entries,
+status 0. Evidence is in the latest returned positive directory's
+`avc-1630894.txt` and `worker-journal-complete.txt`. This identifies the
+synthetic execution failure; it does not establish the real-profile failure
+stage or successful worker execution. Ordinary-UID host inspection confirmed
+Enforcing and the existing bin_t executable label. No host policy was changed.
+
+The launcher constructed `lib -> usr/lib` and `lib64 -> usr/lib64` beneath its
+private temporary root. The actual interpreter's ELF program-interpreter path
+is `/lib64/ld-linux-x86-64.so.2`. SELinux controls the symlink inode separately
+from its target: see the [SELinux project's object-class reference](https://github.com/SELinuxProject/selinux-notebook/blob/main/src/object_classes_permissions.md).
+The repair creates ordinary `lib`/`lib64` mount-point directories and binds
+the same selected `/usr/lib` and, when present, `/usr/lib64` read-only at both
+locations. It exposes no additional host source, writable library mount,
+credentials or user configuration. The versioned [systemd 259 mount contract](https://github.com/systemd/systemd/blob/v259/man/systemd.exec.xml)
+supports distinct host-source/service-root-destination binds; Context7's
+systemd documentation agrees. A targeted SOFA search returned no applicable
+SELinux/systemd symlink evidence; unrelated mount posts were not relied on.
+
+Regression checks cover both owned CPU profiles, hosts with/without
+`/usr/lib64`, absence of writable library binds, directory rather than symlink
+targets and the existing private staging/request contract. The four mount
+specification cases fail against the previous committed `_command`; all five
+focused checks pass for the candidate. Portable checks do not establish that
+SELinux permits the completed launch. The next operator action is the two
+positive host probes with a fresh evidence directory and complete live journal
+export; only after they succeed should all 31 mandatory probes be repeated.
+Further denied operations require actual AVC evidence before another repair.
+
+Candidate validation (ordinary UID 1000; no root/system-manager launch):
+
+- `PATH=/tmp/f22-tools/bin:$PATH bash scripts/check.sh`: status 0; **1,680
+  passed / 31 mandatory host skips**, 96.04 seconds. Both lock checks, lint,
+  formatting, strict typing (273 files), packaging/installed profiles and all
+  dependency audits pass. The restored official uv 0.12.18 archive matches the
+  SHA-256 recorded above; the global uv installation and pins are unchanged.
+- `PATH=/tmp/f22-tools/bin:$PATH uv run --locked --no-sync python
+  scripts/check_negative.py`: status 0; all seven negative controls reject
+  their deliberately invalid inputs and preserve the originals.
+- Semgrep local Python security snapshot: 151 rules, both affected Python
+  files, **0 findings / 0 errors**; CLI status 0.
+- Trivy `fs --scanners vuln,misconfig,secret --include-dev-deps --format json`:
+  status 0, both root/forecast-runtime locks detected, **0 vulnerability/secret
+  findings**. No supported IaC files were detected; the systemd property
+  contract was reviewed/tested directly, not claimed as Trivy IaC coverage.
+- Full local SonarQube `Scryntic` default/main analysis completed **2026-10-09
+  22:29 UTC** on this worktree candidate: coverage **80.9%**, duplication **0%**,
+  unchanged gate **ERROR**, scanner status 3. The same **six existing open
+  issue keys** remain (S7497 x3, S2612, S5443, S8997); no new issue was introduced
+  by this repair. Findings are still unresolved, not silently accepted or
+  excluded. Server default/main is a local candidate snapshot, not proof of
+  remote main/PR validation.
+
+Actual logs/JSON are ignored under
+`state/f22-qualification/loader-alias-validation/`. Codex sandbox execution
+stalled in the threaded portable test; only those session-owned pytest processes
+were stopped. The five focused checks and full gates then ran successfully
+outside that sandbox as the ordinary UID. This is portable validation, not
+successful execution across the model-worker isolation boundary. No root
+operation, policy weakening, host-probe pass, model metric, resource measurement,
+new PR or push is claimed. All mandatory qualification and Sonar closure remain
+blocked; KER-26 stays In Progress and F23 is not started.
 
 ### Operator prerequisites and stage 1: all 31 probes
 

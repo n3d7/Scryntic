@@ -16,7 +16,13 @@ from scryntic.jobs.contracts import JobAttempt
 from scryntic.jobs.fake import calculate
 from scryntic.model_worker import launcher
 from scryntic.model_worker.launcher import CPUWorker, IsolatedFakeProvider
-from scryntic.model_worker.profile import PROPERTIES, IsolationError
+from scryntic.model_worker.profile import (
+    FORECAST_CPU,
+    PROPERTIES,
+    SYNTHETIC_CPU,
+    CPUProfile,
+    IsolationError,
+)
 from scryntic.model_worker.wire import document
 from tests.jobs.helpers import job, review
 from tests.jobs.test_execution import services
@@ -81,6 +87,38 @@ def test_missing_manager_rejects_before_spawn(monkeypatch: pytest.MonkeyPatch) -
     assert "sentinel" not in str(error.value)
 
 
+@pytest.mark.parametrize("profile", [SYNTHETIC_CPU, FORECAST_CPU])
+@pytest.mark.parametrize("lib64", [False, True])
+def test_loader_aliases_bind_only_existing_readonly_libraries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, profile: CPUProfile, lib64: bool
+) -> None:
+    monkeypatch.setattr(launcher, "_manager_environment", set)
+    is_dir = Path.is_dir
+    monkeypatch.setattr(
+        Path,
+        "is_dir",
+        lambda path: lib64 if path == Path("/usr/lib64") else is_dir(path),
+    )
+    command = launcher._command(
+        tmp_path, tmp_path / "request", "scryntic-model-test.service", profile
+    )
+    binds = next(
+        item.split("=", 1)[1]
+        for item in command
+        if item.startswith("--property=BindReadOnlyPaths=")
+    ).split()
+    libraries = {
+        item
+        for item in binds
+        if item.split(":")[1] in {"/lib", "/lib64", "/usr/lib", "/usr/lib64"}
+    }
+    expected = {"/usr/lib:/usr/lib", "/usr/lib:/lib"}
+    if lib64:
+        expected.update({"/usr/lib64:/usr/lib64", "/usr/lib64:/lib64"})
+    assert libraries == expected
+    assert not any(item.startswith("--property=BindPaths=") for item in command)
+
+
 def test_request_mount_point_exists_before_unit_launch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -94,6 +132,9 @@ def test_request_mount_point_exists_before_unit_launch(
         assert target.stat().st_mode & 0o222 == 0
         assert request.read_bytes()
         assert root.parent.stat().st_mode & 0o777 == 0o700
+        for name in ("lib", "lib64"):
+            assert (root / name).is_dir()
+            assert not (root / name).is_symlink()
         return [unit]
 
     async def launch(
