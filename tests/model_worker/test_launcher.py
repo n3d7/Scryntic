@@ -4,6 +4,7 @@ import asyncio
 import io
 import os
 import signal
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -178,9 +179,65 @@ def test_missing_effective_controls_never_invoke_provider(
     monkeypatch.setattr(parser_bootstrap, "restrict_syscalls", lambda: None)
     monkeypatch.setattr(controls, "effective_controls", missing)
     monkeypatch.setattr(fake, "calculate", lambda *args: calls.append("provider"))
+    stage = [70]
     with pytest.raises(IsolationError):
-        bootstrap.main()
+        bootstrap.main(stage)
     assert not calls
+    assert stage == [73]
+
+
+@pytest.mark.parametrize(
+    "outcome,expected", [("success", 0), ("failure", 73), ("invalid", 78)]
+)
+def test_bootstrap_entrypoint_preserves_failure_and_silent_exit(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    outcome: str,
+    expected: int,
+) -> None:
+    from scryntic.model_worker import bootstrap
+
+    def main(stage: list[int]) -> None:
+        stage[:] = [] if outcome == "invalid" else [73]
+        if outcome != "success":
+            raise KeyboardInterrupt("exception-secret-sentinel")
+
+    def stop(code: int) -> None:
+        raise SystemExit(code)
+
+    monkeypatch.setattr(bootstrap, "main", main)
+    monkeypatch.setattr(os, "_exit", stop)
+    with pytest.raises(SystemExit) as error:
+        bootstrap.entrypoint()
+    assert error.value.code == expected
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+
+
+@pytest.mark.parametrize("stage", [70, 73, 75, 77, 0, 999, "secret-sentinel"])
+def test_bootstrap_failure_stage_never_exposes_exception_or_accepts_success(
+    stage: int | str,
+) -> None:
+    program = (
+        "import scryntic.model_worker.bootstrap as b\n"
+        "def fail(stage):\n"
+        f"    stage[:] = [{stage!r}]\n"
+        "    raise SystemExit('exception-secret-sentinel')\n"
+        "b.main = fail\n"
+        "b.entrypoint()\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", program],
+        capture_output=True,
+        env={},
+        timeout=5,
+        check=False,
+    )
+    expected = stage if type(stage) is int and 70 <= stage <= 77 else 78
+    assert result.returncode == expected
+    assert result.stdout == b""
+    assert result.stderr == b""
 
 
 @pytest.mark.parametrize(

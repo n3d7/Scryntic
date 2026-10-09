@@ -7,7 +7,10 @@ import time
 from typing import Any, Literal
 
 
-def main() -> None:
+def main(stage: list[int] | None = None) -> None:
+    # Fixed failure-stage codes only; no exception text crosses the boundary.
+    stage = [70] if stage is None else stage
+    stage[0] = 70
     sys.path[:] = ["/app", *sys.path]
     from scryntic.archive.canonical import canonical_json_bytes
     from scryntic.imports.bootstrap import restrict_syscalls
@@ -22,6 +25,7 @@ def main() -> None:
     from scryntic.model_worker.wire import document
     from scryntic.models.definitions import definition
 
+    stage[0] = 71
     with open(REQUEST_PATH, "rb") as stream:
         data = stream.read(WIRE_BYTES + 1)
     try:
@@ -33,22 +37,28 @@ def main() -> None:
         if model.adapter is None:
             raise IsolationError("Unexpected model workload") from None
     profile = model.profile if model is not None else SYNTHETIC_CPU
+    stage[0] = 72
     if profile.allow_threads:
         restrict_syscalls(allow_threads=True)
     else:
         restrict_syscalls()
     # Fail closed before even the trusted fixture is executed.
+    stage[0] = 73
     controls = (
         effective_controls(request["host"], profile)
         if model is not None
         else effective_controls(request["host"])
     )
+    stage[0] = 74
     mode = request["mode"]
     _probe_mode(mode, model is not None)
     attempt = decode_attempt(request["attempt"].encode("utf-8"))
     started = time.monotonic_ns()
+    stage[0] = 75
     result = _forecast(attempt, request, model)
+    stage[0] = 76
     data = _result_bytes(encode_response(attempt, result), mode)
+    stage[0] = 77
     message: dict[str, Any] = {
         "version": 2 if model is not None else 1,
         "controls": controls,
@@ -154,11 +164,23 @@ def _result_bytes(response: bytes, mode: str) -> bytes:
     return data
 
 
-if __name__ == "__main__":
-    exit_code = 1
+def entrypoint() -> None:
+    stage = [70]
+    completed = False
     try:
-        main()
-        exit_code = 0
+        main(stage)
+        completed = True
     finally:
-        # Includes BaseException/native cleanup paths; never print diagnostics.
+        # Includes BaseException paths; never publish tracebacks or payloads.
+        exit_code = (
+            stage[0]
+            if len(stage) == 1 and type(stage[0]) is int and 70 <= stage[0] <= 77
+            else 78
+        )
+        if completed:
+            exit_code = 0
         os._exit(exit_code)
+
+
+if __name__ == "__main__":
+    entrypoint()

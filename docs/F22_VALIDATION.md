@@ -534,6 +534,89 @@ operation, policy weakening, host-probe pass, model metric, resource measurement
 new PR or push is claimed. All mandatory qualification and Sonar closure remain
 blocked; KER-26 stays In Progress and F23 is not started.
 
+#### Operator positive pair on the directory-bind candidate
+
+The operator ran both positive probes on `fa857c0747b98acaf09282962e8749c22e3044c4`.
+Returned JUnit independently confirms **2 failed / 0 passed / 0 skipped /
+0 errors**, 2.877 seconds, pipeline status 1. Evidence:
+`state/f22-qualification/operator-results-scryntic-f22-positive-20261009T224414Z`.
+The complete live journal records **Started** for both units at 22:44:16 and
+22:44:19 UTC, followed by `status=1/FAILURE`; the previous `203/EXEC` failure
+is absent in this attempt. This establishes successful process execution, not
+successful trusted preflight or inference. The failing runtime stage is unknown:
+bootstrap's unconditional os._exit suppresses exception diagnostics and the
+coordinator does not publish bounded worker stderr. No raw diagnostic/secret
+output was enabled. Units-after is empty, and before/after staging lists match
+the same two pre-existing paths (`a7x8wijv`, `2nmqle25`). No new stale path was
+reported in this attempt. Effective-control/model/resource evidence remains
+missing. Next action is the retained AVC/USER_AVC records for `python3.12` in
+2026-10-09 22:44:14–22:44:22 UTC; absence of a matching AVC must be recorded and
+would require safe runtime-stage diagnostics rather than a speculative policy
+change. The full 31-probe suite and real evaluation remain blocked.
+
+#### No matching runtime AVC; fixed bootstrap-stage diagnostics
+
+The operator's constrained `python3.12` AVC/USER_AVC query returned **no
+matches**, status 1, retained as `runtime-avc.txt` in that evidence directory.
+This does not establish absence of every SELinux denial or identify the failing
+Python/runtime operation. No new policy/label adjustment was made.
+
+The trusted bootstrap now retains a fixed stage number and exits nonzero with
+that number on a Python exception, including BaseException/SystemExit paths.
+It prints no diagnostic text, traceback, exception value, input or credentials;
+the coordinator still discards bounded stderr and raises its generic isolation
+failure. Successful completion remains status 0; invalid failure-stage state
+maps to 78, never success. This changes failure diagnostics only, not control
+checks, result envelopes/import, registered models or F20 admission/durability.
+Context7's CPython documentation agrees with the [official Python 3.12 os._exit
+contract](https://docs.python.org/3.12/library/os.html#os._exit): this immediate
+exit does not flush stdio or execute interpreter cleanup. The existing worker
+cleanup choice is preserved, with exceptions still suppressed at process exit.
+
+| Exit status | Fixed bootstrap stage |
+| --- | --- |
+| 70 | Application imports |
+| 71 | Request/model definition decoding |
+| 72 | Installing seccomp/privilege controls |
+| 73 | Effective-control inspection and boundary probes |
+| 74 | Fixed probe operation / attempt decoding |
+| 75 | Provider inference |
+| 76 | Result encoding and safe bounded import |
+| 77 | Final envelope/resource serialization and pipe write |
+| 78 | Invalid/unknown failure-stage state |
+
+These codes are hints, not attestation or proof of a passed control. Failure
+before the Python entrypoint, explicit crash probes and native signals can still
+produce other statuses. A model could falsify diagnostics; successful evidence
+must still pass all existing validation. Real subprocess tests inject sentinel
+exception values and invalid stage values and require empty stdout/stderr and
+the fixed nonzero statuses. The controls failure test verifies inference is
+never called and the failing stage remains 73; portable tests also cover silent
+successful exit and BaseException paths. No actual host-stage result is claimed
+until the operator repeats the positive pair on the reviewed diagnostic commit.
+
+Diagnostic candidate validation (no root job execution):
+
+- Seven real-process sentinel/stage regression cases fail before entrypoint
+  instrumentation and pass afterward, with empty stdout/stderr. Full normal
+  `scripts/check.sh` using the reviewed uv 0.12.18: status 0; **1,690 passed /
+  31 host skips**, 95.31 seconds; lock/lint/format/mypy/package and all dependency
+  audits pass. The three entrypoint success/BaseException/invalid-stage tests
+  and controls-before-inference regression also pass in this suite.
+- All seven `scripts/check_negative.py` controls pass, status 0.
+- Semgrep: 151 local Python rules / three boundary/test files, no findings or
+  errors, status 0. Trivy root/forecast locks including dev and source secret
+  scan: no findings, status 0; no supported IaC files detected.
+- Full local SonarQube `Scryntic` default/main candidate snapshot completed
+  **2026-10-09 22:57 UTC**: coverage **81.0%**, duplication **0%**, gate **ERROR**,
+  scanner status 3. The same six previously recorded issue keys remain open;
+  no new issue, exclusion or disposition was introduced.
+
+Actual logs/JSON are ignored in `state/f22-qualification/stage-diagnostic-validation/`.
+Host qualification, actual offline TimesFM/Bybit comparison, reproducibility,
+resource/artifact evidence and Sonar closure still block completion. Do not
+interpret portable stage diagnostics as successful isolation or start F23.
+
 ### Operator prerequisites and stage 1: all 31 probes
 
 The commands below are for this reviewed host and retained enrollment. Another
