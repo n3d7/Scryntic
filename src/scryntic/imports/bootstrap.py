@@ -24,7 +24,7 @@ def restrict(memory: int, cpu: int) -> None:
     restrict_syscalls()
 
 
-def restrict_syscalls() -> None:
+def restrict_syscalls(*, allow_threads: bool = False) -> None:
     """Shared fail-closed syscall policy; callers install their own rlimits."""
     libc = ctypes.CDLL(None, use_errno=True)
     if libc.prctl(38, 1, 0, 0, 0) != 0:  # PR_SET_NO_NEW_PRIVS
@@ -44,6 +44,23 @@ def restrict_syscalls() -> None:
     library.seccomp_load.argtypes = [ctypes.c_void_p]
     library.seccomp_load.restype = ctypes.c_int
     library.seccomp_release.argtypes = [ctypes.c_void_p]
+
+    class Argument(ctypes.Structure):
+        _fields_ = [
+            ("arg", ctypes.c_uint),
+            ("op", ctypes.c_int),
+            ("datum_a", ctypes.c_uint64),
+            ("datum_b", ctypes.c_uint64),
+        ]
+
+    library.seccomp_rule_add_array.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_uint32,
+        ctypes.c_int,
+        ctypes.c_uint,
+        ctypes.POINTER(Argument),
+    ]
+    library.seccomp_rule_add_array.restype = ctypes.c_int
     context = library.seccomp_init(0x7FFF0000)  # SCMP_ACT_ALLOW
     if not context:
         raise RuntimeError(_SYSCALL_FAILURE)
@@ -89,11 +106,36 @@ def restrict_syscalls() -> None:
             "setresuid",
             "setresgid",
         ):
+            if allow_threads and name in ("clone", "clone3"):
+                continue
             number = library.seccomp_syscall_resolve_name(name.encode("ascii"))
             if (
                 number < 0
                 or library.seccomp_rule_add(
                     context, 0x00050000 | errno.EPERM, number, 0
+                )
+                != 0
+            ):
+                raise RuntimeError(_SYSCALL_FAILURE)
+        if allow_threads:
+            # x86_64 glibc pthread_create's exact flags, not arbitrary clone.
+            # CLONE_VM|FS|FILES|SIGHAND|THREAD|SYSVSEM|SETTLS|PARENT_SETTID|CHILD_CLEARTID
+            comparison = Argument(0, 1, 0x3D0F00, 0)  # SCMP_CMP_NE
+            clone = library.seccomp_syscall_resolve_name(b"clone")
+            clone3 = library.seccomp_syscall_resolve_name(b"clone3")
+            if (
+                clone < 0
+                or clone3 < 0
+                or library.seccomp_rule_add_array(
+                    context,
+                    0x00050000 | errno.EPERM,
+                    clone,
+                    1,
+                    ctypes.byref(comparison),
+                )
+                != 0
+                or library.seccomp_rule_add(
+                    context, 0x00050000 | errno.ENOSYS, clone3, 0
                 )
                 != 0
             ):

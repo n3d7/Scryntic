@@ -1,0 +1,26 @@
+[project]
+name = "scryntic-forecast-cpu-runtime"
+version = "1.0.0"
+requires-python = "==3.12.14"
+dependencies = [
+  "timesfm==3.0.2",
+  "torch==2.14.0+cpu",
+  "numpy==2.5.3",
+  "safetensors==0.8.0",
+  "huggingface-hub==2.1.1",
+]
+
+[tool.uv]
+required-version = "==0.12.18"
+package = false
+python-preference = "only-managed"
+python-downloads = "manual"
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -1,0 +1,8 @@
+# Supported names: python -m scryntic.models.provision list
+[model]
+selected = "fake-persistence"
+
+# For timesfm-2.5, replace the selection and provide all three enrollment fields:
+# artifacts = "/absolute/private/verified-artifacts"
+# runtime = "/absolute/path/runtimes/forecast_cpu/.venv"
+# runtime_sha256 = "SHA-256 printed by the explicit inventory command"

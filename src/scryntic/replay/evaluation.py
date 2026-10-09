@@ -94,7 +94,7 @@ def fit_standardizer(cases: tuple[ForecastCase, ...]) -> Standardizer:
     return Standardizer(means, scales, tuple(case.features.row_index for case in cases))
 
 
-def _collect_cases(
+def collect_cases(
     reader: CandleReplayReader,
 ) -> tuple[list[ForecastCase], list[dict[str, Any]]]:
     cases: list[ForecastCase] = []
@@ -162,7 +162,9 @@ def _forecast_case(
     return ForecastCase(frame, partition, target, prediction, boundary - 1), ()
 
 
-def _metrics(cases: list[ForecastCase]) -> dict[str, Any]:
+def score_cases(cases: list[ForecastCase]) -> dict[str, Any]:
+    if not cases:
+        raise ValueError("Metrics require nonempty comparable cases")
     with localcontext(arithmetic_context()):
         errors = [case.prediction - case.target.value for case in cases]
         count = len(errors)
@@ -179,7 +181,7 @@ def _metrics(cases: list[ForecastCase]) -> dict[str, Any]:
 
 
 def evaluate(reader: CandleReplayReader) -> dict[str, Any]:
-    cases, exclusions = _collect_cases(reader)
+    cases, exclusions = collect_cases(reader)
     transforms: list[dict[str, Any]] = []
     predictions: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
@@ -207,7 +209,7 @@ def evaluate(reader: CandleReplayReader) -> dict[str, Any]:
                     {
                         "series": series_projection(series),
                         "partition": partition,
-                        **_metrics(partition_cases),
+                        **score_cases(partition_cases),
                     }
                 )
         for case in selected:

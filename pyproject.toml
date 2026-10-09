@@ -39,7 +39,7 @@ python-preference = "only-managed"
 python-downloads = "manual"
 
 [tool.uv.build-backend]
-source-include = [".python-version", "uv.lock", "build-constraints.txt"]
+source-include = [".python-version", "uv.lock", "build-constraints.txt", "runtimes/forecast_cpu/pyproject.toml", "runtimes/forecast_cpu/uv.lock", "runtimes/forecast_cpu/.python-version"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

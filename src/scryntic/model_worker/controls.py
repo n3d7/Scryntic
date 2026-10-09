@@ -1,24 +1,23 @@
 """Effective OS controls checked by trusted bootstrap before worker code."""
 
+import ctypes
 import errno
 import os
 import resource
 import socket
+import threading
 from pathlib import Path
 from typing import Any
 
 from scryntic.model_worker.profile import (
     CONTROL_PATH,
-    CPU_SECONDS,
-    ENVIRONMENT,
-    MEMORY,
     NAMESPACES,
     OUTPUT_BYTES,
-    READONLY_MOUNTS,
     REQUEST_PATH,
-    TASKS,
+    SYNTHETIC_CPU,
     TMPFS_BYTES,
     WRITABLE_MOUNTS,
+    CPUProfile,
     IsolationError,
 )
 
@@ -50,16 +49,17 @@ def resource_limits() -> dict[str, list[int]]:
     }
 
 
-def expected_limits() -> dict[str, list[int]]:
+def expected_limits(profile: CPUProfile = SYNTHETIC_CPU) -> dict[str, list[int]]:
+    profile.require_owned()
     return {
         name: [value, value]
         for name, value in (
-            ("AS", MEMORY),
-            ("CPU", CPU_SECONDS),
+            ("AS", profile.address_space),
+            ("CPU", profile.cpu_seconds),
             ("CORE", 0),
             ("FSIZE", OUTPUT_BYTES),
-            ("NOFILE", 32),
-            ("NPROC", 0),
+            ("NOFILE", profile.nofile),
+            ("NPROC", profile.nproc),
         )
     }
 
@@ -91,7 +91,7 @@ def _fork() -> None:
     os.waitpid(child, 0)
 
 
-def probe_boundaries(host_canary: str) -> None:
+def probe_boundaries(host_canary: str, profile: CPUProfile = SYNTHETIC_CPU) -> None:
     for path in (
         host_canary,
         "/etc/shadow",
@@ -106,15 +106,61 @@ def probe_boundaries(host_canary: str) -> None:
     for family in (socket.AF_INET, socket.AF_INET6, socket.AF_UNIX):
         denied(lambda family=family: socket.socket(family, socket.SOCK_STREAM))
     denied(_fork)
+    if profile.allow_threads:
+        for name in ("/model/model.safetensors", "/runtime/torch/__init__.py"):
+            denied(lambda name=name: _append(name))
+        _thread_boundary(profile.tasks)
     try:
-        bytearray(MEMORY * 2)
+        bytearray(profile.address_space * 2)
     except MemoryError:
         pass
     else:
         raise IsolationError("Missing allocation limit")
 
 
-def effective_controls(host: dict[str, Any]) -> dict[str, Any]:
+def _append(path: str) -> None:
+    with open(path, "ab") as stream:
+        stream.write(b"tamper")
+
+
+def _thread_boundary(maximum: int) -> None:
+    libc = ctypes.CDLL(None, use_errno=True)
+    child = libc.syscall(56, 0, 0, 0, 0, 0)  # x86_64 clone without pthread flags
+    if child == 0:
+        os._exit(1)
+    if child > 0:
+        os.waitpid(child, 0)
+        raise IsolationError("Clone created a process")
+    if ctypes.get_errno() != errno.EPERM:
+        raise IsolationError("Missing thread-only clone policy")
+    if libc.syscall(435, 0, 0) != -1 or ctypes.get_errno() != errno.ENOSYS:
+        raise IsolationError("Missing clone3 fallback policy")
+    released = threading.Event()
+    threads: list[threading.Thread] = []
+    exhausted = False
+    try:
+        for _ in range(maximum * 2):
+            thread = threading.Thread(target=released.wait)
+            try:
+                thread.start()
+            except RuntimeError:
+                exhausted = True
+                break
+            threads.append(thread)
+        if not exhausted or not 1 <= len(threads) < maximum:
+            raise IsolationError("Required thread quota unavailable")
+    finally:
+        released.set()
+        for thread in threads:
+            thread.join(timeout=2)
+            if thread.is_alive():
+                raise IsolationError("Thread probe cleanup failed")
+
+
+def effective_controls(
+    host: dict[str, Any], profile: CPUProfile = SYNTHETIC_CPU
+) -> dict[str, Any]:
+    profile.require_owned()
     status = {
         key: value
         for line in Path("/proc/self/status").read_text().splitlines()
@@ -147,7 +193,7 @@ def effective_controls(host: dict[str, Any]) -> dict[str, Any]:
             name: status[name].strip()
             for name in ("CapInh", "CapPrm", "CapEff", "CapBnd", "CapAmb")
         },
-        "readonly": {name: "ro" in mounts.get(name, ()) for name in READONLY_MOUNTS},
+        "readonly": {name: "ro" in mounts.get(name, ()) for name in profile.readonly},
         "private_writable": {
             name: "rw" in mounts.get(name, ())
             and all(option in mounts[name] for option in ("nodev", "nosuid", "noexec"))
@@ -165,13 +211,18 @@ def effective_controls(host: dict[str, Any]) -> dict[str, Any]:
         "extra_fds": extra_descriptors(),
         "probes": "passed",
     }
-    verify_controls(report, host)
-    probe_boundaries(host["canary"])
+    if profile.allow_threads:
+        report["thread_policy"] = "pthread-only-bounded"
+    verify_controls(report, host, profile)
+    probe_boundaries(host["canary"], profile)
     return report
 
 
-def verify_controls(report: dict[str, Any], host: dict[str, Any]) -> None:
+def verify_controls(
+    report: dict[str, Any], host: dict[str, Any], profile: CPUProfile = SYNTHETIC_CPU
+) -> None:
     """Recheck bounded evidence in coordinator; evidence is not remote attestation."""
+    profile.require_owned()
     expected = {
         "uid",
         "gid",
@@ -191,6 +242,8 @@ def verify_controls(report: dict[str, Any], host: dict[str, Any]) -> None:
         "extra_fds",
         "probes",
     }
+    if profile.allow_threads:
+        expected.add("thread_policy")
     if (
         type(report) is not dict
         or set(report) != expected
@@ -206,12 +259,12 @@ def verify_controls(report: dict[str, Any], host: dict[str, Any]) -> None:
             or report["namespaces"][name] == host["namespaces"][name]
             for name in NAMESPACES
         )
-        or report["limits"] != expected_limits()
+        or report["limits"] != expected_limits(profile)
         or report["cgroup"]
         != {
-            "memory.max": str(MEMORY),
+            "memory.max": str(profile.memory),
             "memory.swap.max": "0",
-            "pids.max": str(TASKS),
+            "pids.max": str(profile.tasks),
             "cpu.max": "100000 100000",
         }
         or report["no_new_privs"] != "1"
@@ -220,13 +273,17 @@ def verify_controls(report: dict[str, Any], host: dict[str, Any]) -> None:
         != dict.fromkeys(
             ("CapInh", "CapPrm", "CapEff", "CapBnd", "CapAmb"), "0000000000000000"
         )
-        or report["readonly"] != dict.fromkeys(READONLY_MOUNTS, True)
+        or report["readonly"] != dict.fromkeys(profile.readonly, True)
         or report["private_writable"] != dict.fromkeys(WRITABLE_MOUNTS, True)
         or report["tmpfs_bytes"] != TMPFS_BYTES
-        or report["environment"] != ENVIRONMENT
+        or report["environment"] != dict(profile.environment)
         or report["pid"] != 1
         or report["visible_pids"] != ["1"]
         or report["extra_fds"] != []
         or report["probes"] != "passed"
+        or (
+            profile.allow_threads
+            and report.get("thread_policy") != "pthread-only-bounded"
+        )
     ):
         raise IsolationError("Required effective CPU controls unavailable")

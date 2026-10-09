@@ -23,7 +23,14 @@ def test_audit_profiles_require_complete_reports(
     ) -> subprocess.CompletedProcess[str]:
         if args[:2] == ["uv", "export"]:
             output = Path(args[args.index("--output-file") + 1])
-            output.write_text('Example_Pkg==1\nignored==2; python_version < "3"\n')
+            contents = 'Example_Pkg==1\nignored==2; python_version < "3"\n'
+            if "--project" in args:
+                contents += (
+                    "torch==2.14.0+cpu \\\n    --hash=sha256:"
+                    + audit.CPU_WHEEL_SHA256
+                    + "\n"
+                )
+            output.write_text(contents)
         elif args[0] == "pip-audit":
             requirements = Path(args[args.index("--requirement") + 1])
             identities = audit.expected_packages(requirements.read_text())
@@ -46,6 +53,7 @@ def test_audit_profiles_require_complete_reports(
         "dev",
         "build",
         "uv",
+        "forecast-cpu",
     ]
     assert records[4]["audit"]["dependencies"] == [
         {"name": "build-pkg", "version": "1", "vulns": []}
@@ -53,6 +61,10 @@ def test_audit_profiles_require_complete_reports(
     assert records[5]["audit"]["dependencies"] == [
         {"name": "uv", "version": "0.12.13", "vulns": []}
     ]
+    assert ["torch", "2.14.0+cpu"] in records[6]["locked_identities"]
+    assert (
+        records[6]["advisory_identity_mapping"]["torch==2.14.0+cpu"] == "torch==2.14.0"
+    )
 
 
 def test_audit_rejects_non_ascii_tooling_pin(
