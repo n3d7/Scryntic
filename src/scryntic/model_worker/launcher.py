@@ -22,6 +22,7 @@ from scryntic.model_worker.profile import (
     PROPERTIES,
     SYNTHETIC_CPU,
     WIRE_BYTES,
+    WRITABLE_MOUNTS,
     CPUProfile,
     IsolationError,
 )
@@ -340,10 +341,13 @@ class CPUWorker:
                     "lib",
                     "lib64",
                     "tmp",
+                    "var/tmp",
                     "home",
                     "output",
                 ):
                     (root / name).mkdir(parents=True, exist_ok=True)
+                for name in WRITABLE_MOUNTS:
+                    (root / name.removeprefix("/")).mkdir(parents=True, exist_ok=True)
                 # Namespace setup cannot always create an inode beneath the
                 # protected root. BindReadOnlyPaths replaces this empty target.
                 (root / "input/request").touch(mode=0o444, exist_ok=False)

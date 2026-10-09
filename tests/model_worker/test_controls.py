@@ -163,3 +163,23 @@ def test_descriptor_probe_includes_unlinked_secret_file() -> None:
     with tempfile.TemporaryFile() as secret:
         secret.write(b"private-inherited-fd")
         assert secret.fileno() in extra_descriptors()
+
+
+def test_scratch_write_probe_uses_fresh_file_and_preserves_existing_link(
+    tmp_path: Path,
+) -> None:
+    from scryntic.model_worker import controls
+
+    secret = tmp_path / "outside"
+    secret.write_bytes(b"untouched-sentinel")
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    (scratch / "f21-unqualified-write").symlink_to(secret)
+
+    def operation() -> None:
+        controls._write_scratch(str(scratch))
+
+    with pytest.raises(IsolationError, match="Required boundary is ineffective"):
+        controls.denied(operation)
+    assert secret.read_bytes() == b"untouched-sentinel"
+    assert [path.name for path in scratch.iterdir()] == ["f21-unqualified-write"]

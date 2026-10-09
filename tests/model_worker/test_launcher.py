@@ -89,6 +89,30 @@ def test_missing_manager_rejects_before_spawn(monkeypatch: pytest.MonkeyPatch) -
 
 
 @pytest.mark.parametrize("profile", [SYNTHETIC_CPU, FORECAST_CPU])
+def test_private_scratch_avoids_systemd_protected_mount_targets(
+    profile: CPUProfile,
+) -> None:
+    properties = dict(item.split("=", 1) for item in profile.properties)
+    assert properties["DynamicUser"] == "yes"
+    assert properties["ProtectHome"] == "yes"
+    assert properties["InaccessiblePaths"] == "/tmp /var/tmp"
+    mounts = dict(
+        item.split(":", 1) for item in properties["TemporaryFileSystem"].split()
+    )
+    assert set(mounts) == {"/worker-home", "/worker-tmp", "/output"}
+    for name, size in (
+        ("/worker-home", "1M"),
+        ("/worker-tmp", "16M"),
+        ("/output", "1M"),
+    ):
+        options = set(mounts[name].split(","))
+        assert {"rw", "nodev", "nosuid", "noexec", "size=" + size} <= options
+    environment = dict(profile.environment)
+    assert environment["HOME"] == "/worker-home"
+    assert environment["TMPDIR"] == "/worker-tmp"
+
+
+@pytest.mark.parametrize("profile", [SYNTHETIC_CPU, FORECAST_CPU])
 @pytest.mark.parametrize("lib64", [False, True])
 def test_loader_aliases_bind_only_existing_readonly_libraries(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, profile: CPUProfile, lib64: bool
@@ -136,6 +160,8 @@ def test_request_mount_point_exists_before_unit_launch(
         for name in ("lib", "lib64"):
             assert (root / name).is_dir()
             assert not (root / name).is_symlink()
+        for name in ("worker-home", "worker-tmp", "tmp", "var/tmp"):
+            assert (root / name).is_dir()
         return [unit]
 
     async def launch(

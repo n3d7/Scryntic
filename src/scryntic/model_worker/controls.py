@@ -5,6 +5,7 @@ import errno
 import os
 import resource
 import socket
+import tempfile
 import threading
 from pathlib import Path
 from typing import Any
@@ -115,6 +116,8 @@ def probe_boundaries(
         denied(lambda path=path: _read_file(path))
     _stage(stage, 97)
     denied(_write_input)
+    for directory in ("/tmp", "/var/tmp"):
+        denied(lambda directory=directory: _write_scratch(directory))
     _stage(stage, 98)
     for family in (socket.AF_INET, socket.AF_INET6, socket.AF_UNIX):
         denied(lambda family=family: socket.socket(family, socket.SOCK_STREAM))
@@ -138,6 +141,19 @@ def probe_boundaries(
 def _append(path: str) -> None:
     with open(path, "ab") as stream:
         stream.write(b"tamper")
+
+
+def _write_scratch(directory: str) -> None:
+    # Fresh exclusive creation tests the directory, not a pre-existing leaf.
+    descriptor, name = tempfile.mkstemp(dir=directory)
+    try:
+        try:
+            os.unlink(name)
+        finally:
+            os.close(descriptor)
+    except OSError:
+        # Creation already succeeded: cleanup errors cannot count as denial.
+        raise IsolationError("Scratch probe cleanup failed") from None
 
 
 def _thread_boundary(maximum: int) -> None:

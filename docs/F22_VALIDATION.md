@@ -652,7 +652,7 @@ environment keys/values, host paths, exception text or payloads are printed.
 | 91 | Exact allowlisted environment |
 | 92 / 93 | PID visibility / extra inherited descriptors |
 | 94 / 95 | Probe completion / real profile thread policy |
-| 96 / 97 / 98 / 99 | Denied host paths / immutable request / sockets / fork |
+| 96 / 97 / 98 / 99 | Denied host paths / request and forbidden scratch writes / sockets / fork |
 | 100 / 101 / 102 | Immutable model/runtime / bounded threads / allocation limit |
 | 103 / 104 / 105 / 106 | Status read / mount inspection / cgroup read / evidence collection |
 
@@ -691,6 +691,96 @@ default/main candidate analysis based on `e8a29a1` plus these source edits,
 not a published GitHub/main/PR validation. Missing successful host controls,
 the full 31 probes, real offline comparison and the existing Sonar gate remain
 completion blockers.
+
+#### Writable mount conflict confirmed; bounded scratch paths relocated
+
+The operator repeated the positive pair on `944b0b6624df7211419366ac5ad3614710aa3332`.
+Retained `operator-results-scryntic-f22-controls-20261009T233400Z/` records two
+failures, no passes/errors/skips, **2.656 seconds**, pipeline 1. Both units
+started at 2026-10-09 23:34:02/04 UTC and exited **89**, rejecting the private
+writable mount evidence before inference. No units or additional staging paths
+remained. This identifies the failed category, not the individual host mount
+flags or a successful qualification.
+
+The selected unit combined `ProtectHome=yes` with `TemporaryFileSystem=/home`,
+and `DynamicUser=yes` with `TemporaryFileSystem=/tmp`. Context7's systemd
+documentation and the [version-pinned systemd 259 execution manual](https://github.com/systemd/systemd/blob/v259/man/systemd.exec.xml)
+establish the inaccessible home and implicit disconnected PrivateTmp settings.
+The [namespace implementation](https://github.com/systemd/systemd/blob/v259/src/core/namespace.c)
+orders same-path mounts by mode and drops duplicates: inaccessible home and
+private-temp bindings take precedence over the requested tmpfs mounts. This
+confirms a configuration conflict consistent with the host's category 89;
+the earlier declaration-only portable checks could not qualify those mounts.
+
+The fixed profiles now put HOME on **/worker-home (1 MiB)**, TMPDIR on
+**/worker-tmp (16 MiB)**, and retain **/output (1 MiB)**. All three still require
+private tmpfs with `rw,nodev,nosuid,noexec` and the same exact measured size.
+`ProtectHome=yes`, `DynamicUser`, its implicit PrivateTmp, all namespaces,
+read-only inputs/runtime, capabilities, credential filtering and resource
+limits remain enabled. `InaccessiblePaths=/tmp /var/tmp` prevents those implicit
+temporary areas becoming an additional writable/unbounded escape from the
+scratch contract; boundary probes now require writes to both to be denied.
+Mount targets are precreated beneath the private staging root. Existing
+read-only host binds and shared contracts are unchanged; the repair adds no
+elevated helper or model-specific service changes. The environment allowlist
+explicitly selects the new HOME/TMPDIR and Torch's existing HOME setting follows
+the same fixed profile.
+
+The first candidate scan raised two new S5443 findings at the denied-scratch
+probe. Source review also identified an actual probe ambiguity: appending to a
+predictable leaf could follow an existing link or mistake a leaf's permission
+denial for a non-writable directory. The probe now attempts fresh exclusive
+creation with `tempfile.mkstemp(dir=...)`, immediately unlinks the empty file
+and closes its descriptor if creation unexpectedly succeeds, then fails
+preflight. Cleanup errors after successful creation are isolation failures,
+never accepted denials. Context7 and the [Python 3.12 mkstemp contract](https://docs.python.org/3.12/library/tempfile.html#tempfile.mkstemp)
+confirm exclusive creation and caller-owned cleanup requirements. A portable
+regression verifies that a writable scratch directory is rejected, an existing
+symlink's outside sentinel remains unchanged, and the fresh probe is removed.
+This is independent probe validation, not evidence that host `/tmp` is denied.
+
+An authenticated read-only SOFA lookup found a JVM PrivateTmp diagnostic post
+with a negatively verified reply; its attach/network advice does not establish
+mount precedence or apply to this offline worker and was not adopted. The
+version-pinned upstream source is the basis for this repair. Actual Fedora
+runtime enforcement remains unqualified until the operator repeats the
+positive pair, then all 31 mandatory probes and the same-case offline evaluation.
+
+Final portable validation of the relocated scratch/probe candidate (ordinary
+UID, reviewed uv 0.12.18; no Codex root/system-manager execution):
+
+- Two profile regression cases failed before the configuration repair; three
+  focused profile/staging cases passed afterward. The fresh-file/link regression
+  failed before its helper existed and passed afterward. A separate injected
+  unlink-permission failure confirmed fail-closed cleanup and a closed descriptor.
+- `bash scripts/check.sh`: status 0, **1,721 passed / 31 host skips**, 95.13
+  seconds; lint/format, typing, lock, packaging and dependency audits pass.
+  `uv run --locked --no-sync python scripts/check_negative.py`: all seven
+  deliberate failures rejected, inputs preserved, status 0.
+- Semgrep 1.179.0, 151 local Python rules / six affected files: zero findings
+  or errors. Trivy root and forecast locks including dev dependencies plus
+  secret/configuration scanning: zero findings, status 0; no supported IaC.
+- Final full local SonarQube default/main candidate analysis at **2026-10-09
+  23:48 UTC**, based on `944b0b6` plus these edits: coverage **81.2%**,
+  duplication **0%**, gate **ERROR**, scanner status 3, **seven open findings**.
+  Five prior findings remain (S7497 x3, S2612, S8997). The former profile S5443
+  key `c9b92aaa-a683-4fa9-86be-64c6d27a2129` is absent after relocation. Two
+  S5443 findings remain at the explicit forbidden-directory probe:
+  `54bb87d9-b818-4605-9b74-d1579e562419` and
+  `555abbe3-894f-4450-9b82-4a8e2939bc20`. Their source now uses exclusive
+  fresh creation, no payload write or existing-link following, immediate cleanup
+  and fail-closed handling; the regression and cleanup-fault evidence support
+  review, not an automatic finding disposition or successful host denial.
+  The earlier candidate's two keys were replaced by these keys during analysis.
+  No rule, exclusion, threshold, control or server disposition was weakened.
+
+Actual logs and scanner metadata are ignored in
+`state/f22-qualification/scratch-mount-validation/`; the final snapshot is
+`sonar-after-probe-repair.json`. These portable results do not qualify the
+relocated host mounts, either CPU runtime, cancellation/restart, real Bybit
+execution or resource/artifact evidence. The seven open Sonar findings and
+mandatory host/evaluation evidence remain completion blockers. KER-26 stays
+In Progress; F23 must not start.
 
 ### Operator prerequisites and stage 1: all 31 probes
 
