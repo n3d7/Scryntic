@@ -328,6 +328,21 @@ class JobStore:
             )
             return changed.rowcount == 1
 
+    def summary(self) -> dict[JobState, int]:
+        """Bounded owner-thread expiration and counts without exposing job bodies."""
+        with self._transaction():
+            now = self.now()
+            for row in self._connection.execute(
+                "SELECT * FROM jobs ORDER BY request_id"
+            ).fetchall():
+                self._expire(self._record(row), now)
+            counts = dict.fromkeys(JobState, 0)
+            for state, count in self._connection.execute(
+                "SELECT state, count(*) FROM jobs GROUP BY state"
+            ).fetchall():
+                counts[JobState(state)] = count
+            return counts
+
     def close(self) -> None:
         if not self._closed:
             self._closed = True

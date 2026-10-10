@@ -664,6 +664,11 @@ class DurableIngestor:
         self._submit(request)
         return request.result.result()
 
+    @property
+    def queue_depth(self) -> int:
+        """Approximate bounded pending intake; no SQLite request or filesystem I/O."""
+        return self._requests.qsize()
+
     def recovery_get(self, key: str) -> bytes | None:
         identifier(key)
         request = _RecoveryRequest(key, None, None, Future())

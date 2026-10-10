@@ -164,6 +164,44 @@ def test_revisions_duplicates_and_f12_finality_replay_same_schema() -> None:
     asyncio.run(with_server(handler, run))
 
 
+def test_cached_transport_health_uses_ack_and_pong_and_clears_connection() -> None:
+    pong_sent = asyncio.Event()
+
+    async def handler(socket: web.WebSocketResponse) -> None:
+        await subscribed(socket)
+        await socket.send_json(frame())
+        assert await socket.receive_json(timeout=1) == {"op": "ping"}
+        await socket.send_json({"op": "pong", "args": ["1"]})
+        pong_sent.set()
+        await socket.receive()
+
+    async def run(client: LocalClient) -> None:
+        source = BybitLiveSource(
+            clock=FixedClock(),
+            client=client,
+            live_limits=LiveLimits(ping_interval_s=0.01, pong_timeout_s=1),
+        )
+        assert source.connected is False
+        assert source.last_heartbeat_monotonic_ns == 0
+        stream = source.stream(_REQUEST)
+        try:
+            await asyncio.wait_for(anext(stream), 2)
+            assert source.connected is True
+            acknowledged = source.last_heartbeat_monotonic_ns
+            assert acknowledged > 0
+            await asyncio.wait_for(pong_sent.wait(), 2)
+            async with asyncio.timeout(2):
+                while source.last_heartbeat_monotonic_ns == acknowledged:
+                    await asyncio.sleep(0.001)
+            assert source.last_heartbeat_monotonic_ns > acknowledged
+        finally:
+            await stream.aclose()
+            await source.close()
+        assert source.connected is False
+
+    asyncio.run(with_server(handler, run))
+
+
 def test_malformed_wrong_topic_and_reconnect_do_not_deliver_stale_data() -> None:
     count = 0
 
