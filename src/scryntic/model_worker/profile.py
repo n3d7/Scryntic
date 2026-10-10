@@ -8,14 +8,24 @@ WALL_SECONDS = 30
 TASKS = 8
 OUTPUT_BYTES = 65_536
 WIRE_BYTES = 2 * OUTPUT_BYTES + 16_384
-HOME_PATH = "/home"
-ENVIRONMENT = {"HOME": HOME_PATH, "PATH": "/python/bin", "LC_ALL": "C"}
+HOME_PATH = "/worker-home"
+TEMP_PATH = "/worker-tmp"
+ENVIRONMENT = {
+    "HOME": HOME_PATH,
+    "TMPDIR": TEMP_PATH,
+    "PATH": "/python/bin",
+    "LC_ALL": "C",
+}
 NAMESPACES = ("user", "mnt", "pid", "net", "ipc", "uts")
 REQUEST_PATH = "/input/request"
 CONTROL_PATH = "/control"
 RESULT_NAME = "result.json"
 READONLY_MOUNTS = ("/", "/python", "/app/scryntic", REQUEST_PATH, CONTROL_PATH)
-TMPFS_BYTES = {HOME_PATH: 1024 * 1024, "/tmp": 16 * 1024 * 1024, "/output": 1024 * 1024}
+TMPFS_BYTES = {
+    HOME_PATH: 1024 * 1024,
+    TEMP_PATH: 16 * 1024 * 1024,
+    "/output": 1024 * 1024,
+}
 WRITABLE_MOUNTS = tuple(TMPFS_BYTES)
 
 # Unsupported properties are fatal; no downgrade for old systemd/kernel hosts.
@@ -32,6 +42,9 @@ PROPERTIES = (
     "ProtectHostname=yes",
     "ProtectSystem=strict",
     "ProtectHome=yes",
+    # DynamicUser's implicit PrivateTmp must not add writable, unbounded scratch.
+    # '+' makes these access paths relative to the worker's RootDirectory.
+    "InaccessiblePaths=+/tmp +/var/tmp",
     "ProtectControlGroups=yes",
     "ProtectKernelTunables=yes",
     "ProtectKernelModules=yes",
@@ -62,8 +75,8 @@ PROPERTIES = (
     f"LimitFSIZE={OUTPUT_BYTES}",
     "LimitNOFILE=32",
     "LimitNPROC=0",
-    "TemporaryFileSystem=/tmp:rw,nodev,nosuid,noexec,size=16M,mode=1777 "
-    "/home:rw,nodev,nosuid,noexec,size=1M,mode=1777 "
+    f"TemporaryFileSystem={TEMP_PATH}:rw,nodev,nosuid,noexec,size=16M,mode=1777 "
+    f"{HOME_PATH}:rw,nodev,nosuid,noexec,size=1M,mode=1777 "
     "/output:rw,nodev,nosuid,noexec,size=1M,mode=1777",
 )
 

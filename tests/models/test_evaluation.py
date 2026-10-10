@@ -6,9 +6,11 @@ from pathlib import Path
 
 import pytest
 
+from scryntic.application.analysis import ForecastArtifactRef
 from scryntic.application.providers import ForecastPoint, ForecastResult
 from scryntic.dataset.schemas import EVOLVED_DATASET_SCHEMA
 from scryntic.domain.dataset import DatasetRef
+from scryntic.forecast.artifact import ImmutableForecastStore
 from scryntic.jobs.codec import encode_response
 from scryntic.jobs.contracts import JobAttempt
 from scryntic.model_worker.launcher import CPUWorker
@@ -139,6 +141,24 @@ def test_selection_uses_identical_jobs_artifacts_and_comparison_semantics(
     assert len({attempt.job.job_id for attempt in seen}) == 6
     assert all(len(attempt.job.inputs.closes) == 2 for attempt in seen)
     assert all(len(row["executions"]) == 2 for row in value["predictions"])
+    artifacts = ImmutableForecastStore(paths)
+    for row in value["predictions"]:
+        for execution in row["executions"]:
+            ref = execution["artifact"]
+            payload = artifacts.read(
+                ForecastArtifactRef(
+                    ref["sha256"], reference, ref["provider_id"], ref["model_revision"]
+                )
+            )
+            assert payload["seed"] == 0
+            assert payload["hardware"] == "cpu"
+            assert payload["determinism"]["seed"] == 0
+            assert payload["determinism"]["hardware"] == "cpu"
+            assert payload["determinism"]["runtime"] == (
+                "cpython-3.12-cpu-v1" if selected == "timesfm-2.5" else "cpython-3.12"
+            )
+            assert "fixture only" not in payload["determinism"]["limitations"]
+            assert "not guaranteed" in payload["determinism"]["limitations"]
     repeated = json.loads(
         asyncio.run(
             evaluate_selected(prepared, reference, choice, paths, per_partition=1)

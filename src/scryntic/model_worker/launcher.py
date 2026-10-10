@@ -22,6 +22,7 @@ from scryntic.model_worker.profile import (
     PROPERTIES,
     SYNTHETIC_CPU,
     WIRE_BYTES,
+    WRITABLE_MOUNTS,
     CPUProfile,
     IsolationError,
 )
@@ -84,6 +85,9 @@ def _command(
         | {
             "INVOCATION_ID",
             "SYSTEMD_EXEC_PID",
+            # Generated per service, even when absent from show-environment.
+            "MEMORY_PRESSURE_WATCH",
+            "MEMORY_PRESSURE_WRITE",
             "JOURNAL_STREAM",
             "NOTIFY_SOCKET",
             "WATCHDOG_PID",
@@ -104,11 +108,11 @@ def _command(
     ) - environment.keys()
     binds = (
         f"{python}:/python {application}:/app/scryntic "
-        f"{request}:/input/request /usr/lib:/usr/lib "
+        f"{request}:/input/request /usr/lib:/usr/lib /usr/lib:/lib "
         f"/sys/fs/cgroup/system.slice/{unit}:/control"
     )
     if Path("/usr/lib64").is_dir():
-        binds += " /usr/lib64:/usr/lib64"
+        binds += " /usr/lib64:/usr/lib64 /usr/lib64:/lib64"
     if profile != SYNTHETIC_CPU:
         binds += f" {root / 'model'}:/model {root / 'runtime'}:/runtime"
     properties = [
@@ -337,13 +341,21 @@ class CPUWorker:
                     "control",
                     "usr/lib",
                     "usr/lib64",
+                    "lib",
+                    "lib64",
                     "tmp",
+                    "var/tmp",
                     "home",
                     "output",
                 ):
                     (root / name).mkdir(parents=True, exist_ok=True)
-                (root / "lib").symlink_to("usr/lib")
-                (root / "lib64").symlink_to("usr/lib64")
+                for name in WRITABLE_MOUNTS:
+                    (root / name.removeprefix("/")).mkdir(parents=True, exist_ok=True)
+                # Namespace setup cannot always create an inode beneath the
+                # protected root. BindReadOnlyPaths replaces this empty target.
+                (root / "input/request").touch(mode=0o444, exist_ok=False)
+                # Reuse the selected host libraries through read-only binds;
+                # temporary symlinks can be unreadable to systemd under SELinux.
                 await self._snapshot(root)
                 canary = staging / "host-secret"
                 canary.write_bytes(b"F21-private-host-canary")

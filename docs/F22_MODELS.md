@@ -103,6 +103,14 @@ Candidate bounds: memory 4 GiB, no swap, address space 8 GiB, CPU 90 seconds,
 wall 180 seconds, 8 tasks, 64 descriptors and cgroup CPU quota 100%.
 These are qualification bounds, not measured successful TimesFM resource use.
 
+Candidate scratch mounts are `/worker-home` (1 MiB, HOME), `/worker-tmp`
+(16 MiB, TMPDIR) and `/output` (1 MiB), each private tmpfs with required
+`rw,nodev,nosuid,noexec` flags. `/home` remains protected; `/tmp` and `/var/tmp`
+are inaccessible and preflight requires writes there to be denied. These paths
+avoid the systemd ProtectHome/implicit PrivateTmp conflicts documented in
+[F22_VALIDATION.md](F22_VALIDATION.md). The relocated mounts still need actual
+host qualification; declared settings are insufficient evidence.
+
 Native CPU libraries need pthreads. The additional seccomp mode allows only the
 reviewed x86-64 glibc pthread `clone` flags `0x3d0f00`; other clone flags are denied.
 `clone3` returns ENOSYS for glibc's documented fallback. Fork/vfork/exec/network

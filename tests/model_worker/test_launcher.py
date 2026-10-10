@@ -4,6 +4,7 @@ import asyncio
 import io
 import os
 import signal
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -16,11 +17,17 @@ from scryntic.jobs.contracts import JobAttempt
 from scryntic.jobs.fake import calculate
 from scryntic.model_worker import launcher
 from scryntic.model_worker.launcher import CPUWorker, IsolatedFakeProvider
-from scryntic.model_worker.profile import PROPERTIES, IsolationError
+from scryntic.model_worker.profile import (
+    FORECAST_CPU,
+    PROPERTIES,
+    SYNTHETIC_CPU,
+    CPUProfile,
+    IsolationError,
+)
 from scryntic.model_worker.wire import document
 from tests.jobs.helpers import job, review
 from tests.jobs.test_execution import services
-from tests.model_worker.helpers import host
+from tests.model_worker.helpers import host, report
 
 
 def attempt() -> JobAttempt:
@@ -63,6 +70,26 @@ def test_fixed_spec_cannot_accept_configuration(
         CPUWorker(shell="dangerous")  # type: ignore[call-arg]
 
 
+@pytest.mark.parametrize("profile", [SYNTHETIC_CPU, FORECAST_CPU])
+def test_generated_pressure_environment_is_unset_without_manager_inheritance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, profile: CPUProfile
+) -> None:
+    monkeypatch.setattr(launcher, "_manager_environment", set)
+    command = launcher._command(tmp_path, tmp_path / "request", "test.service", profile)
+    unset = next(
+        item.removeprefix("--property=UnsetEnvironment=").split()
+        for item in command
+        if item.startswith("--property=UnsetEnvironment=")
+    )
+    assert {"MEMORY_PRESSURE_WATCH", "MEMORY_PRESSURE_WRITE"} <= set(unset)
+    assert not set(dict(profile.environment)) & set(unset)
+    assert (
+        "--property=Environment="
+        + " ".join(f"{name}={value}" for name, value in profile.environment)
+        in command
+    )
+
+
 def test_missing_manager_rejects_before_spawn(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
 
@@ -81,8 +108,103 @@ def test_missing_manager_rejects_before_spawn(monkeypatch: pytest.MonkeyPatch) -
     assert "sentinel" not in str(error.value)
 
 
+@pytest.mark.parametrize("profile", [SYNTHETIC_CPU, FORECAST_CPU])
+def test_private_scratch_avoids_systemd_protected_mount_targets(
+    profile: CPUProfile,
+) -> None:
+    properties = dict(item.split("=", 1) for item in profile.properties)
+    assert properties["DynamicUser"] == "yes"
+    assert properties["ProtectHome"] == "yes"
+    # Access-path directives need '+' to address paths inside RootDirectory.
+    assert properties["InaccessiblePaths"] == "+/tmp +/var/tmp"
+    mounts = dict(
+        item.split(":", 1) for item in properties["TemporaryFileSystem"].split()
+    )
+    assert set(mounts) == {"/worker-home", "/worker-tmp", "/output"}
+    for name, size in (
+        ("/worker-home", "1M"),
+        ("/worker-tmp", "16M"),
+        ("/output", "1M"),
+    ):
+        options = set(mounts[name].split(","))
+        assert {"rw", "nodev", "nosuid", "noexec", "size=" + size} <= options
+    environment = dict(profile.environment)
+    assert environment["HOME"] == "/worker-home"
+    assert environment["TMPDIR"] == "/worker-tmp"
+
+
+@pytest.mark.parametrize("profile", [SYNTHETIC_CPU, FORECAST_CPU])
+@pytest.mark.parametrize("lib64", [False, True])
+def test_loader_aliases_bind_only_existing_readonly_libraries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, profile: CPUProfile, lib64: bool
+) -> None:
+    monkeypatch.setattr(launcher, "_manager_environment", set)
+    is_dir = Path.is_dir
+    monkeypatch.setattr(
+        Path,
+        "is_dir",
+        lambda path: lib64 if path == Path("/usr/lib64") else is_dir(path),
+    )
+    command = launcher._command(
+        tmp_path, tmp_path / "request", "scryntic-model-test.service", profile
+    )
+    binds = next(
+        item.split("=", 1)[1]
+        for item in command
+        if item.startswith("--property=BindReadOnlyPaths=")
+    ).split()
+    libraries = {
+        item
+        for item in binds
+        if item.split(":")[1] in {"/lib", "/lib64", "/usr/lib", "/usr/lib64"}
+    }
+    expected = {"/usr/lib:/usr/lib", "/usr/lib:/lib"}
+    if lib64:
+        expected.update({"/usr/lib64:/usr/lib64", "/usr/lib64:/lib64"})
+    assert libraries == expected
+    assert not any(item.startswith("--property=BindPaths=") for item in command)
+
+
+def test_request_mount_point_exists_before_unit_launch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    launched: list[str] = []
+
+    def command(root: Path, request: Path, unit: str) -> list[str]:
+        target = root / "input/request"
+        assert target.is_file()
+        assert not target.is_symlink()
+        assert target.read_bytes() == b""
+        assert target.stat().st_mode & 0o222 == 0
+        assert request.read_bytes()
+        assert root.parent.stat().st_mode & 0o777 == 0o700
+        for name in ("lib", "lib64"):
+            assert (root / name).is_dir()
+            assert not (root / name).is_symlink()
+        for name in ("worker-home", "worker-tmp", "tmp", "var/tmp"):
+            assert (root / name).is_dir()
+        return [unit]
+
+    async def launch(
+        self: CPUWorker,
+        specification: list[str],
+        unit: str,
+        owner: dict[str, Any],
+        value: JobAttempt,
+    ) -> bytes:
+        launched.append(unit)
+        return b"portable-launch-sentinel"
+
+    monkeypatch.setattr(launcher, "_command", command)
+    monkeypatch.setattr(CPUWorker, "_launch", launch)
+    assert asyncio.run(CPUWorker().execute(attempt())) == b"portable-launch-sentinel"
+    assert len(launched) == 1
+
+
+@pytest.mark.parametrize("failure_stage", [73, 84])
 def test_missing_effective_controls_never_invoke_provider(
     monkeypatch: pytest.MonkeyPatch,
+    failure_stage: int,
 ) -> None:
     from scryntic.imports import bootstrap as parser_bootstrap
     from scryntic.jobs import fake
@@ -98,7 +220,11 @@ def test_missing_effective_controls_never_invoke_provider(
         }
     )
 
-    def missing(owner: dict[str, Any]) -> dict[str, Any]:
+    def missing(owner: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+        if failure_stage == 84:
+            evidence = report()
+            evidence["cgroup"] = {}
+            controls.verify_controls(evidence, owner, stage=kwargs["stage"])
         raise IsolationError("Missing control")
 
     monkeypatch.setattr(sys, "path", sys.path.copy())
@@ -106,9 +232,106 @@ def test_missing_effective_controls_never_invoke_provider(
     monkeypatch.setattr(parser_bootstrap, "restrict_syscalls", lambda: None)
     monkeypatch.setattr(controls, "effective_controls", missing)
     monkeypatch.setattr(fake, "calculate", lambda *args: calls.append("provider"))
+    stage = [70]
     with pytest.raises(IsolationError):
-        bootstrap.main()
+        bootstrap.main(stage)
     assert not calls
+    assert stage == [failure_stage]
+
+
+@pytest.mark.parametrize(
+    "outcome,expected", [("success", 0), ("failure", 73), ("invalid", 78)]
+)
+def test_bootstrap_entrypoint_preserves_failure_and_silent_exit(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    outcome: str,
+    expected: int,
+) -> None:
+    from scryntic.model_worker import bootstrap
+
+    def main(stage: list[int]) -> None:
+        stage[:] = [] if outcome == "invalid" else [73]
+        if outcome != "success":
+            raise KeyboardInterrupt("exception-secret-sentinel")
+
+    def stop(code: int) -> None:
+        raise SystemExit(code)
+
+    monkeypatch.setattr(bootstrap, "main", main)
+    monkeypatch.setattr(os, "_exit", stop)
+    with pytest.raises(SystemExit) as error:
+        bootstrap.entrypoint()
+    assert error.value.code == expected
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+
+
+@pytest.mark.parametrize(
+    "stage",
+    [
+        70,
+        73,
+        75,
+        77,
+        80,
+        84,
+        95,
+        96,
+        106,
+        112,
+        124,
+        128,
+        140,
+        144,
+        156,
+        79,
+        107,
+        111,
+        125,
+        127,
+        141,
+        143,
+        157,
+        0,
+        999,
+        "secret-sentinel",
+    ],
+)
+def test_bootstrap_failure_stage_never_exposes_exception_or_accepts_success(
+    stage: int | str,
+) -> None:
+    program = (
+        "import scryntic.model_worker.bootstrap as b\n"
+        "def fail(stage):\n"
+        f"    stage[:] = [{stage!r}]\n"
+        "    raise SystemExit('exception-secret-sentinel')\n"
+        "b.main = fail\n"
+        "b.entrypoint()\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-I", "-c", program],
+        capture_output=True,
+        env={},
+        timeout=5,
+        check=False,
+    )
+    expected = (
+        stage
+        if type(stage) is int
+        and (
+            70 <= stage <= 77
+            or 80 <= stage <= 106
+            or 112 <= stage <= 124
+            or 128 <= stage <= 140
+            or 144 <= stage <= 156
+        )
+        else 78
+    )
+    assert result.returncode == expected
+    assert result.stdout == b""
+    assert result.stderr == b""
 
 
 @pytest.mark.parametrize(

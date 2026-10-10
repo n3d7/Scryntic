@@ -9,6 +9,7 @@ from scryntic.model_worker.profile import (
     NAMESPACES,
     TASKS,
     TMPFS_BYTES,
+    WRITABLE_MOUNTS,
 )
 
 
@@ -41,7 +42,7 @@ def report() -> dict[str, Any]:
         "readonly": dict.fromkeys(
             ("/", "/python", "/app/scryntic", "/input/request", "/control"), True
         ),
-        "private_writable": dict.fromkeys(("/home", "/tmp", "/output"), True),
+        "private_writable": dict.fromkeys(WRITABLE_MOUNTS, True),
         "tmpfs_bytes": dict(TMPFS_BYTES),
         "environment": dict(ENVIRONMENT),
         "pid": 1,
