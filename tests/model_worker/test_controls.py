@@ -1,5 +1,6 @@
 """Every required effective control is necessary; declarations alone are not enough."""
 
+import errno
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -195,3 +196,55 @@ def test_scratch_write_probe_uses_fresh_file_and_preserves_existing_link(
         controls.denied(operation)
     assert secret.read_bytes() == b"untouched-sentinel"
     assert [path.name for path in scratch.iterdir()] == ["f21-unqualified-write"]
+
+
+@pytest.mark.parametrize("base", [112, 128, 144])
+@pytest.mark.parametrize(
+    "failure,offset",
+    [
+        (errno.ENOTDIR, 0),
+        (errno.ENOSPC, 1),
+        (errno.EMFILE, 2),
+        (errno.EFBIG, 3),
+        (errno.ELOOP, 4),
+        (errno.EEXIST, 5),
+        (errno.ENOMEM, 6),
+        (errno.EINVAL, 7),
+        (errno.EISDIR, 8),
+        (errno.EIO, 9),
+        (MemoryError, 10),
+        (RuntimeError, 11),
+        (None, 12),
+    ],
+)
+def test_write_probe_failure_reports_only_fixed_operation_and_error(
+    base: int, failure: Any, offset: int
+) -> None:
+    from scryntic.model_worker import controls
+
+    def operation() -> None:
+        if type(failure) is int:
+            raise OSError(failure, "exception-secret-sentinel", "private-path")
+        if failure is not None:
+            raise failure("exception-secret-sentinel")
+
+    stage = [97]
+    expected = failure if failure in (MemoryError, RuntimeError) else IsolationError
+    with pytest.raises(expected):
+        controls._probe_write(operation, stage, base)
+    assert stage == [base + offset]
+
+
+@pytest.mark.parametrize("base", [112, 128, 144])
+@pytest.mark.parametrize(
+    "number", [errno.EPERM, errno.EACCES, errno.EROFS, errno.ENOENT]
+)
+def test_write_probe_diagnostics_preserve_accepted_denials(
+    base: int, number: int
+) -> None:
+    from scryntic.model_worker import controls
+
+    def operation() -> None:
+        raise OSError(number, "exception-secret-sentinel", "private-path")
+
+    controls._probe_write(operation, [97], base)

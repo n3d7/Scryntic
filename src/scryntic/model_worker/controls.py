@@ -75,6 +75,38 @@ def denied(operation: Any) -> None:
     raise IsolationError("Required boundary is ineffective")
 
 
+def _probe_write(operation: Any, stage: list[int] | None, base: int) -> None:
+    # Only fixed operation/error categories cross the boundary as exit status.
+    _stage(stage, base + 11)
+
+    def inspect() -> None:
+        try:
+            operation()
+        except OSError as error:
+            categories = (
+                errno.ENOTDIR,
+                errno.ENOSPC,
+                errno.EMFILE,
+                errno.EFBIG,
+                errno.ELOOP,
+                errno.EEXIST,
+                errno.ENOMEM,
+                errno.EINVAL,
+                errno.EISDIR,
+            )
+            offset = categories.index(error.errno) if error.errno in categories else 9
+            _stage(stage, base + offset)
+            raise
+        except MemoryError:
+            _stage(stage, base + 10)
+            raise
+        _stage(stage, base + 12)
+
+    # Keep the same denial/error policy, including rejection after successful
+    # creation. Neither the errno categories nor diagnostics permit new errors.
+    denied(inspect)
+
+
 def _read_file(path: str) -> None:
     with open(path, "rb") as stream:
         stream.read(1)
@@ -115,9 +147,9 @@ def probe_boundaries(
     ):
         denied(lambda path=path: _read_file(path))
     _stage(stage, 97)
-    denied(_write_input)
-    for directory in ("/tmp", "/var/tmp"):
-        denied(lambda directory=directory: _write_scratch(directory))
+    _probe_write(_write_input, stage, 112)
+    for directory, base in (("/tmp", 128), ("/var/tmp", 144)):
+        _probe_write(lambda directory=directory: _write_scratch(directory), stage, base)
     _stage(stage, 98)
     for family in (socket.AF_INET, socket.AF_INET6, socket.AF_UNIX):
         denied(lambda family=family: socket.socket(family, socket.SOCK_STREAM))

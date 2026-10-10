@@ -6,6 +6,16 @@ import sys
 import time
 from typing import Any, Literal
 
+_FAILURE_CODES = frozenset(
+    (
+        *range(70, 78),
+        *range(80, 107),
+        *range(112, 125),
+        *range(128, 141),
+        *range(144, 157),
+    )
+)
+
 
 def main(stage: list[int] | None = None) -> None:
     # Fixed failure-stage codes only; no exception text crosses the boundary.
@@ -174,9 +184,7 @@ def entrypoint() -> None:
         # Includes BaseException paths; never publish tracebacks or payloads.
         exit_code = (
             stage[0]
-            if len(stage) == 1
-            and type(stage[0]) is int
-            and (70 <= stage[0] <= 77 or 80 <= stage[0] <= 106)
+            if len(stage) == 1 and type(stage[0]) is int and stage[0] in _FAILURE_CODES
             else 78
         )
         if completed:

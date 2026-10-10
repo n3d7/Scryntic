@@ -846,6 +846,100 @@ execution occurred in these checks. The next required evidence is the positive
 host pair on the reviewed commit, then all 31 probes and offline Bybit evaluation;
 the existing seven open Sonar findings/gate also remain blockers.
 
+#### Write-boundary rejection after environment filtering
+
+Retained `operator-results-scryntic-f22-environment-20261010T102048Z/`
+is the operator's positive pair on
+`ec5941c98ce4618e86368f7eeda3b2bb03fc6374`: **two failures**, zero
+passes/errors/skips, **4.361 seconds**, pipeline status 1. Both services started
+at 2026-10-10 10:20:49/53 UTC and exited **97**. No units remained; both staging
+inventories were empty. The exact-environment check and preceding preflight
+checks were accepted, but no complete effective-control report or inference
+succeeded. Status 97 groups immutable-request and forbidden `/tmp` / `/var/tmp`
+write probes; it does not identify the operation or prove its failure reason.
+
+The next candidate adds only fixed operation/error exit categories to those
+three probes. It delegates to the unchanged `denied` policy: only EPERM, EACCES,
+EROFS or ENOENT satisfy a denial. Successful creation, cleanup failure and other
+errors still fail closed. No exception text, paths, environment values or
+payloads are published. Existing 70–77 / 80–106 stages remain supported; gaps
+and invalid stages retain silent fallback 78, and successful completion alone
+returns 0. These categories are diagnostic hints, not effective-control evidence.
+
+| Operation | Exit-code base |
+| --- | --- |
+| Immutable request write | 112 |
+| Forbidden `/tmp` write | 128 |
+| Forbidden `/var/tmp` write | 144 |
+
+Add the following fixed offset to the operation's base:
+
+| Offset | Failure category |
+| --- | --- |
+| 0 | ENOTDIR |
+| 1 | ENOSPC |
+| 2 | EMFILE |
+| 3 | EFBIG |
+| 4 | ELOOP |
+| 5 | EEXIST |
+| 6 | ENOMEM |
+| 7 | EINVAL |
+| 8 | EISDIR |
+| 9 | Other OSError |
+| 10 | MemoryError |
+| 11 | Other exception, including scratch cleanup failure |
+| 12 | Write operation unexpectedly succeeded |
+
+Focused regression tests first failed without these diagnostics (51 write-helper
+cases and six native exit-code cases). After implementation, **166 focused tests
+pass** with no skips. They preserve all four accepted denial errnos and verify
+silent native exits for valid categories, invalid gaps and exception sentinels.
+A portable ordinary-UID scratch-helper check under the application seccomp
+filter succeeded in a fresh writable directory; this checks helper compatibility,
+not the system-manager mounts. There is no evidence justifying a filter or
+mount-policy relaxation. Primary reference:
+[CPython 3.12.14 tempfile implementation](https://github.com/python/cpython/blob/v3.12.14/Lib/tempfile.py),
+cross-checked with Context7; explicit-directory `mkstemp` propagates POSIX
+creation errors rather than turning every failure into a permission denial.
+
+Candidate logs are ignored in
+`state/f22-qualification/write-diagnostic-validation/`. Repeat only the positive
+host pair on the reviewed commit before all 31 probes or real Bybit evaluation.
+KER-26 remains In Progress; F23 must not start.
+
+Write-diagnostic candidate validation (ordinary UID, restored and hash-verified
+uv 0.12.18; no root/system-manager execution):
+
+- `PATH=/tmp/f22-tools/bin:$PATH bash scripts/check.sh`: status 0,
+  **1,788 passed / 31 mandatory host skips**, **95.89 seconds**. Both locks,
+  lint/format, strict typing (273 files), packaging/profile checks and dependency
+  audits pass. The first invocation rejected global uv 0.12.19 after the temporary
+  approved executable was absent from `/tmp`; restoring the recorded archive
+  resolved that tooling prerequisite without changing pins or global tooling.
+- `uv run --locked --no-sync python scripts/check_negative.py`: all seven
+  negative controls rejected their defects and preserved inputs, status 0.
+- Semgrep 1.179.0: 151 local Python rules, all four changed code/test files,
+  zero findings/errors, status 0. Trivy root/forecast locks including dev
+  dependencies, secrets and configuration: zero findings, status 0; no supported
+  IaC files. These scanner results do not qualify systemd controls.
+- Full local Sonar default/main candidate analysis **2026-10-10 10:34 UTC**,
+  based on `ec5941c` plus these edits: **80.4% overall coverage / 81.4% new-code
+  coverage**, **0% duplication**, **seven open findings**, gate **ERROR**,
+  scanner status 3. Five prior keys remain (S7497 x3, S2612, S8997).
+  The two S5443 reports now attach to the same forbidden-directory literals at
+  controls.py:151 under keys `2b414d4b-c27b-45e4-9fc9-b268d2b77f6e` and
+  `da6e63ca-392d-4c89-a3e9-1cacef9e9fc5`; the preceding two keys are absent.
+  Source review confirms those paths deliberately exercise denied writes via
+  exclusive fresh creation and fail-closed cleanup, with unchanged acceptance
+  semantics. Host evidence is still missing; no finding was dismissed, and no
+  threshold, rule, exclusion or security control changed. This is a local
+  candidate analysis, not published-main/PR qualification.
+
+Raw logs and the final Sonar snapshot are in the ignored candidate directory
+above. All 31 host probes, actual offline Bybit inference/comparison, repeated
+forecasts, accepted artifact/provenance/resource evidence and the seven open
+Sonar findings/gate remain completion blockers.
+
 ### Operator prerequisites and stage 1: all 31 probes
 
 The commands below are for this reviewed host and retained enrollment. Another

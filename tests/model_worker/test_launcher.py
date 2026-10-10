@@ -268,7 +268,35 @@ def test_bootstrap_entrypoint_preserves_failure_and_silent_exit(
 
 
 @pytest.mark.parametrize(
-    "stage", [70, 73, 75, 77, 80, 84, 95, 96, 106, 79, 107, 0, 999, "secret-sentinel"]
+    "stage",
+    [
+        70,
+        73,
+        75,
+        77,
+        80,
+        84,
+        95,
+        96,
+        106,
+        112,
+        124,
+        128,
+        140,
+        144,
+        156,
+        79,
+        107,
+        111,
+        125,
+        127,
+        141,
+        143,
+        157,
+        0,
+        999,
+        "secret-sentinel",
+    ],
 )
 def test_bootstrap_failure_stage_never_exposes_exception_or_accepts_success(
     stage: int | str,
@@ -290,7 +318,14 @@ def test_bootstrap_failure_stage_never_exposes_exception_or_accepts_success(
     )
     expected = (
         stage
-        if type(stage) is int and (70 <= stage <= 77 or 80 <= stage <= 106)
+        if type(stage) is int
+        and (
+            70 <= stage <= 77
+            or 80 <= stage <= 106
+            or 112 <= stage <= 124
+            or 128 <= stage <= 140
+            or 144 <= stage <= 156
+        )
         else 78
     )
     assert result.returncode == expected
