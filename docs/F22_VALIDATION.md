@@ -1,7 +1,9 @@
 # F22 / KER-26 validation — 2026-10-10
 
-**Status: implementation merged, qualification incomplete. KER-26 is In
-Progress; not In Review or Done.** PR #26 was merged by the operator; the main
+**Status: mandatory operator qualification and local repair gates passed;
+repair delivery is ready for review.** The tracker should move to In Review
+with the repair PR and remain there until operator review; do not mark Done
+automatically. PR #26 was merged by the operator; the main
 merge revision used for the first qualification attempt is
 `4be4ea2c3ee171f5d76e72ad6bbe00c62b4523f1`. Original implementation base:
 `62f9aee731dbac3eadcac03422413e329174498f`.
@@ -9,18 +11,119 @@ Original branch: `ker-26-f22-timesfm`; current candidate repair branch:
 `ker-26-f22-host-mount-repair`. The approved architecture and F19/F20/F21
 contracts were inspected. F21 is merged/Done in the tracker, but its host
 qualification was missing at implementation delivery. The first operator
-attempt below failed; neither profile is qualified yet.
+attempt below failed. Candidate `c8a920d` subsequently passed all 31 mandatory
+host tests, the relocated root decoder preflight and actual Bybit evaluation
+on this installation. The later artifact-metadata repair is committed as
+`f0f1e3eebc297ba424160c8d7ce39b32d51fd91d`; the original operator evidence
+remains bound to `c8a920d`. A source diff verifies that worker, model, runtime,
+decoder, qualification scripts and host tests are unchanged between these
+revisions. Metadata serialization is separately covered by the new regressions
+and the full portable gates. This is combined evidence, not a claim that all
+host probes were repeated on the later commit.
+
+The final full Sonar analysis at `2026-10-10T15:40Z` passed after the user
+authorized all seven individually reviewed FALSE_POSITIVE dispositions and
+their comments. Gate OK: new coverage 81.4%, duplication 0%, new violations 0;
+live read-only queries confirm zero OPEN/CONFIRMED issues and zero TO_REVIEW
+hotspots. Policy, thresholds and exclusions are unchanged. Detailed rationale:
+[F22 Sonar review](sonarqube/f22-qualification-review-2026-10-10.md).
+
+Older dated checkpoints below preserve failure history. Their pending/blocked
+statements and superseded commands are historical; this final checkpoint takes
+precedence. F23 has not started and requires a separate user command.
+
+## Actual Bybit evaluation checkpoint — 2026-10-10
+
+The operator ran TimesFM, fake persistence and a fresh TimesFM repeat using the
+verified relocated coordinator at source revision `c8a920d`, beginning
+`2026-10-10T11:59:52Z`. Evaluation exited 0. Returned evidence is
+`state/f22-qualification/operator-results-evaluation-relocated-20261010T115948Z/`.
+Report SHA-256 values independently verified against their canonical bytes:
+
+| Report | SHA-256 |
+| --- | --- |
+| timesfm.json | `56f5c405c938dbb087e636f03c0115f59ebfc85b442fe201b6835e5fde39bd7b` |
+| fake.json | `1def3795069a159fc80972609ba9c702484d22dbc4cda489001523942a2ec618` |
+| timesfm-repeat.json | `b0768a6d62cd47a5ef68d4af7608ca5cd74bba1da41fca175c9c6293dbf6ae3c` |
+
+`verify_operator_evaluation.py` independently read all accepted artifacts through
+the production immutable store and all jobs through a read-only SQLite connection.
+Its output `evaluation-independent-verification.json` records 36 unique durable
+succeeded jobs and 36 unique accepted artifacts, exact effective controls for all
+36 executions, identical data/provenance/exclusions/baseline, two executions per
+case and equal TimesFM predictions across both reports. There are six retained
+cases, two per partition. Fake persistence exactly matches F19's baseline.
+Actual admitted seed 0 is present in every durable request and artifact's nested
+determinism record. Artifact result identities/digests/request bindings and points
+match the reports; forecast timestamps represent candle starts and their label
+close times are one frequency step later. No native parser ran in this verifier.
+
+| Partition | TimesFM MAE | Persistence MAE | TimesFM RMSE (rounded) | Persistence RMSE (rounded) |
+| --- | ---: | ---: | ---: | ---: |
+| train | 18.59140625 | 19.65 | 24.12581678 | 23.64413246 |
+| validation | 13.4984375 | 19.4 | 15.36082815 | 20.90932806 |
+| test | 33.29375 | 33.65 | 40.27308114 | 40.73113060 |
+
+The train RMSE is worse despite a lower MAE. These six historical cases establish
+successful offline execution and the comparison contract; they do not establish
+general forecasting advantage, training holdout independence or live trading
+suitability. Pretraining overlap remains unknown.
+
+Across 24 native TimesFM executions, CPU time ranged from 4.212832 to 4.356927
+seconds and measured inference elapsed time from 4.161005147 to 4.290524164
+seconds. Reported `ru_maxrss` ranged from 2,136,012 to 2,137,132 KiB (about
+2.04 GiB). Fake resource use is null, so no measured fake/native resource ratio
+is claimed. Systemd's separately rounded 1G cgroup memory peak is a different
+accounting observation; its discrepancy with `ru_maxrss` is unresolved.
+
+Before/after unit and staging inventories are all empty. Four evaluation logs
+were checked for known credential/FD/host-canary sentinels and none were found.
+The captured journal contains 35 successful deactivations; its whole-second
+`--until` boundary truncates the last worker's tail. All 36 durable successes
+and artifacts plus the empty after-unit inventory independently establish
+completion; this is not a claim of 36 complete journal exit records.
+
+### Artifact-metadata correction after the operator checkpoint
+
+Historical `c8a920d` artifacts retain top-level seed null and fake-provider
+hardware wording, and nested limitations still describe an F20 fake fixture.
+The correct admitted seed/device/runtime are independently present in the nested
+record and durable requests, but the legacy descriptions are inaccurate for a
+real model. These immutable evidence files have not been rewritten.
+
+The subsequent focused serialization repair makes top-level seed/device match
+the admitted job and uses provider-neutral reproducibility limitations. It
+does not change artifact shape/schema, predictions, worker execution, admission,
+dataset decoding or isolation controls. Regressions first failed on all three
+provider selections and a nonzero seed; after repair, 39 focused tests passed.
+The full `scripts/check.sh` run passed 1,789 tests, 31 opt-in host skips, both lock
+checks, Ruff, strict mypy, packaging and dependency audits (exit 0). Evidence:
+`state/f22-qualification/metadata-validation/`. This portable validation is
+separate from actual `c8a920d` host/model evidence.
+
+All seven negative controls passed after the metadata repair. The new full
+Sonar analysis at `2026-10-10T15:30Z` exited 3: new coverage 81.4% and new
+duplication 0% pass, while seven open violations keep the gate ERROR. It analyzed
+the dirty source/test diff with SHA-256
+`4abf5642a419e04fd4489c7e99788ee30a2e0dc95eff775e8b45f9ba6320dc9a`;
+this is a local candidate analysis, not a published revision/PR gate.
+That failed analysis was superseded by the successful full analysis at
+`2026-10-10T15:40Z`, after explicit user approval of the seven individual server
+dispositions. Their source/test rationales and applied statuses are in
+[the F22 Sonar review](sonarqube/f22-qualification-review-2026-10-10.md).
+No blanket suppression or quality-policy weakening was used. Final repair
+publication/review is separate from these passed qualification gates.
 
 ## Implementation and available boundary evidence
 
 | Requirement | Verified portable evidence | Mandatory remaining evidence |
 | --- | --- | --- |
-| Interchangeable provider selection | Closed TOML selects TimesFM/fake persistence/fake trend; identical F20 jobs, artifacts and F19 comparison services; reruns execute distinct jobs in the same installation | Actual isolated executions of selected TimesFM and fake on the qualification host |
-| Offline model/runtime admission | Fixed model revision/three hashes, separate locked 25-package CPU closure, explicit inventory approval, bounded no-follow snapshots; drift/link/concurrent-mutation rejection | Successful real-runtime launch and resource measurements |
-| CPU isolation | Original synthetic profile preserved; separate candidate CPU profile; real subprocess seccomp tests allow bounded pthreads and deny fork/exec/network | Effective identity/namespaces/mounts/cgroups/limits and every F21/F22 host probe |
-| Credentials and results | Exact environment, no inherited descriptors, immutable request/model/runtime mounts required; existing F21 safe bounded result import; malformed control/resource/result rejection | Host sentinel environment/FD denial, write denial, isolated output-link failures |
-| Hindsight-free evaluation | F19 observable contiguous contexts, gaps/quality exclusion, temporal label purging and identical Decimal metrics; empty input refuses launch before creating jobs | TimesFM offline forecasts, two independent executions per case, immutable accepted artifacts and baseline comparison |
-| Cleanup/failure/restart | Snapshot cancellation joins before deleting staging; real subprocess repeated cancellation and F20 fencing remain tested | Actual unit cancellation/stop/restart, exhaustion and abrupt coordinator death |
+| Interchangeable provider selection | Closed TOML selects TimesFM/fake persistence/fake trend; actual TimesFM, fake persistence and fresh TimesFM repeat passed through identical F20/F19 services on the qualification host | Final repair publication and quality closure |
+| Offline model/runtime admission | Fixed model revision/three hashes, separate locked 25-package CPU closure, explicit inventory approval, bounded no-follow snapshots; actual offline Bybit inference and 24 native resource measurements passed | Preserve revision-specific evidence |
+| CPU isolation | Both fixed profiles passed all 31 mandatory host probes; all 36 Bybit jobs recorded and independently checked effective controls | No isolation changes in the metadata repair |
+| Credentials and results | Host sentinel/FD/write/link probes passed; 36 accepted immutable artifacts and durable successes independently verified; four evaluation logs checked for sentinels | Historical artifacts retain the metadata limitation described below |
+| Hindsight-free evaluation | Same six eligible Bybit cases, provenance, exclusions and baseline across three reports; two independent jobs per case, equal TimesFM points in repeat, persistence agrees with F19 | Small-sample and pretraining-overlap limitations remain |
+| Cleanup/failure/restart | Snapshot cancellation joins before deleting staging; real subprocess repeated cancellation and F20 fencing; actual unit cancellation/stop/restart, exhaustion and bounded abrupt-death probes passed; two stale roots reviewed/removed by operator | Automatic host snapshot cleanup after coordinator SIGKILL remains unsupported; retain the documented limitation |
 
 Unit adapter/provider tests use controlled doubles and establish contract
 compatibility, not successful PyTorch inference or host containment. No GPU
@@ -30,7 +133,8 @@ kernel/runtime/provisioning trust assumptions and residual limitations.
 
 On this Fedora 44 x86-64 host: Linux `7.2.7-200.fc44.x86_64`, systemd
 `259.9-1.fc44`, glibc `2.43-8.fc44`, libseccomp `2.6.1-2.fc44`, CPython 3.12.14.
-These are observed inputs, **not a qualified host profile**.
+These are the observed inputs for the host-probe checkpoint below, not a claim
+of absolute containment or completed model/dataset qualification.
 
 ## Provisioning and real Bybit baseline
 
@@ -1008,10 +1112,180 @@ Root-relative candidate validation (ordinary UID, approved uv 0.12.18):
 Actual logs and scanner metadata are ignored in
 `state/f22-qualification/root-relative-validation/`. Repeat only the two
 positive host probes on the reviewed commit before all 31 probes or actual
-offline Bybit evaluation. No complete effective-control report, real forecast,
-baseline comparison, accepted artifact or measured model resource result exists
-yet. The seven unresolved Sonar findings/gate remain blockers. KER-26 remains
-In Progress; F23 must not start.
+offline Bybit evaluation. At this pre-host checkpoint, no complete
+effective-control report, real forecast, baseline comparison, accepted artifact
+or measured model resource result existed yet. The seven unresolved Sonar
+findings/gate remain blockers. KER-26 remains In Progress; F23 must not start.
+
+### Positive host checkpoint: 2026-10-10 10:55 UTC
+
+The operator ran the two positive host tests on
+`c8a920d44838c3925928f8706adfddebfe3dd14c`. Codex inspected the returned
+`revision.txt`, JUnit, status, printed reports, journal and cleanup inventories
+in ignored
+`state/f22-qualification/operator-results-scryntic-f22-root-relative-20261010T105519Z/`.
+JUnit records **2 passed, zero failures/errors/skips, 13.029 seconds**;
+the pipeline status is **0**. The journal records three successful worker units
+(synthetic, real probe, real repeat); units after and staging before/after are empty.
+
+Both CPU profiles report dynamic non-root identities, zero capabilities,
+`NoNewPrivileges=1`, seccomp mode 2, six namespace IDs, PID 1 as the only visible
+process, no extra descriptors, exact allowed environments, read-only inputs/code,
+and only the three approved writable tmpfs mounts. The synthetic profile reports
+256 MiB memory; the real profile reports 4 GiB memory, 8 GiB address-space limit,
+zero swap, eight tasks and one CPU quota. Both reports record `probes=passed`;
+the real profile also records `pthread-only-bounded`. The host tests validate
+result decoding and the real test compares equal forecast points across two
+actual offline TimesFM executions on its **synthetic 512-row window**, horizon 24.
+This is positive-path evidence, not all 31 mandatory probes or Bybit evaluation.
+
+The first real execution reports worker process CPU **4,248,480,000 ns**,
+forecast/result elapsed **4,232,616,384 ns**, and process peak RSS
+**2,136,040 KiB** (`getrusage(RUSAGE_SELF)`). Separately, systemd reports
+**4.273/4.308 CPU seconds**, **4.342/4.337 wall seconds**, and rounded **1G memory
+peak** for the two real units. These are distinct accounting sources and scopes;
+the RSS/cgroup peak difference has not been reconciled. Do not use the rounded
+journal value as the process RSS or either value as a Bybit resource measurement.
+
+No implementation changed after this run. Portable gates/scanner results above
+were not rerun for this documentation checkpoint. All 31 host probes, real
+Bybit same-case baseline/fake comparison, evaluation reproducibility and durable
+artifact/provenance validation remain outstanding. The seven open Sonar findings
+and failed gate remain unresolved. KER-26 stays In Progress; F23 must not start.
+
+### Full host checkpoint: 2026-10-10 11:02–11:09 UTC
+
+The operator ran both complete host test files on the unchanged
+`c8a920d44838c3925928f8706adfddebfe3dd14c`. Codex inspected the returned evidence
+in ignored
+`state/f22-qualification/operator-results-scryntic-f22-qualification-20261010T110255Z/`.
+JUnit records **31 passed, zero failures/errors/skips, 386.927 seconds**;
+prerequisite and host pipeline statuses are **0**. The recorded eight
+lock/configuration/inventory/helper/model hashes match the current local bytes.
+Both printed effective-control reports have `probes=passed`; the real profile
+reports process CPU **4,285,971,000 ns**, forecast/result elapsed
+**4,227,459,361 ns**, and peak RSS **2,135,496 KiB**. These remain measurements of
+the synthetic host-test window, not the actual Bybit cases.
+
+The journal contains the expected negative-probe failures: bounded CPU kills
+at approximately 5/90 CPU seconds, the real memory probe's unit OOM at its 4 GiB
+limit, rejected malformed/link outputs and missing controls, cancellation stop
+escalation, and runtime expiry after abrupt coordinator death at 30/180 seconds.
+No loaded worker units remain. Ordinary cancellation/restart passed; abrupt
+coordinator death proves bounded worker lifetime, not automatic staging deletion.
+
+Staging-before is empty; staging-after records `/tmp/scryntic-model-7ffnrdfk`
+and `/tmp/scryntic-model-s720r3vi`. Their observed creation times
+**11:03:10/11:06:22 UTC** coincide with the two abrupt-death probes. Source tests
+kill their coordinators and check bounded unit lifetime; they do not reclaim the
+coordinator's private host snapshot. This matches the previously documented
+SIGKILL residual limitation. Operator review/removal and a post-cleanup inventory
+are still required; this checkpoint is not evidence of automatic cleanup.
+
+Next: preserve this evidence, clean only the reviewed stale roots after confirming
+no model jobs remain, then run stage 2 on a fresh root-owned copy of the retained
+Bybit installation. No implementation or model/runtime pin changed; portable
+gates/scanners were not repeated for this documentation-only checkpoint. Real
+Bybit comparison/artifacts/reproducibility and seven open Sonar findings remain
+outstanding. KER-26 stays In Progress; F23 must not start.
+
+### Evaluation preflight: decoder failure before model launch
+
+The operator reviewed the two stale roots (owner UID 0, mode 0700, creation times
+matching the abrupt-death probes), removed only those roots, and recorded an
+empty post-cleanup inventory. Returned evidence is ignored in
+`state/f22-qualification/operator-results-scryntic-f22-qualification-20261010T110255Z-evaluation/`.
+Stage 2 then exited **1** in `verify_bybit.py`: the first F19 replay inspection
+failed through `LinuxDecoder.analytical` / `bounded_process` with the sanitized
+`Restricted decoder failed` error. No TimesFM/fake/repeat reports exist, the
+evaluation journal has no model units, and units/staging after are empty. This
+is not a forecast failure, zero metric or successful evaluation.
+
+Codex reproduced the retained baseline twice through the unchanged restricted
+decoder as ordinary **UID 1000**, outside its filesystem sandbox, on both the
+original retained installation and the returned evaluation copy. Both commands
+exited **0** with the exact baseline/manifest identities and comparison rows
+`[1, 2, 95, 96, 143, 144]`, contexts `[2, 3, 96, 97, 144, 145]`.
+The latter actual result is retained in ignored
+`state/f22-qualification/decoder-diagnostic/baseline-returned-copy.json`.
+This distinguishes a successful ordinary-UID decoder path from the failed
+operator-root path; it does not identify the root failure or substitute for
+root model qualification.
+
+A one-off ignored `decoder-diagnostic/diagnose_decoder.py` calls only the existing
+no-input `LinuxDecoder.probe()`. It observes the existing Popen return code and
+at most 4 KiB of startup stderr while preserving the production command,
+environment, descriptors, pipe bounds/deadline, bootstrap restrictions and
+cleanup. It opens no dataset or model and changes no tracked implementation.
+Helper SHA-256:
+`d78ea2f539474d0aac1ebdc99ff21474e46df8bbe124f4ce32c7866db51959a8`.
+Its actual ordinary-UID trial exited **0**, with probe passed, bubblewrap return
+code 0 and empty stderr. The operator's root diagnostic then exited **1**:
+bubblewrap returned 1 and reported `Can't find source path` / `Permission denied`
+for the CPython prefix beneath the operator's private home. This latest result
+is operator terminal evidence; its returned evidence directory has not yet been
+inspected. The failure precedes Python startup and native parsing.
+
+Context7's `/containers/bubblewrap` documentation and the exact
+[bubblewrap v0.12.0 source](https://github.com/containers/bubblewrap/blob/v0.12.0/bubblewrap.c)
+were consulted for capability dropping, UID maps and source-path resolution.
+The host's `/home/void`, `.local`, and `.local/share` have mode 0700. Root loses
+its discretionary-access override during bubblewrap setup; unlike UID 1000 it
+does not own these directories. Together with the successful ordinary-UID probe,
+this explains the denied source traversal. The version's `--ro-bind-fd` also
+resolves its `/proc/self/fd` source back through `realpath`, so it was not adopted
+as an unverified shortcut around the private ancestors.
+
+An ignored, one-off `decoder-diagnostic/prepare_coordinator.py` prepares a fresh
+private qualification copy of CPython, the coordinator venv, source and scripts.
+It verifies content, link and mode tree fingerprints before relocation and
+checks that sources did not change during copying. Only the venv interpreter
+link, `pyvenv.cfg` home and editable package path are relocated. It starts no
+worker, service or privileged runner. Root destinations are restricted to a
+fresh `root-coordinator` below an operator-owned 0700 `/var/tmp/scryntic-f22-*`
+evidence directory. No home permissions are broadened; the production decoder
+command and its selected read-only mounts remain unchanged.
+
+The ordinary-UID copy passed the no-input decoder probe (return code 0, empty
+stderr), and reproduced the exact retained Bybit baseline twice through native
+restricted decoding. Actual output is ignored at
+`decoder-diagnostic/relocated-baseline.json`. The helper passed Ruff. Root
+preflight on the relocated environment is still pending; this is not model
+qualification and does not close the Bybit criterion. Helper SHA-256:
+`063d192c7c815ee8166beb951964c8575be3e88b8830a525f7719bcda86980f4`.
+
+The current SOFA skill was subsequently fetched via the public primary site
+and its SHA-256 matched live guidance. A read-only search for bubblewrap root
+private-home access returned container namespace posts, with no directly
+applicable guidance; none was applied or represented as validation.
+No control, UID mapping, input permission, SELinux policy or
+native-parser boundary was weakened. All 31 model host outcomes remain valid
+for the unchanged source; actual Bybit qualification and Sonar closure remain
+outstanding. KER-26 stays In Progress; F23 must not start.
+
+### Relocated root preflight: 2026-10-10 11:54 UTC
+
+Returned evidence at
+`state/f22-qualification/operator-results-coordinator-preflight-20261010T115414Z/`
+was independently read and checked. Snapshot creation ran as UID 0; its four
+tree fingerprints match the ordinary-UID trial. The unchanged no-input decoder
+then passed as UID 0, bubblewrap returned 0 and captured stderr was empty.
+`verify_bybit.py` reproduced the baseline twice, with the exact manifest and
+baseline identities, six comparison rows and context lengths recorded above.
+The overall coordinator preflight status is **0**. This confirms root decoding
+in the private relocated environment without broader home permissions or
+sandbox exceptions. It does not yet qualify TimesFM on Bybit.
+
+An ignored operator-only `state/f22-qualification/run_relocated_evaluation.sh`
+now resumes the three real evaluation reports from this exact qualified copy.
+It requires revision `c8a920d`, clean implementation paths, the successful host
+and coordinator statuses, and identical script/lock bytes. It uses a fresh
+output directory, preserves the prior failed attempt, runs the copied script
+and interpreter with a cleared coordinator environment, and stops subsequent
+model evaluations on the first failure. Journals, unit/staging inventories and
+the quiescent dataset catalogs/accepted artifacts are exported in a new small
+evidence copy; the CPython/venv snapshot is not duplicated. Bash syntax passed;
+this script has not been executed by Codex or qualified by the operator yet.
 
 ### Operator prerequisites and stage 1: all 31 probes
 
@@ -1078,9 +1352,8 @@ sudo -- env SCRYNTIC_F21_HOST=1 SCRYNTIC_F22_HOST=1 \
   tests/model_worker/test_host.py tests/models/test_host.py \
   2>&1 | sudo -- tee "$F22_QROOT/host.log"
 F22_HOST_STATUS=$?
-F22_HOST_FINISHED="$(date -u --iso-8601=seconds)"
 sudo -- journalctl --utc --no-pager --since "$F22_HOST_STARTED" \
-  --until "$F22_HOST_FINISHED" --unit='scryntic-model-*' \
+  --unit='scryntic-model-*' \
   | sudo -- tee "$F22_QROOT/worker-journal.log"
 /usr/bin/systemctl --system --no-ask-password list-units --all \
   'scryntic-model-*' --no-pager \
@@ -1104,6 +1377,12 @@ proof of cleanup. Do not remove unrelated paths or grant broader unit authority.
 If any prerequisite/probe fails, stop before stage 2 and return that evidence.
 
 ### Stage 2: offline evaluation of the same retained Bybit cases
+
+For the current installation, use the relocated operator wrapper above. The
+original recipe below records the initial workflow: its root dataset copy
+already exists, and its original coordinator interpreter was demonstrated to
+fail native decoding through the private home ancestors. Do not replay that
+copy/launch block on this resumed qualification.
 
 Only after stage 1 passes, make a **new root-owned copy** of the already verified,
 quiescent installation; do not recapture a different market sample and do not
@@ -1174,7 +1453,7 @@ sudo -- chown -hR -- "$(id -u):$(id -g)" "$F22_RETURN" || exit 1
 Return the directory path and terminal exit status; Codex must inspect the logs,
 31 JUnit outcomes, actual reports and artifacts before recording qualification.
 The copied installation is evidence, not an instruction to run new root jobs
-from user-owned catalogs. The six Sonar findings need an authorized review of
+from user-owned catalogs. The seven Sonar findings need an authorized review of
 the stated source evidence and any host evidence relevant to mount/cancellation
 behavior; proposed dispositions are not resolved findings. The configured MCP
 is read-only. Validate any actual defect before repair; repeat relevant host
