@@ -89,6 +89,8 @@ def _payload(value: ValidatedForecast) -> dict[str, object]:
         "hardware": "none; trusted deterministic fake provider",
     }
     if isinstance(value, AdmittedForecast):
+        payload["seed"] = value.job.seed
+        payload["hardware"] = value.job.review.loading.device
         payload["job"] = {
             "request_sha256": value.job.sha256,
             "review_sha256": value.job.review.sha256,
@@ -99,7 +101,10 @@ def _payload(value: ValidatedForecast) -> dict[str, object]:
             "seed": value.job.seed,
             "hardware": value.job.review.loading.device,
             "runtime": value.job.review.loading.runtime,
-            "limitations": "trusted deterministic F20 fixture only; no real model qualification",
+            "limitations": (
+                "Seed and admitted device/runtime are recorded; bitwise reproducibility "
+                "across hardware, runtime versions or providers is not guaranteed."
+            ),
         }
     return payload
 

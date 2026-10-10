@@ -76,6 +76,24 @@ def test_success_is_idempotent_and_binds_job_admission_and_dataset(
         store.close()
 
 
+def test_artifact_records_the_admitted_nonzero_seed(tmp_path: Path) -> None:
+    _, store, artifacts, service = services(tmp_path)
+    value = replace(job(), seed=73)
+
+    async def exercise() -> None:
+        service.submit_job(value)
+        await service.run(value.job_id)
+        payload = artifacts.read(service.result(value.job_id))
+        assert payload["seed"] == 73
+        assert payload["determinism"]["seed"] == 73
+        await service.aclose()
+
+    try:
+        asyncio.run(exercise())
+    finally:
+        store.close()
+
+
 def test_submission_retry_preserves_identity_when_clock_advances(
     tmp_path: Path,
 ) -> None:
