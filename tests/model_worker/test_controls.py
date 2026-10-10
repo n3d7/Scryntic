@@ -75,6 +75,18 @@ def test_reference_evidence_passes() -> None:
     verify_controls(report(), host())
 
 
+@pytest.mark.parametrize("name", ["MEMORY_PRESSURE_WATCH", "MEMORY_PRESSURE_WRITE"])
+def test_generated_pressure_environment_cannot_be_accepted(name: str) -> None:
+    evidence = report()
+    evidence["environment"][name] = "private-extra-sentinel"
+    owner = host()
+    stage = [73]
+    with pytest.raises(IsolationError) as error:
+        verify_controls(evidence, owner, stage=stage)
+    assert stage == [91]
+    assert str(error.value) == "Required effective CPU controls unavailable"
+
+
 @pytest.mark.parametrize(
     "field,value,code",
     [

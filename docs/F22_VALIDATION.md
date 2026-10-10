@@ -782,6 +782,70 @@ execution or resource/artifact evidence. The seven open Sonar findings and
 mandatory host/evaluation evidence remain completion blockers. KER-26 stays
 In Progress; F23 must not start.
 
+#### Strict environment rejection after scratch relocation
+
+Retained `operator-results-scryntic-f22-scratch-20261009T235506Z/` is the
+operator's positive pair on `24178e6b99a305ac9727bf6c5a9e832ee6556a08`:
+**two failures**, no passes/errors/skips, **2.627 seconds**, pipeline status 1.
+Both units started at 2026-10-09 23:55:07/10 UTC and exited **91**. The trusted
+preflight reached its exact-environment check after accepting the preceding
+mount checks; no full effective-control report or inference succeeded. No
+units remained and staging before/after was unchanged. This is progress through
+preflight, not completed mount/runtime qualification.
+
+Source review identified an omitted per-service environment source: systemd
+259's [build_environment and final filtering implementation](https://github.com/systemd/systemd/blob/v259/src/core/exec-invoke.c)
+can generate `MEMORY_PRESSURE_WATCH` / `MEMORY_PRESSURE_WRITE` independently of
+the manager's `show-environment`. Its [execution manual](https://github.com/systemd/systemd/blob/v259/man/systemd.exec.xml)
+documents those variables and final `UnsetEnvironment` filtering. A read-only
+ordinary-UID query returned `DefaultMemoryPressureWatch=auto` on this host.
+Context7 confirms the distinct generated-environment source/merge semantics.
+A portable Python 3.12.14 invocation with the exact synthetic allowlist and
+`-I -S -B` retained exactly those keys; Python locale coercion did not add a key.
+The host's rejected values were deliberately not printed or accepted, so status
+91 alone does not prove which extra keys caused this specific attempt.
+
+The fixed launcher now explicitly unsets both pressure variables before worker
+exec, retaining the exact existing allowlist, manager-variable filtering and
+coordinator/preflight equality checks. Neither extra variables nor differing
+values become acceptable. Memory/cgroup limits and all isolation settings stay
+unchanged; the fix does not disable resource enforcement or permit pressure
+sockets/credentials. Unknown generated variables still fail closed.
+Two regression cases (both CPU profiles, empty manager environment) failed
+before the change and pass afterward. Two evidence-rejection cases require
+either pressure variable to retain status 91 and the fixed sanitized error.
+The focused launcher/control suite passes.
+
+A read-only SOFA lookup of a systemd environment smoke-test post distinguishes
+shell, manager and explicit unit environments; it concerns user-manager tests
+and does not independently establish this system-service pressure behavior.
+No suggested host experiment was run by Codex. Version-pinned upstream source
+and the portable regression establish the omission; the operator's next
+positive pair must verify its actual host effect. F22 remains unqualified.
+
+Environment-filter candidate validation (ordinary UID; uv 0.12.18):
+
+- `bash scripts/check.sh`: final status 0, **1,725 passed / 31 host skips**,
+  **95.60 seconds**; lint/format, strict types (273 source files), locks,
+  packaging and dependency audits pass. An initial format gate failure in the
+  new test was corrected; its failed log is retained, not counted as a pass.
+- `uv run --locked --no-sync python scripts/check_negative.py`: all seven
+  negative controls reject their defects and preserve inputs, status 0.
+- Semgrep 1.179.0, 151 Python rules / three changed code/test files: zero
+  findings or errors. Trivy root/forecast locks including dev dependencies plus
+  secrets/configuration: zero findings, status 0; no supported IaC files.
+- Full local Sonar default/main candidate analysis at **2026-10-10 00:01 UTC**,
+  `24178e6` plus these edits: coverage **81.2%**, duplication **0%**, gate
+  **ERROR**, scanner status 3. Exactly the same seven open issue keys remain;
+  no new findings or rule/exclusion/disposition changes. This is local candidate
+  evidence, not a published-main or PR analysis.
+
+Actual logs and final Sonar metadata are ignored in
+`state/f22-qualification/environment-validation/`. No privileged worker
+execution occurred in these checks. The next required evidence is the positive
+host pair on the reviewed commit, then all 31 probes and offline Bybit evaluation;
+the existing seven open Sonar findings/gate also remain blockers.
+
 ### Operator prerequisites and stage 1: all 31 probes
 
 The commands below are for this reviewed host and retained enrollment. Another

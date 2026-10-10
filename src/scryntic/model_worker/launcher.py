@@ -85,6 +85,9 @@ def _command(
         | {
             "INVOCATION_ID",
             "SYSTEMD_EXEC_PID",
+            # Generated per service, even when absent from show-environment.
+            "MEMORY_PRESSURE_WATCH",
+            "MEMORY_PRESSURE_WRITE",
             "JOURNAL_STREAM",
             "NOTIFY_SOCKET",
             "WATCHDOG_PID",

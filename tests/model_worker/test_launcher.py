@@ -70,6 +70,26 @@ def test_fixed_spec_cannot_accept_configuration(
         CPUWorker(shell="dangerous")  # type: ignore[call-arg]
 
 
+@pytest.mark.parametrize("profile", [SYNTHETIC_CPU, FORECAST_CPU])
+def test_generated_pressure_environment_is_unset_without_manager_inheritance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, profile: CPUProfile
+) -> None:
+    monkeypatch.setattr(launcher, "_manager_environment", set)
+    command = launcher._command(tmp_path, tmp_path / "request", "test.service", profile)
+    unset = next(
+        item.removeprefix("--property=UnsetEnvironment=").split()
+        for item in command
+        if item.startswith("--property=UnsetEnvironment=")
+    )
+    assert {"MEMORY_PRESSURE_WATCH", "MEMORY_PRESSURE_WRITE"} <= set(unset)
+    assert not set(dict(profile.environment)) & set(unset)
+    assert (
+        "--property=Environment="
+        + " ".join(f"{name}={value}" for name, value in profile.environment)
+        in command
+    )
+
+
 def test_missing_manager_rejects_before_spawn(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
 
