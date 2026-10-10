@@ -115,7 +115,8 @@ def test_private_scratch_avoids_systemd_protected_mount_targets(
     properties = dict(item.split("=", 1) for item in profile.properties)
     assert properties["DynamicUser"] == "yes"
     assert properties["ProtectHome"] == "yes"
-    assert properties["InaccessiblePaths"] == "/tmp /var/tmp"
+    # Access-path directives need '+' to address paths inside RootDirectory.
+    assert properties["InaccessiblePaths"] == "+/tmp +/var/tmp"
     mounts = dict(
         item.split(":", 1) for item in properties["TemporaryFileSystem"].split()
     )

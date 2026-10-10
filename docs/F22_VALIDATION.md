@@ -940,6 +940,79 @@ above. All 31 host probes, actual offline Bybit inference/comparison, repeated
 forecasts, accepted artifact/provenance/resource evidence and the seven open
 Sonar findings/gate remain completion blockers.
 
+#### Root-relative forbidden paths: actual write success and focused repair
+
+Retained `operator-results-scryntic-f22-write-20261010T103758Z/` records the
+operator's pair on `11730cd56dd840216cc9479eac379d33770cc174`: **two failures**,
+zero passes/errors/skips, **2.596 seconds**, pipeline 1. Both services started
+at 2026-10-10 10:37:59/10:38:02 UTC and exited **140**: forbidden `/tmp`
+creation unexpectedly **succeeded**. The immutable-request write probe had
+accepted its denial; the `/var/tmp` write probe was not reached. Units after
+were empty and both staging inventories were empty. Preflight correctly
+rejected the ineffective boundary before inference/result acceptance.
+
+This establishes an ineffective declaration, not a missing permission to grant.
+The [systemd 259 execution manual](https://github.com/systemd/systemd/blob/v259/man/systemd.exec.xml)
+specifies that `InaccessiblePaths` defaults to host-relative paths, while `+`
+makes them relative to `RootDirectory`. In the
+[version-pinned namespace source](https://github.com/systemd/systemd/blob/v259/src/core/namespace.c),
+`append_access_mounts` marks unprefixed paths already host-relative;
+`prefix_where_needed` therefore does not relocate them, and `drop_outside_root`
+removes those outside the worker root. The earlier `/tmp /var/tmp` declaration
+did not mask the worker paths. This corrects the earlier assumption that
+same-path duplicate ordering alone established the intended mask: path scope
+must be correct first. Context7 was cross-checked against this tagged source.
+
+The fixed property is now **`InaccessiblePaths=+/tmp +/var/tmp`** for both
+application-owned CPU profiles, with no ignore-missing prefix. The precreated
+targets remain required. The existing actual write probes and denial policy are
+unchanged; a writable target still aborts preflight. No new writable path,
+environment allowance, syscall capability, host bind or result schema is added.
+DynamicUser/PrivateTmp, bounded `/worker-home` / `/worker-tmp` / `/output`,
+identity, network, credential, resource and model/runtime contracts remain.
+
+A focused SOFA lookup concerned JVM diagnostic sockets under PrivateTmp, not
+RootDirectory path scoping; it provided no evidence for this fix. Its network
+listener, shared-temp and root namespace-entry suggestions were not adopted.
+The authoritative manual/source trace and the actual code 140 establish this
+defect. Two profile regression cases first failed for the missing `+` and pass
+after the repair. Host qualification of the repaired property is still required.
+
+Root-relative candidate validation (ordinary UID, approved uv 0.12.18):
+
+- Focused suite: **166 passed**, zero skips, **0.517 seconds**. An initial
+  sandboxed invocation stalled and was terminated (status 143); it is retained
+  separately and is not counted as passing. The ordinary-UID run outside the
+  Codex sandbox matches the normal gate environment; no root authority was used.
+- `PATH=/tmp/f22-tools/bin:$PATH bash scripts/check.sh`: status 0,
+  **1,788 passed / 31 host skips**, **96.53 seconds**; both locks,
+  lint/format, strict types (273 files), packaging and dependency audits pass.
+- `uv run --locked --no-sync python scripts/check_negative.py`: unchanged
+  retry status 0; all seven negative controls reject defects and preserve inputs.
+  The initial run stalled after 1,642 tests and was interrupted after 410.42
+  seconds, causing status 1 rather than the expected deliberate-test failure.
+  Its cause is not established; `negative-interrupted.log` is retained separately
+  from the successful `negative-retry.log`. No gate or test was changed to obtain
+  the retry result. The interrupted run is not passing or host evidence.
+- Semgrep 1.179.0: 151 local Python rules / two changed code/test files,
+  zero findings/errors, status 0. Trivy root/forecast locks including dev
+  dependencies plus secrets/configuration: zero findings, status 0;
+  no supported IaC files.
+- Full local Sonar default/main candidate analysis **2026-10-10 10:45 UTC**,
+  based on `11730cd` plus these edits: **80.4% overall / 81.4% new-code
+  coverage**, **0% duplication**, same **seven open keys**, gate **ERROR**,
+  scanner status 3. Existing findings remain attributable to their previously
+  reviewed code; none was hidden, dismissed or remediated by this mount fix.
+  This is not published-main/PR or host-qualification evidence.
+
+Actual logs and scanner metadata are ignored in
+`state/f22-qualification/root-relative-validation/`. Repeat only the two
+positive host probes on the reviewed commit before all 31 probes or actual
+offline Bybit evaluation. No complete effective-control report, real forecast,
+baseline comparison, accepted artifact or measured model resource result exists
+yet. The seven unresolved Sonar findings/gate remain blockers. KER-26 remains
+In Progress; F23 must not start.
+
 ### Operator prerequisites and stage 1: all 31 probes
 
 The commands below are for this reviewed host and retained enrollment. Another

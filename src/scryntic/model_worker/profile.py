@@ -43,7 +43,8 @@ PROPERTIES = (
     "ProtectSystem=strict",
     "ProtectHome=yes",
     # DynamicUser's implicit PrivateTmp must not add writable, unbounded scratch.
-    "InaccessiblePaths=/tmp /var/tmp",
+    # '+' makes these access paths relative to the worker's RootDirectory.
+    "InaccessiblePaths=+/tmp +/var/tmp",
     "ProtectControlGroups=yes",
     "ProtectKernelTunables=yes",
     "ProtectKernelModules=yes",
