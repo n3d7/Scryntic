@@ -2,7 +2,7 @@
 
 import asyncio
 import random
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import StrEnum
@@ -201,7 +201,8 @@ class SourceSupervisor:
 
     async def start(self) -> None:
         async with self._lock:
-            await _io(lambda: self.ledger.begin(self.clock.sample()))
+            sample = self.clock.sample()
+            await _io(lambda: self.ledger.begin(sample))
 
     async def transport_loss(self, notice: SourceLoss) -> None:
         async with self._lock:
@@ -238,6 +239,8 @@ class SourceSupervisor:
         return evidence
 
     async def ingest(self, envelope: RawEnvelope) -> bool:
+        if self._closed.is_set():
+            return False
         reservation = (
             None
             if self._reporting
@@ -304,6 +307,8 @@ class SourceSupervisor:
                     await _io(lambda: self.ledger.observed(record, evidence))
 
     async def repair_once(self) -> bool:
+        if self._closed.is_set():
+            return False
         if self.ledger.stream.family is Family.BOOK:
             return await self._resnapshot()
         if (
@@ -408,7 +413,7 @@ class SourceSupervisor:
         proven: list[int] = []
         final_candles: list[tuple[int, str]] = []
         raw_offset = self.ledger.snapshot.raw_offset
-        for envelope in envelopes:
+        for envelope in self._intake_envelopes(envelopes):
             evidence = self._candle(envelope)
             async with self._lock:
                 known = self._known_candle(evidence)
@@ -435,6 +440,15 @@ class SourceSupervisor:
             if evidence.market_sha256 is not None:
                 final_candles.append((evidence.start_ns, evidence.market_sha256))
         return proven, final_candles, raw_offset
+
+    def _intake_envelopes(
+        self, envelopes: tuple[RawEnvelope, ...]
+    ) -> Iterator[RawEnvelope]:
+        """Check the stop flag again before each historical admission."""
+        for envelope in envelopes:
+            if self._closed.is_set():
+                return
+            yield envelope
 
     async def _resnapshot(self) -> bool:
         if not self._snapshot_required or self._resnapshot_source is None:
@@ -549,6 +563,12 @@ class SourceSupervisor:
             finally:
                 self._owner = None
                 self._running = False
+
+    def stop_intake(self) -> None:
+        """Prevent further admission immediately; accepted writer work still joins."""
+        self._closed.set()
+        if self.state is not SupervisorState.FAILED:
+            self.state = SupervisorState.STOPPING
 
     async def close(self) -> None:
         self._closed.set()

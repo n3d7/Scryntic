@@ -281,6 +281,8 @@ class BybitLiveSource:
         self._reader_task: asyncio.Task[None] | None = None
         self._running = False
         self.last_error: str | None = None
+        self.connected = False
+        self.last_heartbeat_monotonic_ns = 0
         self._loss_handler: Callable[[SourceLoss], Awaitable[None]] | None = None
         self._start_gate: Callable[[], bool] | None = None
         self._buffer_admission: Callable[[int], SourceBufferLease | None] | None = None
@@ -493,6 +495,8 @@ class BybitLiveSource:
         subject: InstrumentId,
     ) -> AsyncGenerator[tuple[RawEnvelope, tuple[object, ...]], None]:
         await self._subscribe(socket, topic)
+        self.connected = True
+        self.last_heartbeat_monotonic_ns = time.monotonic_ns()
         next_ping = time.monotonic() + self._limits.ping_interval_s
         last_data = time.monotonic()
         pong_deadline: float | None = None
@@ -511,6 +515,7 @@ class BybitLiveSource:
             # suspension point. Give cancellation and other collectors a turn.
             await asyncio.sleep(0)
             if _is_pong(document):
+                self.last_heartbeat_monotonic_ns = time.monotonic_ns()
                 pong_deadline = None
                 continue
             candles = self._candle_batch(document, topic)
@@ -565,6 +570,7 @@ class BybitLiveSource:
             self.last_error = str(exc)
             raise
         finally:
+            self.connected = False
             try:
                 await socket.close()
             finally:
