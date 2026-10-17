@@ -364,7 +364,26 @@ class Services:
         publication_fault: Callable[[str], None] | None = None,
         job_factory: Callable[[JobStore], JobService] | None = None,
         sync_factory: Callable[[], Awaitable[PullBinding]] | None = None,
+        history_request: HistoryRequest | None = None,
     ) -> None:
+        if history_request is not None:
+            step = 60_000_000_000
+            subject = InstrumentId("bybit", config.category, config.symbol)
+            if (
+                config.profile != "bybit"
+                or history_request.stream != StreamRequest(BYBIT_CANDLE_SCHEMA, subject)
+                or history_request.start_ns < 0
+                or history_request.end_ns > 2**63 - 1
+                or history_request.start_ns % step
+                or history_request.end_ns % step
+                or not 0
+                < history_request.end_ns - history_request.start_ns
+                <= 256 * step
+                or history_request.page_size > 16
+            ):
+                raise ValueError("Invalid bounded historical collection request")
+        self._history_request = history_request
+        self._backfill_status = ("unknown", 0, 0)
         self.config = config
         self._worker = ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="daemon-store"
@@ -411,6 +430,7 @@ class Services:
         self._started = False
         self._closed = False
         self._drained = False
+        self._collection_source_fault: bool | None = None
         self._state = State.STARTING
         self._faults: set[Fault] = set()
         self._phase = ShutdownPhase.NONE
@@ -703,9 +723,138 @@ class Services:
         assert self._spool is not None
         return self._spool
 
+    @property
+    def source_finished(self) -> bool:
+        """Whether the selected source task has settled, including failed runs."""
+        return self._source_task is not None and self._source_task.done()
+
+    @property
+    def backfill_status(self) -> tuple[str, int, int]:
+        """Requested span status, attempted pages and proven candle slots."""
+        return self._backfill_status
+
+    @property
+    def collection_faults(self) -> tuple[Fault, ...]:
+        """Operation faults distinguish stopped transport from failed collection."""
+        health = self.health()
+        faults = health.faults
+        supervisor = self._supervisor
+        completed_live = (
+            self.config.profile == "bybit"
+            and self._collection_source_fault is False
+            and supervisor is not None
+            and supervisor.state is SupervisorState.STOPPING
+            and all(
+                not (
+                    stream.coverage_pending
+                    or stream.coverage_unknown
+                    or stream.coverage_unrecoverable
+                )
+                for stream in health.streams
+            )
+        )
+        if (
+            (self.config.profile == "fixture" or completed_live)
+            and self._history_request is None
+            and self._drained
+            and self._closed
+            and Fault.SOURCE not in self._faults
+        ):
+            return tuple(fault for fault in faults if fault is not Fault.SOURCE)
+        return faults
+
+    @property
+    def backfill_faults(self) -> tuple[Fault, ...]:
+        """Terminal history faults without claiming an unused live connection."""
+        faults = self.health().faults
+        if (
+            self._history_request is not None
+            and self._backfill_status[0] == "complete"
+            and Fault.SOURCE not in self._faults
+        ):
+            return tuple(fault for fault in faults if fault is not Fault.SOURCE)
+        return faults
+
+    async def _run_history(self) -> None:
+        """An explicit F15 repair operation; never starts a live websocket."""
+        request = self._history_request
+        assert request is not None and self._spool is not None
+        subject = request.stream.subject
+        assert isinstance(subject, InstrumentId)
+        self._source = self._source_factory(self._clock)
+        self._history = self._history_factory(self._clock)
+        instruments = await self._history.discover(self.config.category)
+        selected = next(
+            (item for item in instruments if item.identity == subject), None
+        )
+        if selected is None:
+            raise SourceConfigurationError("Configured instrument unavailable")
+        self._instruments = {subject: selected}
+        self._faults.discard(Fault.SOURCE)
+        ledger = await self._work(
+            lambda: CoverageLedger(
+                self._required_spool(),
+                RecoveryStream(
+                    f"cli-backfill:{request.start_ns}:{request.end_ns}",
+                    "bybit-public",
+                    "market-kline",
+                    "kline-1",
+                    subject,
+                    Family.CANDLE,
+                    "backfill",
+                ),
+                baseline_ns=request.start_ns,
+            )
+        )
+        self._supervisor = _ObservedSupervisor(
+            self,
+            source=self._source,
+            history=self._history,
+            request=request.stream,
+            spool=self._spool,
+            ledger=ledger,
+            budget=SharedBudget(),
+            clock=self._clock,
+            candle_parser=candle_evidence,
+            interval_ns=60_000_000_000,
+        )
+        await self._supervisor.start()
+        await self._work(
+            lambda: ledger.loss(
+                request.start_ns,
+                request.end_ns,
+                "explicit-backfill",
+                self._clock.sample(),
+            )
+        )
+        index = len(ledger.snapshot.spans) - 1
+        try:
+            for _ in range(64):
+                if (
+                    self._stop.is_set()
+                    or ledger.snapshot.spans[index].status != "pending"
+                ):
+                    break
+                if not await self._supervisor.repair_once():
+                    await self._pause(0.05)
+                span = ledger.snapshot.spans[index]
+                self._backfill_status = (span.status, span.pages, len(span.repaired))
+                self._store_snapshot = await self._work(self._collect)
+                self._update_health()
+        finally:
+            span = ledger.snapshot.spans[index]
+            self._backfill_status = (span.status, span.pages, len(span.repaired))
+            await self._work(ledger.finish)
+
     async def _run_source(self) -> None:
         try:
-            if self.config.profile == "fixture":
+            if self._history_request is not None:
+                try:
+                    await self._run_history()
+                except SourceTransientError:
+                    self._faults.add(Fault.SOURCE)
+                    self._update_health()
+            elif self.config.profile == "fixture":
                 await self._run_fixture()
             else:
                 await self._run_bybit()
@@ -790,6 +939,16 @@ class Services:
         return await self._job_host.execute(job_id, resume)
 
     def stop_intake(self) -> None:
+        if not self._stop.is_set():
+            # Preserve source evidence before STOPPING and intentional transport
+            # close replace the live supervision and connection observations.
+            self._update_health()
+            self._collection_source_fault = Fault.SOURCE in self.health().faults
+        elif (
+            self._supervisor is not None
+            and self._supervisor.state is SupervisorState.DEGRADED
+        ):
+            self._collection_source_fault = True
         self._stop.set()
         self._job_host.stop_intake()
         self._phase = ShutdownPhase.INTAKE

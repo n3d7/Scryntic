@@ -343,6 +343,20 @@ class JobStore:
                 counts[JobState(state)] = count
             return counts
 
+    def list(self, *, limit: int = 100, offset: int = 0) -> tuple[JobRecord, ...]:
+        """Read a bounded stable page, applying the normal durable expiry rules."""
+        integer(limit, 1)
+        integer(offset, 0)
+        if limit > 100 or offset > 1024:
+            raise JobError("Job list outside bounds")
+        with self._transaction():
+            now = self.now()
+            rows = self._connection.execute(
+                "SELECT * FROM jobs ORDER BY request_id LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+            return tuple(self._expire(self._record(row), now) for row in rows)
+
     def close(self) -> None:
         if not self._closed:
             self._closed = True

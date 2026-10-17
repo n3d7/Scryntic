@@ -12,6 +12,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _forbidden_packages(profile: str) -> list[str]:
+    forbidden = ["pytest", "ruff", "mypy", "pip_audit", "coverage"]
+    if profile not in ("analysis", "tui"):
+        forbidden += ["asyncssh"]
+    if profile != "tui":
+        forbidden += ["textual"]
+    if profile == "base":
+        forbidden += ["pyarrow"]
+    if profile not in ("analysis", "tui"):
+        forbidden += ["torch", "transformers", "timesfm", "huggingface_hub"]
+    return forbidden
+
+
 def main() -> None:
     config = tomllib.loads((ROOT / "pyproject.toml").read_text())
     package_root = ROOT / "src/scryntic"
@@ -66,7 +79,7 @@ def main() -> None:
                 hashlib.sha256(artifact.read_bytes()).hexdigest(),
                 flush=True,
             )
-        for profile in ("base", "collector", "analysis"):
+        for profile in ("base", "collector", "analysis", "tui"):
             env_path = temp / profile
             env = os.environ | {"UV_PROJECT_ENVIRONMENT": str(env_path)}
             env.pop("VIRTUAL_ENV", None)
@@ -77,8 +90,10 @@ def main() -> None:
                 "--no-default-groups",
                 "--no-install-project",
             ]
-            if profile != "base":
+            if profile not in ("base", "tui"):
                 args += ["--group", profile]
+            if profile == "tui":
+                args += ["--group", "analysis", "--extra", "tui"]
             subprocess.run(args, cwd=ROOT, env=env, check=True)
             python = str(env_path / "bin/python")
             subprocess.run(
@@ -86,13 +101,7 @@ def main() -> None:
                 cwd=temp,
                 check=True,
             )
-            forbidden = ["pytest", "ruff", "mypy", "pip_audit", "coverage"]
-            if profile != "analysis":
-                forbidden += ["asyncssh"]
-            if profile == "base":
-                forbidden += ["pyarrow"]
-            if profile != "analysis":
-                forbidden += ["torch", "transformers", "timesfm", "huggingface_hub"]
+            forbidden = _forbidden_packages(profile)
             manifest = temp / "expected.json"
             manifest.write_text(
                 json.dumps(
@@ -112,7 +121,29 @@ def main() -> None:
                 cwd=temp,
                 check=True,
             )
-            if profile in ("collector", "analysis"):
+            subprocess.run(
+                [python, "-I", str(ROOT / "scripts/verify_cli_install.py"), profile],
+                cwd=temp,
+                check=True,
+            )
+            if profile == "analysis":
+                if os.environ.get("SCRYNTIC_F24_HOST") == "1":
+                    subprocess.run(
+                        [
+                            python,
+                            "-I",
+                            str(ROOT / "scripts/verify_cli_install.py"),
+                            "analysis-host",
+                        ],
+                        cwd=temp,
+                        check=True,
+                    )
+                else:
+                    print(
+                        "F24 real-host worker success remains unqualified; "
+                        "set SCRYNTIC_F24_HOST=1 for qualification"
+                    )
+            if profile in ("collector", "analysis", "tui"):
                 subprocess.run(
                     [python, "-I", str(ROOT / "scripts/verify_archive_install.py")],
                     cwd=temp,
