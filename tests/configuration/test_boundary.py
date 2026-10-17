@@ -374,6 +374,48 @@ def test_file_replacement_during_read_is_rejected(
         prepared_credentials_2.open()
 
 
+@pytest.mark.parametrize("replacement", ["symlink", "regular", "missing"])
+def test_file_replacement_with_unchanged_fd_metadata_is_rejected(
+    installation: Installation, monkeypatch: pytest.MonkeyPatch, replacement: str
+) -> None:
+    path = installation.credential_dir / "token"
+    path.write_text(SENTINEL)
+    path.chmod(0o600)
+    before = path.stat()
+    original_fstat = os.fstat
+    original_read = os.read
+    replaced = False
+
+    def unchanged_fstat(fd: int) -> os.stat_result:
+        current = original_fstat(fd)
+        if (current.st_dev, current.st_ino) == (before.st_dev, before.st_ino):
+            # Rename need not produce distinguishable timestamps on every filesystem.
+            return before
+        return current
+
+    def replace_then_read(fd: int, count: int) -> bytes:
+        nonlocal replaced
+        if not replaced:
+            original = path.with_name("original")
+            path.rename(original)
+            if replacement == "symlink":
+                path.symlink_to(original)
+            elif replacement == "regular":
+                path.write_text(SENTINEL)
+                path.chmod(0o600)
+            replaced = True
+        return original_read(fd, count)
+
+    monkeypatch.setattr(os, "fstat", unchanged_fstat)
+    monkeypatch.setattr(os, "read", replace_then_read)
+    prepared_credentials = credentials(installation)
+    with pytest.raises(BoundaryError) as error:
+        prepared_credentials.open()
+    assert replaced
+    assert error.value.__context__ is None
+    assert SENTINEL not in str(error.value)
+
+
 def test_credential_change_during_read_is_rejected(
     installation: Installation,
     monkeypatch: pytest.MonkeyPatch,

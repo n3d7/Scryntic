@@ -40,6 +40,8 @@ def test_concurrent_source_mutation_rejects_even_if_copied_bytes_hash_matches(
 ) -> None:
     source, target = tmp_path / "source", tmp_path / "snapshot"
     source.write_bytes(b"reviewed-weights")
+    # A same-tick rewrite need not change filesystem timestamps.
+    os.utime(source, ns=(1_000_000_000, 1_000_000_000))
     checksum = sha256(source.read_bytes()).hexdigest()
     original = os.read
     mutated = False

@@ -234,3 +234,4 @@ local-audits
 # Generated measurements; keep benchmark profiles and curated fixtures versioned
 /benchmarks/results/
 /docs/performance/results/
+docs/task-reports/

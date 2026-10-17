@@ -244,6 +244,26 @@ class DatasetService:
         digest(manifest["parquet"]["sha256"])
         integer(manifest["parquet"]["encoded_bytes"], 1)
 
+    def resolve(self, manifest_sha256: str) -> DatasetRef:
+        """Resolve exact local identity; native parsing remains restricted."""
+        try:
+            digest(manifest_sha256)
+            manifest = primitive_document(
+                self._storage.read_artifact(
+                    manifest_sha256, "json", max_bytes=MAX_PROVENANCE_BYTES
+                ),
+                MAX_PROVENANCE_BYTES,
+            )
+            reference = DatasetRef(
+                manifest_sha256,
+                schema_from(manifest["dataset_schema"]),
+                manifest["row_count"],
+            )
+            self._validate_manifest(reference, manifest)
+            return reference
+        except Exception:
+            raise ImportError("Dataset manifest rejected") from None
+
     def read_manifest(self, reference: DatasetRef) -> dict[str, Any]:
         EVOLVED_DATASET_SCHEMA.require_readable(reference.schema)
         try:

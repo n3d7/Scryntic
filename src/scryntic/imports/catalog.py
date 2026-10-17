@@ -25,6 +25,8 @@ from scryntic.imports.protocol import (
 )
 from scryntic.publication.manifest import ManifestDocument, ManifestRef
 
+_SELECT_MANIFEST = "SELECT manifest FROM imports WHERE manifest_hash=?"
+
 
 def _child(parent: int, name: str) -> int:
     try:
@@ -344,7 +346,7 @@ class ImportCatalog:
                         raise
                     raise
                 row = self._db.execute(
-                    "SELECT manifest FROM imports WHERE manifest_hash=?",
+                    _SELECT_MANIFEST,
                     (document.manifest_hash,),
                 ).fetchone()
                 if row != (data,):
@@ -374,11 +376,27 @@ class ImportCatalog:
             ),
         )
 
+    def resolve(self, manifest_hash: str) -> ManifestDocument:
+        """Resolve an exact accepted document and revalidate its native objects."""
+        self._check()
+        try:
+            digest(manifest_hash)
+            row = self._db.execute(_SELECT_MANIFEST, (manifest_hash,)).fetchone()
+            if row is None or type(row[0]) is not bytes:
+                raise ImportError("Unknown import")
+            document = parse_request(row[0], self.limits)
+            if document.manifest_hash != manifest_hash:
+                raise ImportError("Import identity mismatch")
+            self.inspect(document.ref)
+            return document
+        except Exception:
+            raise ImportError("Import inspection rejected") from None
+
     def inspect(self, reference: ManifestRef) -> ManifestRef:
         self._check()
         try:
             row = self._db.execute(
-                "SELECT manifest FROM imports WHERE manifest_hash=?",
+                _SELECT_MANIFEST,
                 (reference.manifest_hash,),
             ).fetchone()
             if row is None or type(row[0]) is not bytes:

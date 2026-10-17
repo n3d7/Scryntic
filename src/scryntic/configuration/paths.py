@@ -175,6 +175,10 @@ def _read_attempt(
                     data.extend(chunk)
                 after = os.fstat(fd)
                 _file_mode(after, uid, secret=secret)
+                current = os.stat(name, dir_fd=parent, follow_symlinks=False)
+                _file_mode(current, uid, secret=secret)
+                if (before.st_dev, before.st_ino) != (current.st_dev, current.st_ino):
+                    return None
                 if len(data) > limit or (
                     before.st_size,
                     before.st_mtime_ns,
