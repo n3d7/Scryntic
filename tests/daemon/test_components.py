@@ -319,6 +319,7 @@ def test_normalization_barrier_preserves_raw_and_recovers_with_metadata(
     async def run() -> None:
         blocked = Services(config, instruments=())
         await blocked.start()
+        await wait_committed(blocked, count=1)
         async with asyncio.timeout(5):
             while Fault.NORMALIZATION not in blocked.health().faults:
                 await asyncio.sleep(0.01)
