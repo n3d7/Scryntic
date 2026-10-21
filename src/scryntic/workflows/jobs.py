@@ -10,6 +10,7 @@ import stat
 import threading
 from collections.abc import Awaitable, Callable
 from concurrent.futures import Future
+from contextlib import suppress
 from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
@@ -290,7 +291,6 @@ class _Owner:
         await self.call(settle, control=True)
 
     async def close(self) -> None:
-        cancellation: asyncio.CancelledError | None = None
         try:
             await self.stop()
         finally:
@@ -304,17 +304,19 @@ class _Owner:
             ):
                 self.loop.call_soon_threadsafe(self.loop.stop)
             joining = asyncio.create_task(asyncio.to_thread(self.thread.join))
-            while not joining.done():
-                try:
-                    await asyncio.shield(joining)
-                except asyncio.CancelledError as error:
-                    cancellation = error
+            try:
+                await asyncio.shield(joining)
+            except asyncio.CancelledError:
+                while not joining.done():
+                    with suppress(asyncio.CancelledError):
+                        await asyncio.shield(joining)
+                joining.result()
+                self._done.exception()
+                raise
             joining.result()
             failure = self._done.exception()
             if failure is not None and failure is not self._ready.exception():
                 raise failure
-        if cancellation is not None:
-            raise cancellation
 
 
 class JobWorkflows:

@@ -1,0 +1,560 @@
+{
+  "schema_version": 2,
+  "research_date": "2026-10-18",
+  "record_policy": "Consensus fetches were performed before citation. Retained content comprises returned bibliographic metadata, fetch identifiers, URLs, DOI and read-depth annotations, analyst-written paraphrases, and ranked search identities. Full provider abstracts and search snippets are omitted. No verbatim abstract excerpts are retained. This archive is not a raw response dump.",
+  "records": [
+    {
+      "fetch_id": "fc69e4f429c85a9abb78a8e6340dc58b",
+      "retrieved_on": "2026-10-18",
+      "id": "fc69e4f429c85a9abb78a8e6340dc58b",
+      "title": "Empirical Asset Pricing via Machine Learning",
+      "url": "https://consensus.app/papers/empirical-asset-pricing-via-machine-learning-gu-kelly/fc69e4f429c85a9abb78a8e6340dc58b/?utm_source=chatgpt",
+      "metadata": {
+        "authors": "Shihao Gu, Bryan T. Kelly, D. Xiu",
+        "publish_year": "2018",
+        "journal": "The Review of Financial Studies",
+        "citation_count": "2325"
+      },
+      "read_depth": "Selective primary full-text: methodology, data, temporal splitting and empirical results; not every appendix",
+      "doi": "10.1093/rfs/hhaa009",
+      "publication_status": "peer-reviewed journal article",
+      "verification": {
+        "doi": "10.1093/rfs/hhaa009",
+        "publication_year": 2020,
+        "publication_status": "peer-reviewed journal article",
+        "version_read": "author-hosted published PDF",
+        "read_depth": "Selective primary full-text: methodology, data, temporal splitting and empirical results; not every appendix",
+        "primary_url": "https://dachxiu.chicagobooth.edu/download/ML.pdf",
+        "limitations": "Discovery metadata uses 2018 working-paper year. Monthly US equities; no proven transfer to this product or shorter horizons."
+      },
+      "abstract_paraphrase": "The study compares return models in a US equity panel. Flexible nonlinear methods identify useful interactions, with past returns, trading liquidity and risk measures prominent among the signals. Its results require separate testing on other markets and horizons.",
+      "paraphrase_author": "research analyst",
+      "verbatim_abstract_excerpt": null
+    },
+    {
+      "fetch_id": "7871071ac4af5052bf97061507b7e760",
+      "retrieved_on": "2026-10-18",
+      "id": "7871071ac4af5052bf97061507b7e760",
+      "title": "Forecasting the equity premium: can machine learning beat the historical average?",
+      "url": "https://consensus.app/papers/forecasting-the-equity-premium-can-machine-learning-beat-xu-liu/7871071ac4af5052bf97061507b7e760/?utm_source=chatgpt",
+      "metadata": {
+        "authors": "Xingfu Xu, Wei-han Liu",
+        "publish_year": "2024",
+        "journal": "Quantitative Finance",
+        "volume": "24",
+        "pages": "1445 - 1461",
+        "citation_count": "5"
+      },
+      "read_depth": "abstract-only; DOI direct fetch failed",
+      "doi": "10.1080/14697688.2024.2409278",
+      "publication_status": "peer-reviewed journal article",
+      "verification": {
+        "doi": "10.1080/14697688.2024.2409278",
+        "publication_year": 2024,
+        "publication_status": "peer-reviewed journal article",
+        "version_read": "Consensus abstract; DOI metadata cross-checked in indexed bibliographic results",
+        "read_depth": "abstract-only; DOI direct fetch failed",
+        "primary_url": "https://doi.org/10.1080/14697688.2024.2409278",
+        "limitations": "Sample dates, detailed implementation and costs not verified; counterevidence to automatic ML optimism, not a controlled replication of GKX."
+      },
+      "abstract_paraphrase": "For aggregate equity-premium forecasts, the reported machine-learning models fit the historical sample well but generally lose to a simple past-average forecast on later data. Detailed sample construction and implementation were not independently read.",
+      "paraphrase_author": "research analyst",
+      "verbatim_abstract_excerpt": null
+    },
+    {
+      "fetch_id": "dfbddb6c07f55669966ce290335bfd12",
+      "retrieved_on": "2026-10-18",
+      "id": "dfbddb6c07f55669966ce290335bfd12",
+      "title": "The M4 Competition: Results, findings, conclusion and way forward",
+      "url": "https://consensus.app/papers/the-m4-competition-results-findings-conclusion-and-way-makridakis-spiliotis/dfbddb6c07f55669966ce290335bfd12/?utm_source=chatgpt",
+      "metadata": {
+        "authors": "S. Makridakis, Evangelos Spiliotis, Vassilios Assimakopoulos",
+        "publish_year": "2018",
+        "journal": "International Journal of Forecasting",
+        "citation_count": "736"
+      },
+      "read_depth": "metadata and primary indexed abstract only",
+      "doi": "10.1016/j.ijforecast.2018.06.001",
+      "publication_status": "peer-reviewed journal article; preliminary M4 report",
+      "verification": {
+        "doi": "10.1016/j.ijforecast.2018.06.001",
+        "publication_year": 2018,
+        "publication_status": "peer-reviewed journal article; preliminary M4 report",
+        "version_read": "Consensus record with abstract-unavailable notice; indexed journal record",
+        "read_depth": "metadata and primary indexed abstract only",
+        "primary_url": "https://www.sciencedirect.com/science/article/pii/S0169207018300785",
+        "limitations": "Related to the distinct fuller 2020 M4 article, not independent corroboration; main review cites the 2020 article."
+      },
+      "abstract_paraphrase": "Consensus supplied no abstract for this preliminary M4 report. Empirical interpretation relies on separately checked primary material and the distinct, fuller M4 publication.",
+      "paraphrase_author": "research analyst",
+      "verbatim_abstract_excerpt": null
+    },
+    {
+      "fetch_id": "c1447310091a524cb2ec67d43aa765cf",
+      "retrieved_on": "2026-10-18",
+      "id": "c1447310091a524cb2ec67d43aa765cf",
+      "title": "Risks and Returns of Cryptocurrency",
+      "url": "https://consensus.app/papers/risks-and-returns-of-cryptocurrency-liu-tsyvinski/c1447310091a524cb2ec67d43aa765cf/?utm_source=chatgpt",
+      "metadata": {
+        "authors": "Yukun Liu, A. Tsyvinski",
+        "publish_year": "2018",
+        "journal": "The Review of Financial Studies",
+        "citation_count": "952"
+      },
+      "read_depth": "abstract-only; primary full text unavailable",
+      "doi": "10.1093/rfs/hhaa113",
+      "publication_status": "peer-reviewed journal article",
+      "verification": {
+        "doi": "10.1093/rfs/hhaa113",
+        "publication_year": 2021,
+        "publication_status": "peer-reviewed journal article",
+        "version_read": "Consensus abstract; final publication verified on Yale author's publication page",
+        "read_depth": "abstract-only; primary full text unavailable",
+        "primary_url": "https://economics.yale.edu/people/aleh-tsyvinski/papers",
+        "limitations": "Discovery metadata uses 2018 working-paper year; final sample dates and detailed horizon coefficients not verified."
+      },
+      "abstract_paraphrase": "The fetched summary motivates crypto-specific network, trend and attention variables. The final publication was verified, while its detailed sample and horizon-specific estimates remain unexamined in this review.",
+      "paraphrase_author": "research analyst",
+      "verbatim_abstract_excerpt": null
+    },
+    {
+      "fetch_id": "f5ef21e8509b544fba76ccc9aa2de55c",
+      "retrieved_on": "2026-10-18",
+      "id": "f5ef21e8509b544fba76ccc9aa2de55c",
+      "title": "The probability of back-test over-fitting",
+      "url": "https://consensus.app/papers/the-probability-of-backtest-overfitting-bailey-borwein/f5ef21e8509b544fba76ccc9aa2de55c/?utm_source=chatgpt",
+      "metadata": {
+        "authors": "David H. Bailey, J. Borwein, Marcos M. López de Prado, Q. Zhu",
+        "publish_year": "2016",
+        "citation_count": "114"
+      },
+      "read_depth": "Selective primary manuscript: introduction and PBO/CSCV framework",
+      "doi": "10.21314/JCF.2016.322",
+      "publication_status": "peer-reviewed journal article; earlier author manuscript read",
+      "verification": {
+        "doi": "10.21314/JCF.2016.322",
+        "publication_year": 2017,
+        "publication_status": "peer-reviewed journal article; earlier author manuscript read",
+        "version_read": "author manuscript revised February 2015",
+        "read_depth": "Selective primary manuscript: introduction and PBO/CSCV framework",
+        "primary_url": "https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf",
+        "limitations": "Discovery year is 2016. CSCV is a selection diagnostic, not purged CV or causal deployment evaluation; manuscript differs from final journal version."
+      },
+      "abstract_paraphrase": "The authors explain how selecting a winning strategy from many historical trials can exaggerate its likely performance. Their proposed diagnostic estimates selection-related overfit under a specified resampling framework rather than guaranteeing future results.",
+      "paraphrase_author": "research analyst",
+      "verbatim_abstract_excerpt": null
+    },
+    {
+      "fetch_id": "cb608bdcfc4b52baa11789d9cfee6d2c",
+      "retrieved_on": "2026-10-18",
+      "id": "cb608bdcfc4b52baa11789d9cfee6d2c",
+      "title": "Strictly Proper Scoring Rules, Prediction, and Estimation",
+      "url": "https://consensus.app/papers/strictly-proper-scoring-rules-prediction-and-estimation-gneiting-raftery/cb608bdcfc4b52baa11789d9cfee6d2c/?utm_source=chatgpt",
+      "metadata": {
+        "authors": "T. Gneiting, A. Raftery",
+        "publish_year": "2007",
+        "journal": "Journal of the American Statistical Association",
+        "volume": "102",
+        "pages": "359 - 378",
+        "citation_count": "7352"
+      },
+      "verification": {
+        "doi": "10.1198/016214506000001437",
+        "publication_year": 2007,
+        "publication_status": "peer-reviewed journal article",
+        "version_read": "Consensus abstract and indexed primary paper passages",
+        "read_depth": "Abstract plus indexed primary passages; direct author PDF fetch failed",
+        "primary_url": "https://sites.stat.washington.edu/people/raftery/Research/PDF/Gneiting2007jasa.pdf",
+        "limitations": "Theoretical scoring-rule evidence does not establish model calibration or economic value."
+      },
+      "doi": "10.1198/016214506000001437",
+      "publication_status": "peer-reviewed journal article",
+      "read_depth": "Abstract plus indexed primary passages; direct author PDF fetch failed",
+      "abstract_paraphrase": "The paper develops ways to evaluate probability forecasts that reward reporting the forecaster's actual beliefs. It connects distributional, event, quantile and interval evaluation without establishing that a particular fitted model is calibrated.",
+      "paraphrase_author": "research analyst",
+      "verbatim_abstract_excerpt": null
+    },
+    {
+      "fetch_id": "caad141443cf595ba4936f1afcf3c031",
+      "retrieved_on": "2026-10-18",
+      "id": "caad141443cf595ba4936f1afcf3c031",
+      "title": "The M4 Competition: 100,000 time series and 61 forecasting methods",
+      "url": "https://consensus.app/papers/the-m4-competition-100000-time-series-and-61-forecasting-makridakis-spiliotis/caad141443cf595ba4936f1afcf3c031/?utm_source=chatgpt",
+      "metadata": {
+        "authors": "S. Makridakis, Evangelos Spiliotis, Vassilios Assimakopoulos",
+        "publish_year": "2019",
+        "journal": "International Journal of Forecasting",
+        "volume": "36",
+        "pages": "54-74",
+        "citation_count": "1096"
+      },
+      "verification": {
+        "doi": "10.1016/j.ijforecast.2019.04.014",
+        "publication_year": 2020,
+        "publication_status": "peer-reviewed journal article",
+        "version_read": "Consensus record has no abstract; indexed primary journal body passages",
+        "read_depth": "Selective indexed introduction, horizon and methodological/result passages; direct journal open failed",
+        "primary_url": "https://doi.org/10.1016/j.ijforecast.2019.04.014",
+        "limitations": "Discovery metadata uses 2019 online year. Mixed domains; not a financial-return benchmark. Same research line as preliminary M4 report."
+      },
+      "doi": "10.1016/j.ijforecast.2019.04.014",
+      "publication_status": "peer-reviewed journal article",
+      "read_depth": "Selective indexed introduction, horizon and methodological/result passages; direct journal open failed",
+      "abstract_paraphrase": "Consensus supplied no abstract for the fuller M4 article. Separately retrieved journal passages describe a large mixed-domain forecasting comparison that includes uncertainty evaluation; its rankings do not establish financial trading performance.",
+      "paraphrase_author": "research analyst",
+      "verbatim_abstract_excerpt": null
+    },
+    {
+      "fetch_id": "fe5093b7ccba53cf812ebbb5a7505e42",
+      "retrieved_on": "2026-10-18",
+      "id": "fe5093b7ccba53cf812ebbb5a7505e42",
+      "title": "A note on the validity of cross-validation for evaluating autoregressive time series prediction",
+      "url": "https://consensus.app/papers/a-note-on-the-validity-of-crossvalidation-for-evaluating-bergmeir-hyndman/fe5093b7ccba53cf812ebbb5a7505e42/?utm_source=chatgpt",
+      "metadata": {
+        "authors": "C. Bergmeir, Rob J Hyndman, Bonsoo Koo",
+        "publish_year": "2018",
+        "journal": "Comput. Stat. Data Anal.",
+        "volume": "120",
+        "pages": "70-83",
+        "citation_count": "708"
+      },
+      "verification": {
+        "doi": "10.1016/j.csda.2017.11.003",
+        "publication_year": 2018,
+        "publication_status": "peer-reviewed journal article; earlier author manuscript read",
+        "version_read": "author abstract and Monash 2015 manuscript",
+        "read_depth": "Primary author abstract and selective manuscript assumption sections; Consensus abstract unavailable",
+        "primary_url": "https://www.monash.edu/business/econometrics-and-business-statistics/research/publications/ebs/wp10-15.pdf",
+        "limitations": "Restricted purely autoregressive setting with uncorrelated errors; not authorization for shuffled evaluation of drifting multiasset overlapping labels."
+      },
+      "doi": "10.1016/j.csda.2017.11.003",
+      "publication_status": "peer-reviewed journal article; earlier author manuscript read",
+      "read_depth": "Primary author abstract and selective manuscript assumption sections; Consensus abstract unavailable",
+      "abstract_paraphrase": "Consensus supplied no abstract. Separately checked author material supports ordinary cross-validation in restricted autoregressive settings, which does not justify shuffled evaluation of drifting asset panels with overlapping future outcomes.",
+      "paraphrase_author": "research analyst",
+      "verbatim_abstract_excerpt": null
+    }
+  ],
+  "searches": [
+    {
+      "query": "M4 Competition results statistical machine learning combination forecasting Makridakis Spiliotis Assimakopoulos",
+      "retrieved_on": "2026-10-18",
+      "returned_results": {
+        "results": [
+          {
+            "id": "dfbddb6c07f55669966ce290335bfd12",
+            "title": "The M4 Competition: Results, findings, conclusion and way forward",
+            "url": "https://consensus.app/papers/details/dfbddb6c07f55669966ce290335bfd12/?utm_source=chatgpt",
+            "rank": 1
+          },
+          {
+            "id": "caad141443cf595ba4936f1afcf3c031",
+            "title": "The M4 Competition: 100,000 time series and 61 forecasting methods",
+            "url": "https://consensus.app/papers/details/caad141443cf595ba4936f1afcf3c031/?utm_source=chatgpt",
+            "rank": 2
+          },
+          {
+            "id": "b7280604cc3b5c67963ff890f3dac9d4",
+            "title": "A hybrid method of exponential smoothing and recurrent neural networks for time series forecasting",
+            "url": "https://consensus.app/papers/details/b7280604cc3b5c67963ff890f3dac9d4/?utm_source=chatgpt",
+            "rank": 3
+          },
+          {
+            "id": "10d18064cb03554f998e8a8e1f71ef43",
+            "title": "Kaggle forecasting competitions: An overlooked learning opportunity",
+            "url": "https://consensus.app/papers/details/10d18064cb03554f998e8a8e1f71ef43/?utm_source=chatgpt",
+            "rank": 4
+          },
+          {
+            "id": "fd0d0083ca125417bd41de6e1b0533a8",
+            "title": "The value added by machine learning approaches in forecasting",
+            "url": "https://consensus.app/papers/details/fd0d0083ca125417bd41de6e1b0533a8/?utm_source=chatgpt",
+            "rank": 5
+          },
+          {
+            "id": "2a927da523e856c0821bca2d851a1d87",
+            "title": "Machine learning in M4: What makes a good unstructured model?",
+            "url": "https://consensus.app/papers/details/2a927da523e856c0821bca2d851a1d87/?utm_source=chatgpt",
+            "rank": 6
+          },
+          {
+            "id": "a7e5980cbc2e5f05bccf0535d03c7bea",
+            "title": "FFORMA: Feature-based forecast model averaging",
+            "url": "https://consensus.app/papers/details/a7e5980cbc2e5f05bccf0535d03c7bea/?utm_source=chatgpt",
+            "rank": 7
+          },
+          {
+            "id": "c7ad5c8c6af05395ae135561e99f055a",
+            "title": "Fast and accurate yearly time series forecasting with forecast combinations",
+            "url": "https://consensus.app/papers/details/c7ad5c8c6af05395ae135561e99f055a/?utm_source=chatgpt",
+            "rank": 8
+          },
+          {
+            "id": "03f17f3ced8b55d7899c5245f978595f",
+            "title": "A combination-based forecasting method for the M4-competition",
+            "url": "https://consensus.app/papers/details/03f17f3ced8b55d7899c5245f978595f/?utm_source=chatgpt",
+            "rank": 9
+          },
+          {
+            "id": "f3ed9eb645e958268a318ccbe059a024",
+            "title": "A simple combination of univariate models",
+            "url": "https://consensus.app/papers/details/f3ed9eb645e958268a318ccbe059a024/?utm_source=chatgpt",
+            "rank": 10
+          }
+        ]
+      },
+      "usage": {
+        "searches_used": 8,
+        "searches_limit": 30,
+        "papers_per_search": 10
+      },
+      "archive_note": "Provider prose removed; returned result identities, order and available metadata retained."
+    },
+    {
+      "query": "Risks and Returns of Cryptocurrency Liu Tsyvinski momentum attention",
+      "retrieved_on": "2026-10-18",
+      "returned_results": {
+        "results": [
+          {
+            "id": "c1447310091a524cb2ec67d43aa765cf",
+            "title": "Risks and Returns of Cryptocurrency",
+            "url": "https://consensus.app/papers/details/c1447310091a524cb2ec67d43aa765cf/?utm_source=chatgpt",
+            "rank": 1
+          },
+          {
+            "id": "7ab23f02f9cf5dcb8157daf18776d06d",
+            "title": "Common risk factors in the returns on cryptocurrencies",
+            "url": "https://consensus.app/papers/details/7ab23f02f9cf5dcb8157daf18776d06d/?utm_source=chatgpt",
+            "rank": 2
+          },
+          {
+            "id": "32603511a7405d3b9706bb2f775fe25d",
+            "title": "Predictability of cryptocurrency returns: evidence from robust tests",
+            "url": "https://consensus.app/papers/details/32603511a7405d3b9706bb2f775fe25d/?utm_source=chatgpt",
+            "rank": 3
+          },
+          {
+            "id": "e5c9a65132e85c1e9e70fc977b3e0ad2",
+            "title": "Downside risk and the cross-section of cryptocurrency returns",
+            "url": "https://consensus.app/papers/details/e5c9a65132e85c1e9e70fc977b3e0ad2/?utm_source=chatgpt",
+            "rank": 4
+          },
+          {
+            "id": "77714e11cde05a00ad39e20cfcac0eef",
+            "title": "Common Risk Factors in Cryptocurrency ∗",
+            "url": "https://consensus.app/papers/details/77714e11cde05a00ad39e20cfcac0eef/?utm_source=chatgpt",
+            "rank": 5
+          },
+          {
+            "id": "290f4d8c7fb45fcdbf73ea82cbfd13cf",
+            "title": "Dynamic time series momentum of cryptocurrencies",
+            "url": "https://consensus.app/papers/details/290f4d8c7fb45fcdbf73ea82cbfd13cf/?utm_source=chatgpt",
+            "rank": 6
+          },
+          {
+            "id": "90c0dafea3a35e118ce3ae74f56a5e52",
+            "title": "Investor attention and cryptocurrency: Evidence from the Bitcoin market",
+            "url": "https://consensus.app/papers/details/90c0dafea3a35e118ce3ae74f56a5e52/?utm_source=chatgpt",
+            "rank": 7
+          },
+          {
+            "id": "dc52f830fd985f00b066b17f63fcdc42",
+            "title": "Investor attention and idiosyncratic risk in cryptocurrency markets",
+            "url": "https://consensus.app/papers/details/dc52f830fd985f00b066b17f63fcdc42/?utm_source=chatgpt",
+            "rank": 8
+          },
+          {
+            "id": "606817dff4c55dc4ba9248ee6df03afe",
+            "title": "Investor attention and cryptocurrency: Evidence from wavelet-based quantile Granger causality analysis",
+            "url": "https://consensus.app/papers/details/606817dff4c55dc4ba9248ee6df03afe/?utm_source=chatgpt",
+            "rank": 9
+          },
+          {
+            "id": "d92bed33c2585a0f940b909404bc3dba",
+            "title": "Investor attention and cryptocurrency performance",
+            "url": "https://consensus.app/papers/details/d92bed33c2585a0f940b909404bc3dba/?utm_source=chatgpt",
+            "rank": 10
+          }
+        ]
+      },
+      "usage": {
+        "searches_used": 7,
+        "searches_limit": 30,
+        "papers_per_search": 10
+      },
+      "archive_note": "Provider prose removed; returned result identities, order and available metadata retained."
+    },
+    {
+      "query": "Strictly Proper Scoring Rules Prediction and Estimation Gneiting Raftery 2007",
+      "retrieved_on": "2026-10-18",
+      "returned_results": {
+        "results": [
+          {
+            "id": "cb608bdcfc4b52baa11789d9cfee6d2c",
+            "title": "Strictly Proper Scoring Rules, Prediction, and Estimation",
+            "url": "https://consensus.app/papers/details/cb608bdcfc4b52baa11789d9cfee6d2c/?utm_source=chatgpt",
+            "rank": 1
+          },
+          {
+            "id": "b9088aab88355d828651b60dbc27f62f",
+            "title": "Proper Scoring Rules for Estimation and Forecast Evaluation",
+            "url": "https://consensus.app/papers/details/b9088aab88355d828651b60dbc27f62f/?utm_source=chatgpt",
+            "rank": 2
+          },
+          {
+            "id": "57fab6e0abd75f0487522b5ef33ef0d5",
+            "title": "Localizing Strictly Proper Scoring Rules",
+            "url": "https://consensus.app/papers/details/57fab6e0abd75f0487522b5ef33ef0d5/?utm_source=chatgpt",
+            "rank": 3
+          },
+          {
+            "id": "be5d4378ba92552aa42ec7ec93d5c252",
+            "title": "Beyond Strictly Proper Scoring Rules: The Importance of Being Local",
+            "url": "https://consensus.app/papers/details/be5d4378ba92552aa42ec7ec93d5c252/?utm_source=chatgpt",
+            "rank": 4
+          },
+          {
+            "id": "f48c829019b0503f9dec2e0227a63b37",
+            "title": "Choosing a Strictly Proper Scoring Rule",
+            "url": "https://consensus.app/papers/details/f48c829019b0503f9dec2e0227a63b37/?utm_source=chatgpt",
+            "rank": 5
+          },
+          {
+            "id": "519b8a847fbe5ea8b38a6f188149f3fa",
+            "title": "Minimum Scoring Rule Inference",
+            "url": "https://consensus.app/papers/details/519b8a847fbe5ea8b38a6f188149f3fa/?utm_source=chatgpt",
+            "rank": 6
+          },
+          {
+            "id": "e1c4f4c832ec5a08926cbc8a09a33e17",
+            "title": "Proper scoring rules for multivariate probabilistic forecasts based on aggregation and transformation",
+            "url": "https://consensus.app/papers/details/e1c4f4c832ec5a08926cbc8a09a33e17/?utm_source=chatgpt",
+            "rank": 7
+          },
+          {
+            "id": "0e9f2617d42555b3846c2c26345a30cc",
+            "title": "Theory and applications of proper scoring rules",
+            "url": "https://consensus.app/papers/details/0e9f2617d42555b3846c2c26345a30cc/?utm_source=chatgpt",
+            "rank": 8
+          },
+          {
+            "id": "901d9d1ca2205a609bcf6e280db4a679",
+            "title": "A construction principle for proper scoring rules",
+            "url": "https://consensus.app/papers/details/901d9d1ca2205a609bcf6e280db4a679/?utm_source=chatgpt",
+            "rank": 9
+          },
+          {
+            "id": "d20d881ca40157718b23dc9516e9b091",
+            "title": "Tailoring Strictly Proper Scoring Rules for Downstream Tasks: An Application to Causal Inference",
+            "url": "https://consensus.app/papers/details/d20d881ca40157718b23dc9516e9b091/?utm_source=chatgpt",
+            "rank": 10
+          }
+        ]
+      },
+      "usage": {
+        "searches_used": 11,
+        "searches_limit": 30,
+        "papers_per_search": 10
+      },
+      "archive_note": "Provider prose removed; returned result identities, order and available metadata retained."
+    },
+    {
+      "query": "A note on validity cross-validation evaluating autoregressive time series prediction Bergmeir Hyndman Koo",
+      "retrieved_on": "2026-10-18",
+      "returned_results": {
+        "results": [
+          {
+            "id": "fe5093b7ccba53cf812ebbb5a7505e42",
+            "title": "A note on the validity of cross-validation for evaluating autoregressive time series prediction",
+            "url": "https://consensus.app/papers/details/fe5093b7ccba53cf812ebbb5a7505e42/?utm_source=chatgpt",
+            "rank": 1
+          },
+          {
+            "id": "569e467cc1e45e7facb0208667cb2ae8",
+            "title": "Using cross-validation methods to select time series models: Promises and pitfalls.",
+            "url": "https://consensus.app/papers/details/569e467cc1e45e7facb0208667cb2ae8/?utm_source=chatgpt",
+            "rank": 2
+          },
+          {
+            "id": "18c7794229a5562e8147a205443a80ce",
+            "title": "A Note on the Validity of Cross-Validation for Evaluating Time Series Prediction",
+            "url": "https://consensus.app/papers/details/18c7794229a5562e8147a205443a80ce/?utm_source=chatgpt",
+            "rank": 3
+          },
+          {
+            "id": "216f9e759fe15fd8997fc5dd28905975",
+            "title": "Cross validation for uncertain autoregressive model",
+            "url": "https://consensus.app/papers/details/216f9e759fe15fd8997fc5dd28905975/?utm_source=chatgpt",
+            "rank": 4
+          },
+          {
+            "id": "a1386ff5e2f35b44812f4c433327ee58",
+            "title": "Cross-validation aggregation for combining autoregressive neural network forecasts",
+            "url": "https://consensus.app/papers/details/a1386ff5e2f35b44812f4c433327ee58/?utm_source=chatgpt",
+            "rank": 5
+          },
+          {
+            "id": "4fa528bed5fa5524ad46f7d8d6934f23",
+            "title": "Cross-Validatory Model Selection for Bayesian Autoregressions with Exogenous Regressors",
+            "url": "https://consensus.app/papers/details/4fa528bed5fa5524ad46f7d8d6934f23/?utm_source=chatgpt",
+            "rank": 6
+          },
+          {
+            "id": "422748adeb33575d94b91db0cf854c2a",
+            "title": "Implementing Time Series Cross Validation to Evaluate the Forecasting Model Performance",
+            "url": "https://consensus.app/papers/details/422748adeb33575d94b91db0cf854c2a/?utm_source=chatgpt",
+            "rank": 7
+          },
+          {
+            "id": "cc9b78183f635fa89729176eb68c20b2",
+            "title": "A Note on the Finite Sample Bias in Time Series Cross-Validation",
+            "url": "https://consensus.app/papers/details/cc9b78183f635fa89729176eb68c20b2/?utm_source=chatgpt",
+            "rank": 8
+          },
+          {
+            "id": "9cc4db8859735c5fb52dab27be9c1885",
+            "title": "On the use of cross-validation for time series predictor evaluation",
+            "url": "https://consensus.app/papers/details/9cc4db8859735c5fb52dab27be9c1885/?utm_source=chatgpt",
+            "rank": 9
+          },
+          {
+            "id": "3d8f128f71c15563954b4a2661a36d18",
+            "title": "Cross-validation for autoregressive models.",
+            "url": "https://consensus.app/papers/details/3d8f128f71c15563954b4a2661a36d18/?utm_source=chatgpt",
+            "rank": 10
+          }
+        ]
+      },
+      "usage": {
+        "searches_used": 12,
+        "searches_limit": 30,
+        "papers_per_search": 10
+      },
+      "archive_note": "Provider prose removed; returned result identities, order and available metadata retained."
+    }
+  ],
+  "contradictions": [
+    {
+      "papers": [
+        "fc69e4f429c85a9abb78a8e6340dc58b",
+        "7871071ac4af5052bf97061507b7e760"
+      ],
+      "finding": "GKX report ML gains in stock panels and aggregate timing; Xu/Liu generally fail to beat historical average in aggregate equity premium. Different data/model/evaluation designs prevent treating this as an exact controlled replication.",
+      "implication": "Keep simple baselines, specify target and horizon, and require point-in-time out-of-time evaluation."
+    },
+    {
+      "papers": [
+        "caad141443cf595ba4936f1afcf3c031"
+      ],
+      "related_primary_doi": "10.1016/j.ijforecast.2021.11.013",
+      "finding": "M4 reported weak pure-ML submissions while retail M5 strongly favored LightGBM; domains, covariates, participants and evaluation differ.",
+      "implication": "No universal architecture ranking."
+    }
+  ],
+  "retrieval_limitations": [
+    "Three Consensus search attempts returned rate-limit errors, recorded in SEARCH_LOG.md.",
+    "Consensus records may use working-paper or online-first years; verified journal years retained separately.",
+    "Firecrawl search returned insufficient credits and did not execute; no retry.",
+    "Primary retrieval limits and read depth are recorded per paper."
+  ]
+}

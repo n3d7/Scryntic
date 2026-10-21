@@ -1,6 +1,7 @@
 """Admission and validation own result acceptance; provider tasks own no state."""
 
 import asyncio
+import sqlite3
 from collections.abc import Callable
 
 from scryntic.application.analysis import ForecastArtifactRef
@@ -13,6 +14,7 @@ from scryntic.jobs.fake import JobProvider
 from scryntic.jobs.inputs import InputReader
 from scryntic.jobs.result import AdmittedForecast
 from scryntic.jobs.store import JobError, JobStore
+from scryntic.research.ledger import ResearchLedger, guard_dataset
 
 
 class JobService:
@@ -54,13 +56,32 @@ class JobService:
         ):
             raise JobError("Job admission no longer matches operator policy")
         job.review.admit(self._policy, job.forecast, job.intended_use)
+        verified = job.inputs.verified
+        guard_dataset(
+            self._store.installation,
+            job.forecast.dataset.manifest_sha256,
+            {
+                "time_range_ns": [
+                    verified.last_start_ns,
+                    verified.last_start_ns
+                    + job.forecast.frequency_ns * job.forecast.horizon,
+                ]
+            },
+            "inspect",
+        )
         if self._inputs.read(job.forecast) != job.inputs:
             raise JobError("Verified dataset inputs changed")
         return provider
 
     def submit_job(self, job: JobRequest) -> JobRecord:
         self._validate(job)
+        self._audit(job, "registered", 0)
         return self._store.submit(job)
+
+    def _audit(self, job: JobRequest, phase: str, attempt: int) -> None:
+        if ResearchLedger.active(self._store.installation):
+            with ResearchLedger(self._store.installation) as ledger:
+                ledger.trial(job.job_id, job.sha256, phase, attempt)
 
     def submit(
         self,
@@ -90,10 +111,16 @@ class JobService:
         return self.submit_job(job)
 
     def cancel(self, job_id: str) -> JobRecord:
-        record = self._store.cancel(job_id)
-        task = self._active.get(job_id)
-        if task is not None:
-            task.cancel()
+        try:
+            before = self._store.get(job_id)
+            try:
+                self._audit(before.job, "intervention", before.attempt)
+            finally:
+                record = self._store.cancel(job_id)
+        finally:
+            task = self._active.get(job_id)
+            if task is not None:
+                task.cancel()
         return record
 
     def _point(self, phase: str) -> None:
@@ -116,10 +143,13 @@ class JobService:
             self._point("after_success")
 
     def _cancelled(self, active: JobRecord) -> None:
-        if self._closing:
-            self._store.finish(active, JobState.INTERRUPTED, reason="shutdown")
-        else:
-            self._store.cancel(active.job.job_id)
+        try:
+            self._audit(active.job, "intervention", active.attempt)
+        finally:
+            if self._closing:
+                self._store.finish(active, JobState.INTERRUPTED, reason="shutdown")
+            else:
+                self._store.cancel(active.job.job_id)
 
     async def run(self, job_id: str, *, resume: bool = False) -> JobRecord:
         if self._closing:
@@ -133,6 +163,7 @@ class JobService:
         if active.state is not JobState.RUNNING:
             return active
         try:
+            self._audit(active.job, "started", active.attempt)
             provider = self._validate(active.job)
             await self._execute(active, provider)
         except asyncio.CancelledError:
@@ -141,7 +172,9 @@ class JobService:
                 raise
         except Exception:
             self._store.finish(active, JobState.FAILED, reason="provider_failed")
-        return self._store.get(job_id)
+        record = self._store.get(job_id)
+        self._audit(record.job, record.state.value, record.attempt)
+        return record
 
     @staticmethod
     def _owner_cancelled() -> bool:
@@ -189,9 +222,21 @@ class JobService:
     async def aclose(self) -> None:
         self._closing = True
         tasks = tuple(self._active.items())
-        for job_id, task in tasks:
-            active = self._store.get(job_id)
-            self._store.finish(active, JobState.INTERRUPTED, reason="shutdown")
-            task.cancel()
-        if tasks:
-            await asyncio.gather(*(task for _, task in tasks), return_exceptions=True)
+        failure: Exception | None = None
+        try:
+            for job_id, _ in tasks:
+                try:
+                    active = self._store.get(job_id)
+                    self._store.finish(active, JobState.INTERRUPTED, reason="shutdown")
+                except (OSError, ValueError, sqlite3.Error) as error:
+                    if failure is None:
+                        failure = error
+        finally:
+            for _, task in tasks:
+                task.cancel()
+            if tasks:
+                await asyncio.gather(
+                    *(task for _, task in tasks), return_exceptions=True
+                )
+        if failure is not None:
+            raise failure

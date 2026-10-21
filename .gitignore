@@ -235,3 +235,5 @@ local-audits
 /benchmarks/results/
 /docs/performance/results/
 docs/task-reports/
+
+!ARCHITECTURE.md

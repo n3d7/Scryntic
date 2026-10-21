@@ -20,10 +20,12 @@ from scryntic.application.operations import (
     Request,
 )
 from scryntic.configuration.paths import Installation
+from scryntic.dataset.preparation import prepare_dataset
 from scryntic.dataset.protocol import clock_from
 from scryntic.dataset.recipes import CoverageClaim, RecipePolicy
 from scryntic.dataset.schemas import F18_RECIPE_SCHEMA, schema_projection
 from scryntic.dataset.service import DatasetService
+from scryntic.dataset.usage import SourceUsePolicy
 from scryntic.domain.dataset import DatasetRef
 from scryntic.domain.identity import InstrumentId
 from scryntic.domain.time import ClockSample
@@ -194,6 +196,11 @@ class DataWorkflows:
                             "epoch": body.epoch,
                             "sequence": body.sequence,
                             "record_count": body.record_count,
+                            "partition": {
+                                "source": body.partition.source,
+                                "event_family": body.partition.event_family,
+                                "utc_date": body.partition.utc_date,
+                            },
                             "validated": True,
                             "objects": [
                                 {
@@ -210,7 +217,7 @@ class DataWorkflows:
                         },
                     )
                 if isinstance(request, DatasetBuildRequest):
-                    return self._build(datasets, request)
+                    return self._build(catalog, datasets, request)
                 if isinstance(request, DatasetInspectRequest):
                     reference = datasets.resolve(request.manifest_sha256)
                     rows = datasets.inspect(
@@ -254,10 +261,14 @@ class DataWorkflows:
             raise ApplicationError(ErrorCode.FAILED) from None
 
     def _build(
-        self, datasets: DatasetService, request: DatasetBuildRequest
+        self,
+        catalog: ImportCatalog,
+        datasets: DatasetService,
+        request: DatasetBuildRequest,
     ) -> ApplicationResult:
         cutoff = None
         coverage: tuple[CoverageClaim, ...] = ()
+        usage_policy: SourceUsePolicy | None = None
         try:
             if request.cutoff_leaf:
                 cutoff = _clock(
@@ -266,6 +277,10 @@ class DataWorkflows:
             if request.coverage_leaf:
                 coverage = _coverage(
                     self._context.read_config_json(request.coverage_leaf, 1024 * 1024)
+                )
+            if request.usage_policy_leaf:
+                usage_policy = SourceUsePolicy.from_document(
+                    self._context.read_config_json(request.usage_policy_leaf, 65536)
                 )
         except (ValueError, TypeError, KeyError, OverflowError):
             raise ApplicationError(ErrorCode.CONFIGURATION) from None
@@ -278,11 +293,38 @@ class DataWorkflows:
             request.lag_steps,
             request.label_horizon_steps,
         )
-        reference = datasets.build(
-            BuildDatasetRequest(request.manifests, F18_RECIPE_SCHEMA, cutoff),
-            policy=policy,
-            coverage=coverage,
-        ).dataset
+        build_request = BuildDatasetRequest(
+            request.manifests, F18_RECIPE_SCHEMA, cutoff
+        )
+        preparation: dict[str, object] = {}
+        if usage_policy is None:
+            reference = datasets.build(
+                build_request, policy=policy, coverage=coverage
+            ).dataset
+        else:
+            try:
+                prepared = prepare_dataset(
+                    catalog,
+                    datasets,
+                    build_request,
+                    usage_policy=usage_policy,
+                    policy=policy,
+                    coverage=coverage,
+                )
+            except ValueError:
+                raise ApplicationError(ErrorCode.CONFIGURATION) from None
+            reference = prepared.dataset
+            exported = self._context.export_bundle(
+                request.preparation_destination, prepared.export_files()
+            )
+            preparation = {
+                "preparation": {
+                    "purpose": "features-only",
+                    "policy_sha256": usage_policy.sha256,
+                    "receipt_sha256": prepared.receipt_sha256,
+                    "export": exported,
+                }
+            }
         return result(
             request.operation,
             {
@@ -291,6 +333,7 @@ class DataWorkflows:
                 "recipe": schema_projection(F18_RECIPE_SCHEMA),
                 "policy": policy.projection(),
                 "pins": datasets.pins(reference),
+                **preparation,
             },
         )
 

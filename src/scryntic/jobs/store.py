@@ -26,6 +26,7 @@ from scryntic.sqlite_state import connect_pinned, open_private_file, schema_matc
 _LOCK = "provider-jobs.lock"
 _DATABASE = "provider-jobs.sqlite3"
 _SELECT_JOB = "SELECT * FROM jobs WHERE request_id=?"
+_ORDERED_JOBS = "SELECT * FROM jobs ORDER BY request_id"
 _CREATE = """CREATE TABLE jobs (
 request_id TEXT PRIMARY KEY NOT NULL,
 request BLOB NOT NULL,
@@ -58,6 +59,7 @@ class JobStore:
         if max_jobs > 1024:
             raise JobError("Job quota outside bounds")
         self._owner = threading.get_ident()
+        self.installation = installation
         self._clock = clock
         self._max_jobs = max_jobs
         self._closed = False
@@ -108,6 +110,7 @@ class JobStore:
             connection.execute("BEGIN IMMEDIATE")
             yield
             connection.execute("COMMIT")
+            self._audit_states()
         except BaseException as error:
             if isinstance(error, sqlite3.Error):
                 self._failed = True
@@ -222,12 +225,40 @@ class JobStore:
     def _recover(self) -> None:
         with self._transaction():
             now = self.now()
-            for row in self._connection.execute(
-                "SELECT * FROM jobs ORDER BY request_id"
-            ).fetchall():
-                record = self._expire(self._record(row), now)
+            for row in self._connection.execute(_ORDERED_JOBS).fetchall():
+                previous = self._record(row)
+                record = self._expire(previous, now)
                 if record.state is JobState.RUNNING:
                     self._write(record, JobState.INTERRUPTED, now, reason="restarted")
+                    record = self._read(record.job.job_id)
+
+    def _audit_states(self) -> None:
+        """Reconcile committed SQLite facts, including a lost post-commit audit.
+
+        A journal error closes this owner to further work; reopening retries the
+        idempotent audit from authoritative jobs, without resetting either store.
+        """
+        from scryntic.research.ledger import ResearchLedger
+
+        if ResearchLedger.active(self.installation):
+            with ResearchLedger(self.installation) as ledger:
+                for row in self._connection.execute(_ORDERED_JOBS).fetchall():
+                    record = self._record(row)
+                    ledger.trial(record.job.job_id, record.job.sha256, "registered", 0)
+                    if record.attempt:
+                        ledger.trial(
+                            record.job.job_id,
+                            record.job.sha256,
+                            "started",
+                            record.attempt,
+                        )
+                    if record.state not in (JobState.QUEUED, JobState.RUNNING):
+                        ledger.trial(
+                            record.job.job_id,
+                            record.job.sha256,
+                            record.state.value,
+                            record.attempt,
+                        )
 
     def submit(self, job: JobRequest) -> JobRecord:
         data = encode_job(job)
@@ -332,9 +363,7 @@ class JobStore:
         """Bounded owner-thread expiration and counts without exposing job bodies."""
         with self._transaction():
             now = self.now()
-            for row in self._connection.execute(
-                "SELECT * FROM jobs ORDER BY request_id"
-            ).fetchall():
+            for row in self._connection.execute(_ORDERED_JOBS).fetchall():
                 self._expire(self._record(row), now)
             counts = dict.fromkeys(JobState, 0)
             for state, count in self._connection.execute(

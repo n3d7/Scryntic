@@ -62,6 +62,8 @@ class DatasetBuildRequest:
     label_horizon_steps: int = 0
     cutoff_leaf: str = ""
     coverage_leaf: str = ""
+    usage_policy_leaf: str = ""
+    preparation_destination: str = ""
 
     def __post_init__(self) -> None:
         immutable_tuple(self.manifests, 8)
@@ -79,6 +81,14 @@ class DatasetBuildRequest:
         _bounded(self.label_horizon_steps, 0, 128)
         _leaf(self.cutoff_leaf, optional=True)
         _leaf(self.coverage_leaf, optional=True)
+        _leaf(self.usage_policy_leaf, optional=True)
+        _leaf(self.preparation_destination, optional=True)
+        if bool(self.usage_policy_leaf) != bool(self.preparation_destination):
+            raise ValueError(
+                "ML preparation requires source policy and export destination"
+            )
+        if self.usage_policy_leaf and self.label_horizon_steps:
+            raise ValueError("ML preparation is features-only")
         if (self.mode == "as-observed") != bool(self.cutoff_leaf):
             raise ValueError("Strict selection requires an explicit cutoff capture")
 
@@ -174,6 +184,8 @@ def _build_dataset(values: dict[str, str]) -> DatasetBuildRequest:
         label_horizon_steps=int(values["label_horizon_steps"]),
         cutoff_leaf=values["cutoff_leaf"],
         coverage_leaf=values["coverage_leaf"],
+        usage_policy_leaf=values.get("usage_policy_leaf", ""),
+        preparation_destination=values.get("preparation_destination", ""),
     )
 
 
@@ -237,6 +249,11 @@ WORKFLOWS = (
                 help="Required for as-observed; full clock quality evidence.",
             ),
             Field("coverage_leaf", "Protected coverage capture JSON leaf"),
+            Field(
+                "usage_policy_leaf",
+                "Source-use policy JSON leaf (optional ML preparation)",
+            ),
+            Field("preparation_destination", "ML preparation export directory leaf"),
         ),
         _build_dataset,
     ),

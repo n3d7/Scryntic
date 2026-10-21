@@ -417,6 +417,8 @@ def test_failed_owner_close_joins_after_loop_has_closed(
             if cancel_close:
                 closing.cancel()
                 await asyncio.sleep(0)
+                closing.cancel()
+                await asyncio.sleep(0)
             assert not closing.done()
             assert owner.thread.is_alive()
             release_owner.set()

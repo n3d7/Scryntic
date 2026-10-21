@@ -4,7 +4,50 @@ import sys
 
 import pytest
 
+from scryntic.application.operations import ApplicationResult, Request
 from scryntic.cli import main
+from scryntic.configuration.paths import Installation
+
+
+def test_cli_passes_ml_preparation_policy_and_destination(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from scryntic.application.data_operations import DatasetBuildRequest
+    from scryntic.workflows.wire import result
+
+    captured = []
+
+    class Services:
+        def __init__(self, installation: Installation) -> None:
+            pass
+
+        async def execute(self, request: Request) -> ApplicationResult:
+            captured.append(request)
+            return result(request.operation, {"scope": "offline-cli-check"})
+
+        async def aclose(self) -> None:
+            pass
+
+    monkeypatch.setattr("scryntic.cli.ApplicationServices", Services)
+    assert (
+        main(
+            [
+                "dataset",
+                "build",
+                "--manifests",
+                "a" * 64,
+                "--usage-policy-leaf",
+                "research-policy",
+                "--preparation-destination",
+                "prepared",
+            ]
+        )
+        == 0
+    )
+    assert isinstance(captured[0], DatasetBuildRequest)
+    assert captured[0].usage_policy_leaf == "research-policy"
+    assert captured[0].preparation_destination == "prepared"
+    assert json.loads(capsys.readouterr().out)["ok"] is True
 
 
 def test_malformed_cli_is_fixed_json(capsys: pytest.CaptureFixture[str]) -> None:
