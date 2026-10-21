@@ -78,8 +78,10 @@ from scryntic.research.ledger import ResearchLedger, Reservation
 raw = Path("docs/architecture/PI00_RESEARCH_POLICY_v2.json").read_bytes()
 policy = json.loads(raw)
 
+
 def utc_ns(value: str) -> int:
     return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()) * 10**9
+
 
 reservation = Reservation(
     policy_sha256=sha256(raw).hexdigest(),
