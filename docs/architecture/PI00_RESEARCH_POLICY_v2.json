@@ -1,0 +1,207 @@
+{
+  "architecture_approved": true,
+  "chronology": {
+    "all_intervals": "half-open UTC; requested calendars are policy choices, not claims of data availability",
+    "calibration": [
+      "2025-01-01T00:00:00Z",
+      "2026-01-01T00:00:00Z"
+    ],
+    "common_origins": true,
+    "development": [
+      "2020-01-01T00:00:00Z",
+      "2025-01-01T00:00:00Z"
+    ],
+    "embargo_rule": "28d between fitting/calibration and scored validation blocks, plus any larger registered actual feature/label span; no later-fold training on earlier validation futures",
+    "embargo_seconds": 2419200,
+    "exploratory_test": [
+      "2026-01-01T00:00:00Z",
+      "2026-10-01T00:00:00Z"
+    ],
+    "historic_contamination": "unknown; all historical periods are development evidence, never an untouched final holdout",
+    "purging": "exclude origins whose label endpoint reaches or crosses the next partition; nominal max horizon 28d. Fit transforms and calibration on their own earlier permitted partition only."
+  },
+  "coverage": {
+    "forward_plane": "as-observed only after source/clock/availability qualification",
+    "historical_plane": "historical-reconstruction; unknown first-seen/revision times explicitly unknown",
+    "known_only": "Binance Vision BTCUSDT and ETHUSDT monthly 1h USD-M archives: 81 verified ZIPs and 59160 ordered rows per instrument; no missing or duplicate hours in the observed interval. Original release/revision timestamps unknown.",
+    "minimum_complete_fraction": "0.99 per instrument/horizon, with all exclusions and denominator reported; no forward fill of labels; no claims below threshold",
+    "verified_historical_range": [
+      "2020-01-01T00:00:00Z",
+      "2026-10-01T00:00:00Z"
+    ],
+    "verified_rows": {
+      "Binance:USD-M:BTCUSDT:1h": 59160,
+      "Binance:USD-M:ETHUSDT:1h": 59160
+    },
+    "archive_observation_limit": "Archive content was inspected for schema and coverage only. Candle time is not first-seen time; no historical PIT or final-range independence follows.",
+    "receipt_sha256": "e1a90fd1fb53d52721da5db378ba5e6b22fc7d323f52d05356c1530d7fffca6c"
+  },
+  "current_gates": {
+    "final_access_allowed": false,
+    "market_data_downloads_authorized_by_this_policy": false,
+    "outstanding": [
+      "Bybit source-specific retention/research rights and eligibility before its use",
+      "forward source and observed availability qualification before t+60s or forward-performance claims",
+      "installation-specific reservation and ledger enrollment before any fitting",
+      "power feasibility from development-only residuals before any final claim",
+      "PI02 separately approved before any fitting"
+    ],
+    "pi00_complete": true,
+    "training_allowed": false,
+    "scope_of_completion": "Frozen bounded historical-reconstruction policy and future final reservation; no live/PIT source, fitting, final-label access, or predictive result admitted."
+  },
+  "evaluation": {
+    "baseline_selection": "strongest MAE baseline selected only on development folds; freeze its parameters before calibration/test",
+    "baselines": [
+      "zero log-return (random-walk price)",
+      "training-only mean log-return per horizon",
+      "ridge AR with lag counts 1 and 24, regularization fixed 1.0, training-only standardization; no search"
+    ],
+    "calibration": "if supported: nominal80% and95% intervals; absolute coverage error <=0.05 and <=0.03 respectively; report block-bootstrap coverage CI and width. Each direction reliability bin needs >=30 independent effective blocks; otherwise not qualified. No fabricated probabilities or forced distribution adapters.",
+    "long_horizon_delay": "40 independent 28d blocks require at least1120d of suitable forward labels, longer with gaps/dependence; final reservation intentionally spans years. Earlier results are provisional.",
+    "meaningful_margin": "at least 0.02 relative MAE improvement; lower simultaneous 95% confidence bound must exceed 0.02, not merely zero",
+    "minimum_block_duration_seconds": {
+      "2419200": 2419200,
+      "3600": 86400,
+      "604800": 604800,
+      "86400": 86400
+    },
+    "minimum_nonoverlapping_blocks": {
+      "2419200": 40,
+      "3600": 240,
+      "604800": 60,
+      "86400": 120
+    },
+    "multiplicity": "Holm control familywise alpha0.05 across all declared horizon claims and <=8 attempted candidate configurations; include failed trials and interventions; final aggregate is confirmatory only after all required horizon/sample gates",
+    "primary": "equal-weight mean across registered horizons of per-horizon MAE skill on log returns vs strongest registered baseline; per-horizon claims also required",
+    "sample_rule": "required blocks are minimum feasibility floors, not a demonstrated power calculation; dependence may reduce eligibility further. No significance/skill claim until confidence and margin gates pass.",
+    "secondary": [
+      "RMSE log return",
+      "direction balanced accuracy with zero-tie accounting",
+      "magnitude MAE",
+      "pinball loss/CRPS only for genuinely supported predictive distributions",
+      "Brier/log score only with supported calibrated direction probabilities",
+      "economic diagnostic: fixed hypothetical exposure with documented fees/funding/spread/slippage; no execution or profitability inference"
+    ],
+    "stop": "8 total attempted trial/configuration slots including failures; no outcome-driven early stopping, repeated holdout peeking or adaptive final thresholds. Budget exhaustion is a stop, not success.",
+    "uncertainty": "paired chronological moving-block bootstrap, 2000 draws, seed42; synchronized blocks across venues/assets; block length at least max(horizon, observed dependence span) and never pool venue counts as independence"
+  },
+  "final_holdout": {
+    "access": "no research or early-job final-label access. Only future separately qualified evaluator may receive a specific grant; PI01 adds no such grant.",
+    "contamination_status": "future at registration; no market data fetched in this task; any later access must be audited; pretraining knowledge not assumed clean",
+    "end": "2030-01-01T00:00:00Z",
+    "if_contaminated": "invalidate confirmatory claim, preserve access record, register a later genuinely future reservation before further evaluation; never erase or reset evidence",
+    "origin_rule": "base and endpoint fully in reserved interval, label mature before scoring",
+    "reporting": "until gates mature, exploratory/forward monitoring only; no automatic claim of predictive improvement",
+    "selection": "future-only labels not yet existing at registration; no inspected historical independence inferred",
+    "start": "2026-11-01T00:00:00Z"
+  },
+  "origin_target": {
+    "cross_asset_rule": "common forecast-origin cutoffs; BTC and ETH venues are dependent, not four independent samples",
+    "daily_grid": "00:00 UTC reference close",
+    "information_cutoff": "actual issued_at, common across venues/assets for the origin; observations and revisions available by this time only",
+    "issued_at": "t+60s; skip if finalized P(t) was not observed by cutoff; endpoint must remain strictly after issuance",
+    "label_maturity": "endpoint candle finalized and actually received; score only after endpoint+60s and observed finality. Unknown historical release time remains unknown, never backdated. Missing/nonpositive prices or gaps invalidate label.",
+    "origin_cadence_seconds": {
+      "2419200": 86400,
+      "3600": 3600,
+      "604800": 86400,
+      "86400": 86400
+    },
+    "price_basis": "same venue/category/instrument and last-trade-close throughout",
+    "reference_grid": "UTC hourly candle end t; finalized last-trade close P(t), no mark/index substitution",
+    "secondary_targets": [
+      "sign(log_return), with zero separate and no artificial tie wins",
+      "absolute log-return magnitude"
+    ],
+    "target": "log(P(t+h)/P(t)); nominal h measured from reference close t, not issuance; record both timestamps"
+  },
+  "policy_id": "pi00-private-cpu-v2",
+  "registered_at": "2026-10-20T22:46:46.680937+00:00",
+  "resources": {
+    "address_space_bytes": 8589934592,
+    "basis": "current Debian6CPU /33536053248B RAM /91627094016B free at probe; conservative existing f22-cpu-v1 envelope, actual training controls not requalified",
+    "cpu_seconds_per_job": 90,
+    "cpu_threads": 1,
+    "execution": "existing qualified local CPU only; this server run qualifies synthetic preparation, not a model runtime",
+    "max_active_jobs": 1,
+    "max_total_trials_including_failures": 8,
+    "max_worker_tasks": 8,
+    "memory_bytes": 4294967296,
+    "minimum_free_storage_before_admission_bytes": 17179869184,
+    "pilot_storage_bytes": 8589934592,
+    "scope": "global across venues, horizons, retries and failures; no GPU/remote-model fleet, paid data or unrestricted downloads",
+    "wall_seconds_per_job": 180
+  },
+  "revision_policy": {
+    "after_observing_evaluation": "threshold/feature/hypothesis change is a new exploratory family and consumes budget; never rewrite this registration or reclaim final independence",
+    "before_any_fit": "version and hash all scientific/source/coverage decisions; unresolved rights cannot become permitted solely by changing a flag",
+    "source_admission": "retain evidence, territory eligibility, exact historical coverage and availability inventory before an amended policy activates a source; no silent activation",
+    "predecessor": {
+      "policy_id": "pi00-private-cpu-v1",
+      "sha256": "5df47982d6c8e71c658cc05d401eacba65271803805d8c532da261f02c795a53"
+    },
+    "change": "Add verified Binance historical-reconstruction rights/coverage; preserve scientific thresholds, horizons, chronology, final holdout and resource ceilings. Bybit and forward plane remain pending."
+  },
+  "schema": {
+    "major": 1,
+    "minor": 0,
+    "name": "scryntic.registered-research-policy"
+  },
+  "scope": {
+    "active_sources": [],
+    "candle_seconds": 3600,
+    "horizons_seconds": [
+      3600,
+      86400,
+      604800,
+      2419200
+    ],
+    "live_api_archive_rights_interchangeable": false,
+    "purpose": "private-noncommercial-research",
+    "venues": [
+      {
+        "admission": "pending",
+        "category": "linear",
+        "rights_evidence": "docs/research/bybit/BVAPO_OPERATOR_TEXT_REVIEW_2026-10-20.md",
+        "source": "public V5 final trade-price candles",
+        "symbols": [
+          "BTCUSDT",
+          "ETHUSDT"
+        ],
+        "venue": "Bybit"
+      },
+      {
+        "admission": "permitted_private_noncommercial_historical_reconstruction_only",
+        "category": "USD-M futures",
+        "rights_evidence": "docs/research/data-sources/SOURCE_ADMISSION_RECEIPT_2026-10-21.json",
+        "source": "Binance Vision monthly historical candle archive",
+        "symbols": [
+          "BTCUSDT",
+          "ETHUSDT"
+        ],
+        "venue": "Binance"
+      }
+    ],
+    "admitted_historical_sources": [
+      {
+        "venue": "Binance",
+        "category": "USD-M futures",
+        "symbols": [
+          "BTCUSDT",
+          "ETHUSDT"
+        ],
+        "interval": "1h",
+        "observed_range": [
+          "2020-01-01T00:00:00Z",
+          "2026-10-01T00:00:00Z"
+        ],
+        "use": "private noncommercial historical reconstruction only",
+        "coverage_receipt": "docs/research/data-sources/BINANCE_COVERAGE_RECEIPT_2026-10-21.json",
+        "rights_receipt": "docs/research/data-sources/SOURCE_ADMISSION_RECEIPT_2026-10-21.json"
+      }
+    ],
+    "forward_source_admission": "pending; archival receipt cannot establish t+60s point-in-time availability or live rights"
+  },
+  "status": "frozen_historical_reconstruction_policy"
+}

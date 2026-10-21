@@ -1,0 +1,85 @@
+{
+  "schema": {
+    "name": "scryntic.pi01-compatibility-fixtures",
+    "major": 1,
+    "minor": 0
+  },
+  "git_head": "8e1465fd389e440763ef69b7c59832ad2f8bd8de",
+  "scope": "Exact pre-existing artifact and fixture-source pins. Generated test snapshots are exercised by regression; this inventory does not invent a historical production dataset hash.",
+  "files": [
+    {
+      "path": "tests/archive/fixtures/f07-parquet-pyarrow-v1.parquet",
+      "head_sha256": "f7d43f0b6eededc7cdea5b8c4c656904595eb59d4eab1f9c79c650677eccc883",
+      "current_sha256": "f7d43f0b6eededc7cdea5b8c4c656904595eb59d4eab1f9c79c650677eccc883",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/archive/fixtures/f07-parquet-pyarrow-v1.json",
+      "head_sha256": "12148f29a983b545b156a86938adc19bb4aa6d88950fbffec1b68d97817f1db9",
+      "current_sha256": "12148f29a983b545b156a86938adc19bb4aa6d88950fbffec1b68d97817f1db9",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/archive/test_prior_codec.py",
+      "head_sha256": "966bd1d6c37a34bc0c2fd7170d5b2a7df0bb2c1c7c3b4ca1820a0c2c9d14c723",
+      "current_sha256": "966bd1d6c37a34bc0c2fd7170d5b2a7df0bb2c1c7c3b4ca1820a0c2c9d14c723",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/dataset/test_imported.py",
+      "head_sha256": "65bf459b94e2d581109ee672e11c12eab234276e04f949f02c9c9b76cf2b241e",
+      "current_sha256": "65bf459b94e2d581109ee672e11c12eab234276e04f949f02c9c9b76cf2b241e",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/dataset/test_imported_security.py",
+      "head_sha256": "5869b5550325c2620389740e2baa26cffdfb8106f2bfb103d6260342f620d9b9",
+      "current_sha256": "5869b5550325c2620389740e2baa26cffdfb8106f2bfb103d6260342f620d9b9",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/dataset/test_imported_recipes.py",
+      "head_sha256": "a81b2004b607f63da6b2f8e97c1cdcfe45b9a51e0fc6a60e7a608ee94882d8dc",
+      "current_sha256": "a81b2004b607f63da6b2f8e97c1cdcfe45b9a51e0fc6a60e7a608ee94882d8dc",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/replay/test_service.py",
+      "head_sha256": "ab610b4b2e244362f06381feac6f025ac3a9a6bf3ffa6773ffb36f57895daa61",
+      "current_sha256": "ab610b4b2e244362f06381feac6f025ac3a9a6bf3ffa6773ffb36f57895daa61",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/jobs/test_codec.py",
+      "head_sha256": "88d639ea2b2598c049975e9cade297b769ddbbb2e8c9526274c8a67c6c39360b",
+      "current_sha256": "88d639ea2b2598c049975e9cade297b769ddbbb2e8c9526274c8a67c6c39360b",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/jobs/test_store.py",
+      "head_sha256": "fd8ab4a319d7912f5cd8d4188ff14dcc5b8d28ec34b05dd69f99e5c57946d99d",
+      "current_sha256": "fd8ab4a319d7912f5cd8d4188ff14dcc5b8d28ec34b05dd69f99e5c57946d99d",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/forecast/test_analysis.py",
+      "head_sha256": "d57cfc07a6d71bb4e1b9eddb7513d2de433e91caf6970436db8fe5f75221c7c7",
+      "current_sha256": "d57cfc07a6d71bb4e1b9eddb7513d2de433e91caf6970436db8fe5f75221c7c7",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "tests/contracts/test_domain.py",
+      "head_sha256": "1088022d0dfab97c5cc86628936635141d87a81022d3ecd424119a272b2885c1",
+      "current_sha256": "1088022d0dfab97c5cc86628936635141d87a81022d3ecd424119a272b2885c1",
+      "unchanged_from_head": true
+    },
+    {
+      "path": "uv.lock",
+      "head_sha256": "f67863aaf9c8ac181566aa98d07b4fe26564d30f0076c8a4553549093d54365f",
+      "current_sha256": "4f28c9827902e55d6d704b6e34e2bc87383e4179ae296ae2488c397105b1efa9",
+      "unchanged_from_head": false,
+      "change_reason": "Intentional aiohttp 3.14.3 to 3.14.5 and certifi 2026.7.22 to 2026.10.19 advisory fixes; historical HEAD pin retained."
+    }
+  ],
+  "rollback_limit": "Original artifact readers remain compatible; old software does not enforce the opt-in research reservation and must not run protected research."
+}

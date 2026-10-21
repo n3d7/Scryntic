@@ -94,7 +94,13 @@ class WorkflowContext:
             reference_name(leaf)
         except BoundaryError:
             raise ApplicationError(ErrorCode.INVALID) from None
-        allowed = {"dataset.manifest.json", "dataset.parquet", "replay.json"}
+        allowed = {
+            "dataset.manifest.json",
+            "dataset.parquet",
+            "replay.json",
+            "source-use-policy.json",
+            "preparation.json",
+        }
         if (
             not files
             or set(files) - allowed
@@ -194,4 +200,4 @@ def _write(parent: int, name: str, data: bytes) -> None:
         os.close(fd)
 
 
-LOCK_SHA256 = "f67863aaf9c8ac181566aa98d07b4fe26564d30f0076c8a4553549093d54365f"
+LOCK_SHA256 = "4f28c9827902e55d6d704b6e34e2bc87383e4179ae296ae2488c397105b1efa9"

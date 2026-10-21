@@ -1,0 +1,890 @@
+{
+  "id": "remaining-budget-review-2026-10-18",
+  "date": "2026-10-18",
+  "status": "complete",
+  "scope": "Focused supplement: crypto factor/horizon evidence, tabular model baselines, financial news/LLM leakage, multiple-model statistical selection.",
+  "budget": {
+    "user_reported_remaining_uses": 12,
+    "conservative_total_consensus_call_cap": 12,
+    "calls_attempted": 12,
+    "successful_searches": 5,
+    "successful_fetches": 7,
+    "provider_first_receipt": {
+      "searches_used": 12,
+      "searches_limit": 30
+    },
+    "note": "User-reported remaining uses were treated as a ceiling. Collection stopped at 12 total tool calls (5 searches, 7 fetches). Provider search-usage receipts included repeated counter values; billing semantics were not independently established. No additional quota was inferred."
+  },
+  "searches": [
+    {
+      "query": "Common Risk Factors in Cryptocurrency Liu Tsyvinski Wu cross section returns momentum daily weekly",
+      "result_count": 10,
+      "receipt": {
+        "searches_used": 12,
+        "searches_limit": 30
+      },
+      "selected_ids": [
+        "77714e11cde05a00ad39e20cfcac0eef",
+        "638400d238e05840929ab25bd177b5a3",
+        "17147a989ea15fc29b565f1ca75fc731"
+      ],
+      "results": [
+        {
+          "id": "7ab23f02f9cf5dcb8157daf18776d06d",
+          "title": "Common risk factors in the returns on cryptocurrencies",
+          "year": 2019,
+          "citation_count": 97,
+          "rank": 1,
+          "url": "https://consensus.app/papers/details/7ab23f02f9cf5dcb8157daf18776d06d/?utm_source=chatgpt"
+        },
+        {
+          "id": "77714e11cde05a00ad39e20cfcac0eef",
+          "title": "Common Risk Factors in Cryptocurrency",
+          "year": 2019,
+          "citation_count": 514,
+          "rank": 2,
+          "url": "https://consensus.app/papers/details/77714e11cde05a00ad39e20cfcac0eef/?utm_source=chatgpt"
+        },
+        {
+          "id": "17147a989ea15fc29b565f1ca75fc731",
+          "title": "An empirical investigation on risk factors in cryptocurrency futures",
+          "year": 2023,
+          "citation_count": 5,
+          "rank": 3,
+          "url": "https://consensus.app/papers/details/17147a989ea15fc29b565f1ca75fc731/?utm_source=chatgpt"
+        },
+        {
+          "id": "e5c9a65132e85c1e9e70fc977b3e0ad2",
+          "title": "Downside risk and the cross-section of cryptocurrency returns",
+          "year": 2021,
+          "citation_count": 117,
+          "rank": 4,
+          "url": "https://consensus.app/papers/details/e5c9a65132e85c1e9e70fc977b3e0ad2/?utm_source=chatgpt"
+        },
+        {
+          "id": "c1447310091a524cb2ec67d43aa765cf",
+          "title": "Risks and Returns of Cryptocurrency",
+          "year": 2018,
+          "citation_count": 952,
+          "rank": 5,
+          "url": "https://consensus.app/papers/details/c1447310091a524cb2ec67d43aa765cf/?utm_source=chatgpt"
+        },
+        {
+          "id": "638400d238e05840929ab25bd177b5a3",
+          "title": "Common factors in the returns on cryptocurrencies",
+          "year": 2024,
+          "citation_count": 1,
+          "rank": 6,
+          "url": "https://consensus.app/papers/details/638400d238e05840929ab25bd177b5a3/?utm_source=chatgpt"
+        },
+        {
+          "id": "d9d824f9603e50f7b9903f0885975246",
+          "title": "The Pricing of Jump and Diffusive Risks in the Cross-Section of Cryptocurrency Returns",
+          "year": 2023,
+          "citation_count": 6,
+          "rank": 7,
+          "url": "https://consensus.app/papers/details/d9d824f9603e50f7b9903f0885975246/?utm_source=chatgpt"
+        },
+        {
+          "id": "13af0380042f533fadc70e1dc32c6803",
+          "title": "The Common Risk Drivers of Cryptocurrency Markets",
+          "year": 2026,
+          "citation_count": 1,
+          "rank": 8,
+          "url": "https://consensus.app/papers/details/13af0380042f533fadc70e1dc32c6803/?utm_source=chatgpt"
+        },
+        {
+          "id": "2134bf18280552b984d5161647c1701a",
+          "title": "The Cross-Section of Cryptocurrency Risk and Return",
+          "year": 2020,
+          "citation_count": 4,
+          "rank": 9,
+          "url": "https://consensus.app/papers/details/2134bf18280552b984d5161647c1701a/?utm_source=chatgpt"
+        },
+        {
+          "id": "a6cea9515c0755b191e9666bfb25055f",
+          "title": "Crypto pricing with hidden factors",
+          "year": 2026,
+          "citation_count": 0,
+          "rank": 10,
+          "url": "https://consensus.app/papers/details/a6cea9515c0755b191e9666bfb25055f/?utm_source=chatgpt"
+        }
+      ]
+    },
+    {
+      "query": "Why do tree based models still outperform deep learning on typical tabular data Grinsztajn Ouillon Varoquaux",
+      "result_count": 9,
+      "receipt": {
+        "searches_used": 14,
+        "searches_limit": 30,
+        "papers_per_search": 10
+      },
+      "results": [
+        {
+          "rank": 1,
+          "title": "Why do tree-based models still outperform deep learning on typical tabular data?",
+          "authors": [
+            "Léo Grinsztajn",
+            "Edouard Oyallon",
+            "G. Varoquaux"
+          ],
+          "year": 2022,
+          "citation_count": 2242,
+          "url": "https://consensus.app/papers/details/3bc887a119c25257af04c0a792ee2971/?utm_source=chatgpt",
+          "id": "3bc887a119c25257af04c0a792ee2971"
+        },
+        {
+          "rank": 2,
+          "title": "A Survey on Tabular Data: From Tree-based Methods to Tabular Deep Learning",
+          "authors": [
+            "Shriyank Somvanshi",
+            "Subasish Das",
+            "S. Javed",
+            "Gian Antariksa",
+            "Ahmed Hossain"
+          ],
+          "year": 2026,
+          "citation_count": 10,
+          "url": "https://consensus.app/papers/details/5768ff9e721558cf9a26af34f95ce69b/?utm_source=chatgpt",
+          "id": "5768ff9e721558cf9a26af34f95ce69b"
+        },
+        {
+          "rank": 3,
+          "title": "Tabular Data: Deep Learning is Not All You Need",
+          "authors": [
+            "Ravid Shwartz-Ziv",
+            "Amitai Armon"
+          ],
+          "year": 2021,
+          "citation_count": 2382,
+          "url": "https://consensus.app/papers/details/af4520b6159f5348be55f5dfa3c66813/?utm_source=chatgpt",
+          "id": "af4520b6159f5348be55f5dfa3c66813"
+        },
+        {
+          "rank": 4,
+          "title": "Deep Neural Networks and Tabular Data: A Survey",
+          "authors": [
+            "V. Borisov",
+            "Tobias Leemann",
+            "Kathrin Sessler",
+            "Johannes Haug",
+            "Martin Pawelczyk",
+            "Gjergji Kasneci"
+          ],
+          "year": 2021,
+          "citation_count": 1379,
+          "url": "https://consensus.app/papers/details/5e9e95a346b15704885c8bd6197555cf/?utm_source=chatgpt",
+          "id": "5e9e95a346b15704885c8bd6197555cf"
+        },
+        {
+          "rank": 5,
+          "title": "Confirming the statistically significant superiority of tree-based machine learning algorithms over their counterparts for tabular data",
+          "authors": [
+            "Shahadat Uddin",
+            "Hao-Hui Lu"
+          ],
+          "year": 2024,
+          "citation_count": 104,
+          "url": "https://consensus.app/papers/details/dc1341adcf2455398d25c6c2ffdf59aa/?utm_source=chatgpt",
+          "id": "dc1341adcf2455398d25c6c2ffdf59aa"
+        },
+        {
+          "rank": 6,
+          "title": "A Closer Look at Deep Learning on Tabular Data",
+          "authors": [
+            "Han-Jia Ye",
+            "Si-Yang Liu",
+            "Hao-Run Cai",
+            "Qi-Le Zhou",
+            "De-Chuan Zhan"
+          ],
+          "year": 2024,
+          "citation_count": 38,
+          "url": "https://consensus.app/papers/details/9e320b9311485bccb20dd5f01cf7aa12/?utm_source=chatgpt",
+          "id": "9e320b9311485bccb20dd5f01cf7aa12"
+        },
+        {
+          "rank": 7,
+          "title": "When Do Neural Nets Outperform Boosted Trees on Tabular Data?",
+          "authors": [
+            "Duncan C. McElfresh",
+            "Sujay Khandagale",
+            "Jonathan Valverde",
+            "C. VishakPrasad",
+            "Ben Feuer",
+            "Chinmay Hegde",
+            "Ganesh Ramakrishnan",
+            "Micah Goldblum",
+            "Colin White"
+          ],
+          "year": 2023,
+          "citation_count": 415,
+          "url": "https://consensus.app/papers/details/f0220fbe11b15733bcb4de318fe4cc59/?utm_source=chatgpt",
+          "id": "f0220fbe11b15733bcb4de318fe4cc59"
+        },
+        {
+          "rank": 8,
+          "title": "Anomaly-based error and intrusion detection in tabular data: No DNN outperforms tree-based classifiers",
+          "authors": [
+            "Tommaso Zoppi",
+            "Stefano Gazzini",
+            "Andrea Ceccarelli"
+          ],
+          "year": 2024,
+          "citation_count": 33,
+          "url": "https://consensus.app/papers/details/c23804e470c75fb1b5247676480e1e84/?utm_source=chatgpt",
+          "id": "c23804e470c75fb1b5247676480e1e84"
+        },
+        {
+          "rank": 9,
+          "title": "A Closer Look at Deep Learning Methods on Tabular Datasets",
+          "authors": [
+            "Han-Jia Ye",
+            "Si-Yang Liu",
+            "Hao-Run Cai",
+            "Qi-Le Zhou",
+            "De-Chuan Zhan"
+          ],
+          "year": 2024,
+          "citation_count": 54,
+          "url": "https://consensus.app/papers/details/a6477284c5b05e7b91c91348a2bffb92/?utm_source=chatgpt",
+          "id": "a6477284c5b05e7b91c91348a2bffb92"
+        }
+      ]
+    },
+    {
+      "query": "Accurate predictions on small data with a tabular foundation model TabPFN Hollmann Muller Purucker Nature 2025",
+      "result_count": 10,
+      "receipt": {
+        "searches_used": 15,
+        "searches_limit": 30,
+        "papers_per_search": 10
+      },
+      "results": [
+        {
+          "rank": 1,
+          "id": "cf371b1bbafe5b25a344217711bfc76b",
+          "title": "Accurate predictions on small data with a tabular foundation model",
+          "authors": [
+            "N. Hollmann",
+            "Samuel Müller",
+            "L. Purucker",
+            "Arjun Krishnakumar",
+            "Max Körfer",
+            "Shi Bin Hoo",
+            "R. Schirrmeister",
+            "Frank Hutter"
+          ],
+          "year": 2025,
+          "citation_count": 1611,
+          "url": "https://consensus.app/papers/details/cf371b1bbafe5b25a344217711bfc76b/?utm_source=chatgpt"
+        },
+        {
+          "rank": 2,
+          "id": "af6a26c59ee95338bee1c25432d7bcd7",
+          "title": "TabPFN Opens New Avenues for Small-Data Tabular Learning in Drug Discovery",
+          "authors": [
+            "Woruo Chen",
+            "Yao Tian",
+            "Nian Liao",
+            "You-Chao Deng",
+            "Dejun Jiang",
+            "Dong-Sheng Cao"
+          ],
+          "year": 2026,
+          "citation_count": 7,
+          "url": "https://consensus.app/papers/details/af6a26c59ee95338bee1c25432d7bcd7/?utm_source=chatgpt"
+        },
+        {
+          "rank": 3,
+          "id": "6a73395ab90e58319b18da28b305b17d",
+          "title": "TabPFN-2.5: Advancing the State of the Art in Tabular Foundation Models",
+          "authors": [
+            "Léo Grinsztajn",
+            "Klemens Floge",
+            "Oscar Key",
+            "Felix Birkel",
+            "Philippe Jund",
+            "Brendan Roof",
+            "Benjamin Jäger",
+            "Dominik Safaric",
+            "Simone Alessi",
+            "A. Hayler",
+            "Mihir Manium",
+            "Rose Yu",
+            "F. Jablonski",
+            "Shi Bin Hoo",
+            "Anurag Garg",
+            "Jake Robertson",
+            "Magnus Bühler",
+            "Vladyslav Moroshan",
+            "L. Purucker",
+            "Clara Cornu",
+            "L. Wehrhahn",
+            "Alessandro Bonetto",
+            "Bernhard Schölkopf",
+            "Sauraj Gambhir",
+            "N. Hollmann",
+            "Frank Hutter"
+          ],
+          "year": 2025,
+          "citation_count": 160,
+          "url": "https://consensus.app/papers/details/6a73395ab90e58319b18da28b305b17d/?utm_source=chatgpt"
+        },
+        {
+          "rank": 4,
+          "id": "687d31fde70559d7b140d7ac02d1ec62",
+          "title": "TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second",
+          "authors": [
+            "N. Hollmann",
+            "Samuel Müller",
+            "Katharina Eggensperger",
+            "F. Hutter"
+          ],
+          "year": 2022,
+          "citation_count": 1036,
+          "url": "https://consensus.app/papers/details/687d31fde70559d7b140d7ac02d1ec62/?utm_source=chatgpt"
+        },
+        {
+          "rank": 5,
+          "id": "7c1cfcf9f9e75a90a22058c9a74f7102",
+          "title": "TabPFN: One Model to Rule Them All?",
+          "authors": [
+            "Qiong Zhang",
+            "Yan-Shuo Tan",
+            "Qing-Long Tian",
+            "Peng-Fei Li"
+          ],
+          "year": 2025,
+          "citation_count": 18,
+          "url": "https://consensus.app/papers/details/7c1cfcf9f9e75a90a22058c9a74f7102/?utm_source=chatgpt"
+        },
+        {
+          "rank": 6,
+          "id": "65e22f18a9eb5629b25032d808e87f4e",
+          "title": "Real-TabPFN: Improving Tabular Foundation Models via Continued Pre-training With Real-World Data",
+          "authors": [
+            "Anurag Garg",
+            "Muhammad Ali",
+            "N. Hollmann",
+            "L. Purucker",
+            "Samuel Müller",
+            "Frank Hutter"
+          ],
+          "year": 2025,
+          "citation_count": 50,
+          "url": "https://consensus.app/papers/details/65e22f18a9eb5629b25032d808e87f4e/?utm_source=chatgpt"
+        },
+        {
+          "rank": 7,
+          "id": "ac55693eb15f59928461cd27d91d438b",
+          "title": "A Closer Look at TabPFN v2: Strength, Limitation, and Extension",
+          "authors": [
+            "Han-Jia Ye",
+            "Si-Yang Liu",
+            "Wei-Lun Chao"
+          ],
+          "year": 2025,
+          "citation_count": 34,
+          "url": "https://consensus.app/papers/details/ac55693eb15f59928461cd27d91d438b/?utm_source=chatgpt"
+        },
+        {
+          "rank": 8,
+          "id": "94d898550a6259608e7e5ea6590d1416",
+          "title": "Large Models for Small Tables: Adapting Tabular Foundation Models to EHR Data.",
+          "authors": [
+            "Rui Zhu",
+            "Xiaopu Zhou",
+            "Ivy Liang",
+            "Stephen W. Scherer",
+            "Ke Xu",
+            "L. Ohno-Machado"
+          ],
+          "year": 2026,
+          "citation_count": 2,
+          "url": "https://consensus.app/papers/details/94d898550a6259608e7e5ea6590d1416/?utm_source=chatgpt"
+        },
+        {
+          "rank": 9,
+          "id": "b0e4b28887b2559aa97117d8d7d4df7b",
+          "title": "The Current Generation of Tabular Foundation Models: A Critical Review",
+          "authors": [
+            "S. Kurashkin",
+            "V. Tynchenko",
+            "Alexey S. Borodulin",
+            "V. Nelyub",
+            "Nikolay O. Kalutsky",
+            "Tee Connie"
+          ],
+          "year": 2026,
+          "citation_count": 1,
+          "url": "https://consensus.app/papers/details/b0e4b28887b2559aa97117d8d7d4df7b/?utm_source=chatgpt"
+        },
+        {
+          "rank": 10,
+          "id": "05897b65abf75e42b1a6c7dbff4e3866",
+          "title": "On Finetuning Tabular Foundation Models",
+          "authors": [
+            "Ivan Rubachev",
+            "Akim Kotelnikov",
+            "Nikolay Kartashev",
+            "Artem Babenko"
+          ],
+          "year": 2025,
+          "citation_count": 15,
+          "url": "https://consensus.app/papers/details/05897b65abf75e42b1a6c7dbff4e3866/?utm_source=chatgpt"
+        }
+      ]
+    },
+    {
+      "query": "large language model financial forecasting news look ahead bias pretraining return predictability contamination",
+      "result_count": 10,
+      "receipt": {
+        "searches_used": 15,
+        "searches_limit": 30,
+        "papers_per_search": 10
+      },
+      "results": [
+        {
+          "rank": 1,
+          "id": "a157c61162e25ab1918082612ca49e87",
+          "title": "Summoning the Oracle to Slay It: Mitigating Look-Ahead Bias in Financial Backtesting with Large Language Models",
+          "authors": [
+            "Weixian Waylon Li",
+            "Meng-Yu Wang",
+            "Tie-Jun Ma"
+          ],
+          "year": 2026,
+          "citation_count": 3,
+          "url": "https://consensus.app/papers/details/a157c61162e25ab1918082612ca49e87/?utm_source=chatgpt"
+        },
+        {
+          "rank": 2,
+          "id": "7d03105ee8a45b12935fb8fa22ff6652",
+          "title": "DatedGPT: Preventing Lookahead Bias in Large Language Models with Time-Aware Pretraining",
+          "authors": [
+            "Yu Yan",
+            "Raphael Tang",
+            "Zhenyu Gao",
+            "Wen-Xin Jiang",
+            "Yao Lu"
+          ],
+          "year": 2026,
+          "citation_count": 10,
+          "url": "https://consensus.app/papers/details/7d03105ee8a45b12935fb8fa22ff6652/?utm_source=chatgpt"
+        },
+        {
+          "rank": 3,
+          "id": "82c878d6b7935d82952fe1b13591a198",
+          "title": "Can ChatGPT Forecast Stock Price Movements? Return Predictability and Large Language Models",
+          "authors": [
+            "Alejandro Lopez-Lira",
+            "Yue-Hua Tang"
+          ],
+          "year": 2023,
+          "citation_count": 417,
+          "url": "https://consensus.app/papers/details/82c878d6b7935d82952fe1b13591a198/?utm_source=chatgpt"
+        },
+        {
+          "rank": 4,
+          "id": "beaf2b42d3315951a7601fd1c1ee7c5a",
+          "title": "Assessing Look-Ahead Bias in Stock Return Predictions Generated by GPT Sentiment Analysis",
+          "authors": [
+            "P. Glasserman",
+            "Caden Lin"
+          ],
+          "year": 2023,
+          "citation_count": 53,
+          "url": "https://consensus.app/papers/details/beaf2b42d3315951a7601fd1c1ee7c5a/?utm_source=chatgpt"
+        },
+        {
+          "rank": 5,
+          "id": "8282b37d1f965203af8e1822f55077b8",
+          "title": "Detecting Lookahead Bias in LLM Forecasts",
+          "authors": [
+            "Zhen-Yu Gao",
+            "Wen-Xin Jiang",
+            "Yutong Yan"
+          ],
+          "year": 2025,
+          "citation_count": 10,
+          "url": "https://consensus.app/papers/details/8282b37d1f965203af8e1822f55077b8/?utm_source=chatgpt"
+        },
+        {
+          "rank": 6,
+          "id": "518c675d55ae5797882706fafb9c52d3",
+          "title": "Chronologically Consistent Large Language Models",
+          "authors": [
+            "Songrun He",
+            "Linying Lv",
+            "Asaf Manela",
+            "Jimmy Wu"
+          ],
+          "year": 2025,
+          "citation_count": 20,
+          "url": "https://consensus.app/papers/details/518c675d55ae5797882706fafb9c52d3/?utm_source=chatgpt"
+        },
+        {
+          "rank": 7,
+          "id": "2a3b33fbbf82503c8b9b2b6383a8baeb",
+          "title": "AI’s predictable memory in financial analysis",
+          "authors": [
+            "Antoine Didisheim",
+            "Martina Fraschini",
+            "Luciano Somoza"
+          ],
+          "year": 2025,
+          "citation_count": 5,
+          "url": "https://consensus.app/papers/details/2a3b33fbbf82503c8b9b2b6383a8baeb/?utm_source=chatgpt"
+        },
+        {
+          "rank": 8,
+          "id": "b9cd8af00c805d70ac03871e0b4f3b86",
+          "title": "MemGuard-Alpha: Detecting and Filtering Memorization-Contaminated Signals in LLM-Based Financial Forecasting via Membership Inference and Cross-Model Disagreement",
+          "authors": [
+            "Anish Roy",
+            "Dip Roy"
+          ],
+          "year": 2026,
+          "citation_count": 1,
+          "url": "https://consensus.app/papers/details/b9cd8af00c805d70ac03871e0b4f3b86/?utm_source=chatgpt"
+        },
+        {
+          "rank": 9,
+          "id": "a5e3778e487c5286976fb57947fb7e25",
+          "title": "Look-Ahead-Bench: a Standardized Benchmark of Look-ahead Bias in Point-in-Time LLMs for Finance",
+          "authors": [
+            "Mostapha Benhenda"
+          ],
+          "year": 2026,
+          "citation_count": 17,
+          "url": "https://consensus.app/papers/details/a5e3778e487c5286976fb57947fb7e25/?utm_source=chatgpt"
+        },
+        {
+          "rank": 10,
+          "id": "03d51c36137355669813514b8a8af5fe",
+          "title": "The New Quant: A Survey of Large Language Models in Financial Prediction and Trading",
+          "authors": [
+            "Weilong Fu"
+          ],
+          "year": 2025,
+          "citation_count": 10,
+          "url": "https://consensus.app/papers/details/03d51c36137355669813514b8a8af5fe/?utm_source=chatgpt"
+        }
+      ]
+    },
+    {
+      "query": "Hansen test superior predictive ability White reality check data snooping comparing many forecasting models 2005",
+      "result_count": 10,
+      "receipt": {
+        "searches_used": 17,
+        "searches_limit": 30,
+        "papers_per_search": 10
+      },
+      "results": [
+        {
+          "rank": 1,
+          "id": "9decc6f21ba757f5a549d9b90a77a380",
+          "title": "A Test for Superior Predictive Ability",
+          "authors": [
+            "P. Hansen"
+          ],
+          "year": 2005,
+          "citation_count": 1285,
+          "url": "https://consensus.app/papers/details/9decc6f21ba757f5a549d9b90a77a380/?utm_source=chatgpt"
+        },
+        {
+          "rank": 2,
+          "id": "7923a12c2b515dd899d89f3d60634cc8",
+          "title": "Testing the Predictive Ability of Technical Analysis Using a New Stepwise Test Without Data Snooping Bias",
+          "authors": [
+            "Po-Hsuan Hsu",
+            "Yu-Chin Hsu",
+            "Chung-Ming Kuan"
+          ],
+          "year": 2010,
+          "citation_count": 171,
+          "url": "https://consensus.app/papers/details/7923a12c2b515dd899d89f3d60634cc8/?utm_source=chatgpt"
+        },
+        {
+          "rank": 3,
+          "id": "13e0e59fbe21540ea5234946a8d8e7da",
+          "title": "Testing Investment Strategies for Superior Predictive Ability Testing Investment Strategies for Superior Predictive Ability",
+          "authors": [
+            "Jack K. Baldwin"
+          ],
+          "year": 2020,
+          "citation_count": 0,
+          "url": "https://consensus.app/papers/details/13e0e59fbe21540ea5234946a8d8e7da/?utm_source=chatgpt"
+        },
+        {
+          "rank": 4,
+          "id": "326b50dbce575d2f88abad9535585fad",
+          "title": "Data Snooping Bias in Tests of the Relative Performance of Multiple Forecasting Models",
+          "authors": [
+            "D. Anghel"
+          ],
+          "year": 2021,
+          "citation_count": 4,
+          "url": "https://consensus.app/papers/details/326b50dbce575d2f88abad9535585fad/?utm_source=chatgpt"
+        },
+        {
+          "rank": 5,
+          "id": "87fa92f4777255aaa46144e1d1beccc2",
+          "title": "Forecasting volatility: A reality check based on option pricing, utility function, value-at-risk, and predictive likelihood",
+          "authors": [
+            "Gloria González-Rivera",
+            "Tae-Hwy Lee",
+            "S. Mishra"
+          ],
+          "year": 2004,
+          "citation_count": 224,
+          "url": "https://consensus.app/papers/details/87fa92f4777255aaa46144e1d1beccc2/?utm_source=chatgpt"
+        },
+        {
+          "rank": 6,
+          "id": "c046c08cf2775ddc8fcf6e7a65d30918",
+          "title": "Testing Predictive Ability and Power Robustification",
+          "authors": [
+            "Kyungchul Song"
+          ],
+          "year": 2012,
+          "citation_count": 6,
+          "url": "https://consensus.app/papers/details/c046c08cf2775ddc8fcf6e7a65d30918/?utm_source=chatgpt"
+        },
+        {
+          "rank": 7,
+          "id": "9829542c448e54e5821c3684889a2918",
+          "title": "Predictive ability tests with possibly overlapping models",
+          "authors": [
+            "Valentina Corradi",
+            "Jack Fosten",
+            "Daniel Gutknecht"
+          ],
+          "year": 2024,
+          "citation_count": 3,
+          "url": "https://consensus.app/papers/details/9829542c448e54e5821c3684889a2918/?utm_source=chatgpt"
+        },
+        {
+          "rank": 8,
+          "id": "99913e6059a35e14b07d2042329eb7e4",
+          "title": "Multi-Horizon Forecast Comparison",
+          "authors": [
+            "R. Quaedvlieg"
+          ],
+          "year": 2019,
+          "citation_count": 73,
+          "url": "https://consensus.app/papers/details/99913e6059a35e14b07d2042329eb7e4/?utm_source=chatgpt"
+        },
+        {
+          "rank": 9,
+          "id": "3cf44a7b85b3546f8b3b888ea0811ae0",
+          "title": "Conditional Superior Predictive Ability",
+          "authors": [
+            "Jia Li",
+            "Z. Liao",
+            "R. Quaedvlieg"
+          ],
+          "year": 2020,
+          "citation_count": 37,
+          "url": "https://consensus.app/papers/details/3cf44a7b85b3546f8b3b888ea0811ae0/?utm_source=chatgpt"
+        },
+        {
+          "rank": 10,
+          "id": "376281a778aa5ecaab50b83c31b0447b",
+          "title": "A Forecast Comparison of Volatility Models: Does Anything Beat a GARCH(1,1)?",
+          "authors": [
+            "P. R. Hansen",
+            "A. Lunde"
+          ],
+          "year": 2005,
+          "citation_count": 1866,
+          "url": "https://consensus.app/papers/details/376281a778aa5ecaab50b83c31b0447b/?utm_source=chatgpt"
+        }
+      ]
+    }
+  ],
+  "records": [
+    {
+      "id": "77714e11cde05a00ad39e20cfcac0eef",
+      "title": "Common Risk Factors in Cryptocurrency ∗",
+      "url": "https://consensus.app/papers/common-risk-factors-in-cryptocurrency-∗-liu-tsyvinski/77714e11cde05a00ad39e20cfcac0eef/?utm_source=chatgpt",
+      "provider_metadata": {
+        "authors": "Yukun Liu, A. Tsyvinski, Xi Wu",
+        "publish_year": "2019",
+        "citation_count": "514"
+      },
+      "analyst_paraphrase": "Three crypto-specific factor families are studied as explanations of cross-sectional return patterns; this is not a guarantee of forecasting the direction of a single asset.",
+      "verification": {
+        "publication_status": "Peer-reviewed final paper in Journal of Finance, 2022; Consensus indexed the 2019 working paper.",
+        "doi": "10.1111/jofi.13119",
+        "primary_urls": [
+          "https://doi.org/10.1111/jofi.13119",
+          "https://eprints.soton.ac.uk/458065/1/AcceptedManuscript.pdf"
+        ],
+        "version_caution": "Fetched working-paper abstract refers to nine characteristics/strategies; final publisher abstract refers to ten. Do not combine versions.",
+        "read_depth": "Published DOI page/abstract and author publication record read; accepted-manuscript PDF and direct NBER PDF fetches failed (403). No full final-paper-methods review claimed.",
+        "verified_publication_year": 2022,
+        "journal": "The Journal of Finance 77(2), 1133–1177"
+      }
+    },
+    {
+      "id": "638400d238e05840929ab25bd177b5a3",
+      "title": "Common factors in the returns on cryptocurrencies",
+      "url": "https://consensus.app/papers/common-factors-in-the-returns-on-cryptocurrencies-jung-park/638400d238e05840929ab25bd177b5a3/?utm_source=chatgpt",
+      "provider_metadata": {
+        "authors": "Woosung Jung, Hae-Keun Park",
+        "publish_year": "2024",
+        "journal": "Finance Research Letters",
+        "citation_count": "1"
+      },
+      "analyst_paraphrase": "The examined three-factor representation leaves substantial common return variation unexplained; this concerns a different statistical object from pricing expected-return spreads.",
+      "verification": {
+        "publication_status": "Peer-reviewed Finance Research Letters 65, 105485 (2024)",
+        "doi": "10.1016/j.frl.2024.105485",
+        "verified_authors": [
+          "Woosung Jung",
+          "Haerang Park"
+        ],
+        "provider_metadata_correction": "Consensus assigns Hae-Keun Park; publisher and Korea University record identify Haerang Park.",
+        "primary_urls": [
+          "https://www.sciencedirect.com/science/article/pii/S1544612324005154",
+          "https://scholar.korea.ac.kr/item/6b645359-cc23-4a30-9f3a-d8cb427caf10"
+        ],
+        "read_depth": "Primary publisher indexed abstract/conclusion and university metadata read; direct publisher open failed. Sample/method details not fully verified; not treated as exact replication."
+      }
+    },
+    {
+      "id": "17147a989ea15fc29b565f1ca75fc731",
+      "title": "An empirical investigation on risk factors in cryptocurrency futures",
+      "url": "https://consensus.app/papers/an-empirical-investigation-on-risk-factors-in-chi-hao/17147a989ea15fc29b565f1ca75fc731/?utm_source=chatgpt",
+      "provider_metadata": {
+        "authors": "Yeguang Chi, Wenyan Hao, Jiangdong Hu, Zhenkai Ran",
+        "publish_year": "2023",
+        "journal": "Journal of Futures Markets",
+        "citation_count": "5"
+      },
+      "analyst_paraphrase": "Basis-related factor premia in a historical quarterly-futures sample are horizon-dependent; neither the instrument class nor the effect transfers automatically to perpetual funding or monthly forecasts.",
+      "verification": {
+        "publication_status": "Peer-reviewed Journal of Futures Markets 43, 1161–1180 (2023)",
+        "doi": "10.1002/fut.22425",
+        "primary_url": "https://onlinelibrary.wiley.com/doi/10.1002/fut.22425",
+        "read_depth": "Published methods and selected results read, including sample/instruments/resampling/lookback choices; empirical results not reproduced.",
+        "sample": "12 OKEx assets as available, November 2017–March 2021, current-quarter dated futures and spot, daily/weekly/monthly evaluation.",
+        "limitations": [
+          "Small historical selected universe and venue; not a modern unseen benchmark.",
+          "Five-day illustration selected from tested lookbacks; all such choices count as research trials.",
+          "Dated futures basis is distinct from perpetual funding."
+        ]
+      }
+    },
+    {
+      "id": "3bc887a119c25257af04c0a792ee2971",
+      "title": "Why do tree-based models still outperform deep learning on typical tabular data?",
+      "url": "https://consensus.app/papers/why-do-treebased-models-still-outperform-deep-learning-on-grinsztajn-oyallon/3bc887a119c25257af04c0a792ee2971/?utm_source=chatgpt",
+      "provider_metadata": {
+        "authors": "Léo Grinsztajn, Edouard Oyallon, G. Varoquaux",
+        "publish_year": "2022",
+        "journal": "Advances in Neural Information Processing Systems 35",
+        "citation_count": "2242"
+      },
+      "analyst_paraphrase": "A controlled benchmark finds tree ensembles competitive or stronger than tested neural models for medium-sized tabular datasets, including tuning cost; this is not a chronological financial forecasting benchmark.",
+      "verification": {
+        "read_depth": "Official 14-page PDF: benchmark construction, tuning/size controls and main findings inspected. Not a temporal financial-return replication.",
+        "publication_status": "Peer-reviewed NeurIPS 2022 Datasets and Benchmarks",
+        "primary_url": "https://papers.nips.cc/paper_files/paper/2022/file/0378c7692da36807bdec87ab043cdadc-Paper-Datasets_and_Benchmarks.pdf"
+      }
+    },
+    {
+      "id": "cf371b1bbafe5b25a344217711bfc76b",
+      "title": "Accurate predictions on small data with a tabular foundation model",
+      "url": "https://consensus.app/papers/accurate-predictions-on-small-data-with-a-tabular-hollmann-müller/cf371b1bbafe5b25a344217711bfc76b/?utm_source=chatgpt",
+      "provider_metadata": {
+        "authors": "N. Hollmann, Samuel Müller, L. Purucker, Arjun Krishnakumar, Max Körfer, Shi Bin Hoo, R. Schirrmeister, Frank Hutter",
+        "publish_year": "2025",
+        "journal": "Nature",
+        "volume": "637",
+        "pages": "319 - 326",
+        "citation_count": "1611"
+      },
+      "analyst_paraphrase": "A synthetically pretrained tabular model is a serious small-data challenger on the paper's benchmark; transfer to point-in-time financial returns and checkpoint licensing remain unqualified.",
+      "verification": {
+        "publication_status": "Peer-reviewed Nature, 2025",
+        "doi": "10.1038/s41586-024-08328-6",
+        "primary_url": "https://www.nature.com/articles/s41586-024-08328-6",
+        "read_depth": "Primary Nature indexed abstract/architecture/user-guide/limitations passages read; direct article open failed. No weights/runtime installed or tested.",
+        "model_version_scope": "Nature 2025 study corresponds to TabPFN-2; newer defaults/versions are not the same artifact.",
+        "license_status": "Code and weights differ. Official README distinguishes v2 attribution license from non-commercial later weights. No exact checkpoint admitted.",
+        "license_sources": [
+          "https://github.com/PriorLabs/TabPFN",
+          "https://raw.githubusercontent.com/PriorLabs/TabPFN/49394b053a6759cfe68e90c21a2d51c31b396768/LICENSE",
+          "https://huggingface.co/Prior-Labs/tabpfn_2_5/blob/ae1deb1887872a303d23efcf86f95c859ed5e903/LICENSE"
+        ]
+      }
+    },
+    {
+      "id": "beaf2b42d3315951a7601fd1c1ee7c5a",
+      "title": "Assessing Look-Ahead Bias in Stock Return Predictions Generated by GPT Sentiment Analysis",
+      "url": "https://consensus.app/papers/assessing-lookahead-bias-in-stock-return-predictions-glasserman-lin/beaf2b42d3315951a7601fd1c1ee7c5a/?utm_source=chatgpt",
+      "provider_metadata": {
+        "authors": "P. Glasserman, Caden Lin",
+        "publish_year": "2023",
+        "volume": "6",
+        "pages": "25 - 42",
+        "citation_count": "53"
+      },
+      "analyst_paraphrase": "The studied sentiment experiment finds identifier masking can help historical results; company-knowledge distraction and memorized outcomes are distinct effects, so not every gain/loss is explained by look-ahead.",
+      "verification": {
+        "publication_status": "arXiv preprint v1, 2023-09-29; no peer-reviewed later version verified in this collection.",
+        "doi": "10.48550/arXiv.2309.17322",
+        "primary_url": "https://arxiv.org/html/2309.17322v1",
+        "read_depth": "Primary v1 introduction, methods and selected results inspected; no independent replication.",
+        "sample": "US equities/news; in-sample 2015–September 2021, later evaluation October 2021–December 2022 under the paper's GPT-3.5 training-cutoff assumption.",
+        "limitations": [
+          "Identifier masking is a diagnostic, not proof that memorized facts were removed.",
+          "Do not transfer equity/news profitability to crypto or current LLM versions.",
+          "Frozen model/prompt/output and licensed text availability remain required."
+        ]
+      }
+    },
+    {
+      "id": "9decc6f21ba757f5a549d9b90a77a380",
+      "title": "A Test for Superior Predictive Ability",
+      "url": "https://consensus.app/papers/a-test-for-superior-predictive-ability-hansen/9decc6f21ba757f5a549d9b90a77a380/?utm_source=chatgpt",
+      "provider_metadata": {
+        "authors": "P. Hansen",
+        "publish_year": "2005",
+        "journal": "Journal of Business & Economic Statistics",
+        "volume": "23",
+        "pages": "365 - 380",
+        "citation_count": "1285"
+      },
+      "analyst_paraphrase": "The SPA framework tests whether any member of a declared model family improves expected loss over a benchmark while accounting for comparison across models, under explicit dependence/asymptotic assumptions.",
+      "verification": {
+        "publication_status": "Peer-reviewed Journal of Business & Economic Statistics 23(4), 365–380 (2005)",
+        "doi": "10.1198/073500105000000063",
+        "primary_urls": [
+          "https://doi.org/10.1198/073500105000000063",
+          "https://citeseerx.ist.psu.edu/document?doi=83d10adb98319ab3fcc15dfa44dd3f7ff80e4bda&repid=rep1&type=pdf"
+        ],
+        "read_depth": "Fetched abstract and index-extracted original published text, including pages 365–366 estimation/stationarity limitations. Direct publisher open failed; mirror PDF timed out. Proof/bootstrap implementation not fully reviewed.",
+        "critical_applicability_limit": "Original framework excludes recursively re-estimated parameters; fixed conditional and rolling schemes are discussed. Do not apply unchanged to expanding-window refits.",
+        "hypothesis_limit": "Omnibus rejection concerns some improvement within the declared family; it does not identify a uniquely best model or guarantee future performance."
+      }
+    }
+  ],
+  "policy": "Preserve identities, metadata, search ranks, dated provider citation counts and analyst paraphrases only. No full abstracts/snippets. Citation counts are provider snapshots and popularity signals, not quality scores. Every cited search result is fetched first; primary source verification and read depth are separate.",
+  "findings": [
+    "Treat cross-sectional factor pricing, realized-return co-movement and per-asset forecasting as distinct claims.",
+    "Investigate dated-futures basis as a later controlled ablation, with horizon, roll/unit and joint availability policies; do not equate with perpetual funding.",
+    "Keep strong GBM baselines and admit a pinned TabPFN-2 challenger only after rights/runtime/PIT qualification; neither generic benchmark chooses the financial winner.",
+    "LLM text features need model-version/time provenance, identifier-masking controls and fresh forward evaluation.",
+    "Statistical test admission must match estimation scheme; original 2005 SPA is not a default for recursive/expanding refits."
+  ],
+  "unresolved": [
+    "Exact modern checkpoint/weight rights and resource compatibility",
+    "Modern out-of-time liquid-crypto value of factor/basis features",
+    "Suitable statistical comparison for adaptive/recursive model families and multi-horizon dependence",
+    "Reproducible licensed news and LLM revision access"
+  ]
+}

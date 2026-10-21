@@ -98,6 +98,9 @@ class DatasetService:
         policy: RecipePolicy | None = None,
         coverage: tuple[CoverageClaim, ...] = (),
     ) -> BuildDatasetResult:
+        from scryntic.research.ledger import guard_dataset
+
+        guard_dataset(self._installation, request.input_manifests[0], {}, "build")
         F18_RECIPE_SCHEMA.require_readable(request.recipe)
         strict = request.recipe == AS_OBSERVED_CANDLE_RECIPE_SCHEMA
         default = RecipePolicy(mode="as-observed") if strict else RecipePolicy()
@@ -279,13 +282,18 @@ class DatasetService:
             raise ImportError("Dataset manifest rejected") from None
 
     def _read(
-        self, reference: DatasetRef, offset: int, limit: int
+        self, reference: DatasetRef, offset: int, limit: int, operation: str = "inspect"
     ) -> tuple[dict[str, Any], bytes]:
         integer(offset, 0)
         integer(limit, 1)
         if limit > MAX_INSPECT_ROWS:
             raise ValueError("Inspection row limit")
         manifest = self.read_manifest(reference)
+        from scryntic.research.ledger import guard_dataset
+
+        guard_dataset(
+            self._installation, reference.manifest_sha256, manifest, operation
+        )
         data = canonical_json_bytes(manifest)
         parquet = self._storage.read_artifact(
             manifest["parquet"]["sha256"], "parquet", max_bytes=MAX_DATASET_BYTES
@@ -328,7 +336,7 @@ class DatasetService:
         )
 
     def export(self, reference: DatasetRef) -> tuple[bytes, bytes]:
-        _, parquet = self._read(reference, 0, 1)
+        _, parquet = self._read(reference, 0, 1, "export")
         return canonical_json_bytes(self.read_manifest(reference)), parquet
 
     def pins(self, reference: DatasetRef) -> dict[str, Any]:

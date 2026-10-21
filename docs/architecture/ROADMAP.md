@@ -1,0 +1,111 @@
+# Predictive Intelligence roadmap
+
+Status: architectural direction/roadmap approved on 2026-10-19. PI00/KER-60 is **In Progress with an unresolved source-rights gate**; PI01/KER-61 protective implementation is In Progress under the operator's explicit subsequent steps1–3 authorization. Scientific rules are registered; source/coverage admission remains pending and no fitting is permitted. The PI00→PI01 dependency is preserved. Approval itself completes no issue. Current execution authority covers M0 preparation and PI01 only, with no publication. Gate/evidence record. Snapshot: 2026-10-19; MCP planning extension is additive.
+
+## Program structure
+
+The separate Scryntic — Predictive Intelligence project is created in **Planned**. Preserve the Foundation v1 project, all 45 Done issues unchanged. Under the operator's later explicit consolidation request, the six unfinished F25–F30 issues and old project are Canceled as superseded. Preserve IDs, descriptions and relationships; use only the new active queue. Dates and estimates remain unset until scope and data/host budgets are approved.
+
+The first functional priority is hours/days/weeks/longer **return** forecasting. M1 is a bounded pilot, not evidence that a few observations establish long-horizon skill. M2 expands history/capacity. Local isolated training precedes model search; the distributed fleet comes afterward. Parallel work follows the explicit issue DAG.
+
+M8 core release includes remote CPU, a separately qualified GPU profile, bounded autonomy, recovery and private UX. Missing eligible hardware/evidence blocks the corresponding claim. A valid baseline/null result does not prevent honest platform completion; model promotion still requires registered gates. Minute/second forecasting and trading are not prerequisites.
+
+| Stage | Outcome / gate | Items |
+|---|---|---|
+| M0 — Architecture approval and compatibility | Approve target/policy, reserve an untouched final period and establish minimal trial/access accounting plus additive compatibility before any fit or comparison. | PI00, PI01 |
+| M1 — Long-horizon forecasting vertical slice | First functional priority: feasible 1h/1d/7d/28d return targets, bounded resampling, fixed isolated baseline fit/evaluate and pre-outcome ledger; extend current launcher/services rather than assume existing training support. | PI02, PI03, PI04 |
+| M2 — Point-in-time signals and analytical scale | Bounded batch scans, bitemporal revisions/instrument mapping and shared fitted feature definitions. Add signal adapters only with a justified hypothesis and rights. | PI05, PI06, PI07 |
+| M3 — Controlled predictive model qualification | Expand early holdout/trial controls into independent qualification, then general local training and fixed-budget statistical/boosting/probabilistic/deep/foundation comparisons. | PI08, PI09, PI10, PI11, PI12; PI26 contract side branch |
+| M4 — Eligible CPU and GPU workers | Enrolled remote CPU agent and separate GPU profile with reproducible environments, recovery/fencing and independent result acceptance; general local training is established in M3. | PI13, PI14 |
+| M5 — Bounded autonomous intelligence | Budgeted hypothesis/search/retrain workflows, matured live performance, champion selection/fallback, revocation and rollback. Research cannot change its authority or production software. | PI15, PI16 |
+| M6 — Operational maturity and extension qualification | Declared capacity, deployment, observability, retention/backup/upgrade/DR, operator docs and extension conformance. Reuse relevant Foundation work without changing its history. | PI17, PI18 |
+| M7 — Private dashboard and AI interfaces | Late private authenticated API/dashboard over shared services, default read-only roles and scoped management. Dashboard outage cannot stop core services. | PI19, PI20; optional PI27–PI29 |
+| M8 — Prediction core release | Evidence-qualified core completion, including long-horizon forward records, scientific/technical gates, supported CPU/GPU profiles and recovery/UX. Does not require profitable forecasts or a trading bot. | PI21 / KER-81 |
+| D1 — Deferred minute and second forecasts | Starts only after core release and separate scope approval; benchmark data/latency needs before native rewrites or infrastructure. | PI22, PI23 |
+| D2 — Deferred separate trading program | Only after core completion and new authorization: simulation/paper first, then separately reviewed risk/execution program. No active order placement or credentials in the prediction program. | PI24, PI25 |
+
+## Dependency and acceptance ledger
+
+LINEAR_ROADMAP.json stores exact scopes, acceptance criteria, dependencies and actual remote identifiers. Each issue must satisfy its full criteria.
+
+| Key | Deliverable | Blocked by | Validation gate |
+|---|---|---|---|
+| PI00 / KER-60 | Approve target architecture and registered research policy | Explicit operator decision | Explicit operator architecture approval and frozen benchmark policy exist before implementation/search. Unknowns and holdout-access policy are recorded; this issue must not be auto-completed by roadmap creation. Final-period reservation and access history are explicit; public historical availability alone does not make a previously inspected period untouched. |
+| PI01 / KER-61 | Specify additive v2 contracts and preserve v1 compatibility | PI00 / KER-60 | Old archive/dataset/forecast identities remain readable; unknown major versions fail closed; missing historical availability stays unknown; no in-place rewrite, lost pin or anchor reset. Review migration/rollback fixtures. Every early trial, failure, intervention and final-range access is recorded; early jobs cannot read reserved labels. |
+| PI02 / KER-62 | Add hourly through monthly return targets and PIT eligibility | PI01 / KER-61 | A feasibility gate proves each horizon expressible with the chosen cadence, input history, matured train/validation/test counts and bounded resources before baseline work. Missing history blocks the affected capability. Resampling/gap/late-revision/time-quality fixtures pass; no look-ahead aggregation, manufactured bars or availability; v1 step/row caps remain intact. |
+| PI03 / KER-63 | Deliver chronological long-horizon baseline comparisons | PI02 / KER-62 | Actual bounded baseline fit/evaluate runs under the qualified launcher; missing controls fail closed. Train-only transforms, label maturity, cancellation/recovery and negative leakage fixtures pass. Paired per-horizon scores/exclusions reproduce; service/CLI agree; baseline retained on null evidence; no advantage inferred from price-level fit. All comparisons use development ranges and the PI01 trial ledger, never the reserved final period. |
+| PI04 / KER-64 | Record forward forecasts before outcomes and score maturation | PI03 / KER-63 | Forecast accepted durably before outcome or marked late; duplicates/conflicts and restart preserve identity; immature labels are not scored; backcasts/replay/forward cannot be conflated; CLI/TUI services expose understandable status. |
+| PI05 / KER-65 | Qualify bounded analytical scans and native-engine choice | PI04 / KER-64 | Record full-job time/RSS/spill/bytes and semantic parity including exclusions; enforce file/network/extension/resource limits and cancellation; select minimum sufficient engine/version or retain current path. No invented capacity/Rust gain. |
+| PI06 / KER-66 | Version multi-family availability, revisions and instrument mapping | PI04 / KER-64 | Fixtures cover late facts/revisions, symbol reuse, contracts, gaps, resets/reorg where relevant and missing history; mappings are known/effective-time safe; immutable provenance and licensed reproducibility remain intact. |
+| PI07 / KER-67 | Add fitted feature registry with replay and online parity | PI05, PI06 | Same input/origin/recipe yields parity for batch/replay/live; calibration/fit state never sees future; revisions invalidate affected caches; ablations and rights gate optional funding/OI/news/macro/on-chain groups. Ablations use development ranges and append to the early trial ledger; final labels remain sealed. |
+| PI08 / KER-68 | Seal final holdout and implement trial and qualification registry | PI07 / KER-67 | Research cannot inspect final labels or promote; every trial/failure/seed/variant/access is retained from the first baseline. If any reserved period was observed/consumed, it is disqualified as untouched and replaced by a genuinely later unseen period. Exhausted holdouts cannot be silently reused; registry/revocation and deterministic scoring are verified. |
+| PI09 / KER-70 | Compare regularized statistics and gradient boosting under fixed budgets | PI12 / KER-69 | Retain all trial results and cost/resource evidence; validate against naive/statistical baselines by horizon/regime with effect sizes and registered multiple-testing policy; winner may remain baseline. |
+| PI10 / KER-71 | Qualify probabilities, calibration, ensembles and economic diagnostics | PI09 / KER-70 | Coverage and width, Brier/log/pinball/CRPS as applicable, sample/abstention counts and conservative fees/spread/funding/slippage are visible. Calibration/weights use matured permitted data; no final-test strategy tuning or execution/fill claims. |
+| PI11 / KER-72 | Evaluate isolated deep and foundation-model challengers | PI10 / KER-71 | Exact weights/runtime/corpus/cutoff limits recorded; unknown pretraining overlap qualified; same data/protocol and compute costs retained; independent forward shadow required for strong claims; reject complexity without robust incremental value. |
+| PI12 / KER-69 | Generalize fixed baseline jobs to admitted training and evaluation tasks | PI08 / KER-68 | Actual isolated CPU fit/evaluate succeeds; missing controls fail closed; restart/cancel/deadline/OOM/output attacks preserve durable acceptance and pins; no collector/operational credentials or arbitrary shell/code admission. |
+| PI13 / KER-73 | Enroll remote CPU workers with leases and verified result acceptance | PI11, PI12 | Partition/expired lease/stale result/duplicate/conflict/coordinator restart/host revoke cases pass; model sandbox has no transport secrets/network; trusted recomputation/requalification catches fabricated output scenarios; no exactly-once execution claim. |
+| PI14 / KER-74 | Qualify a separate eligible GPU execution profile | PI13 / KER-73 | Effective device/resource/cleanup/time/VRAM/reproducibility and hostile-input evidence on a declared host; CPU evidence not reused as GPU proof. If hardware/control evidence absent, profile stays ineligible and GPU completion remains blocked. |
+| PI15 / KER-75 | Automate bounded hypotheses, search and retraining | PI11, PI13 | Budget exhaustion/failed trials/drift storms/restart stop safely; no production source edits/new dependencies/credentials or validation-policy changes; independent qualification remains mandatory; initial promotion manual, later explicit scoped policy. |
+| PI16 / KER-76 | Monitor matured forecast skill and govern promotion and fallback | PI04, PI08, PI15 | Record forecasts pre-outcome; dependence/minimum evidence checks prevent noisy automatic promotion; data-quality failure and degradation drill fallback/retrain/rollback; monitor lineage, coverage/width/abstention and cost sensitivity. |
+| PI17 / KER-77 | Qualify deployment, capacity, retention, upgrade and disaster recovery | PI16 / KER-76 | Measured workload meets registered budgets; restart/forced stop/disk full/corrupt transfer/restore/rollback drills preserve anchors, pins and artifacts; no credential leaks or scope broadening. Foundation F25-F30 statuses are not changed by partial reuse. |
+| PI18 / KER-78 | Prove extension compatibility and document operator journeys | PI17 / KER-77 | A bounded extra source/family and provider/task exercise passes relevant contracts without unrelated restructuring; installation/help work headlessly; meaningful failures and cancellation are consistent; documentation reflects delivered evidence only. |
+| PI19 / KER-79 | Add private read-only API and forecast comparison dashboard | PI17 / KER-77 | Unauthorized/CSRF/injection/oversized requests fail; default principal read-only; views expose horizon/evidence/baseline/calibration/coverage/version; dashboard/API/auth outage leaves collection/forecast services and CLI operating. |
+| PI20 / KER-80 | Expose scoped management and consistent private UX | PI19, PI16 | Service/CLI/TUI/web parity, safe errors, resource-owner cancellation and reauthentication/audit for sensitive actions pass operator journeys; web failure and privilege separation are demonstrated. |
+| PI21 / KER-81 | Qualify the completed prediction core | PI18, PI20, PI11, PI13, PI14 | All scope-specific registered technical/scientific gates have auditable outcomes; unresolved blockers prevent completion. A baseline/null result is valid, not fabricated predictive advantage. Minute/second forecasting and trading are not prerequisites. |
+| PI22 / KER-82 | Evaluate minute-horizon forecasting after core completion | PI21 / KER-81 | Core gate complete; same PIT/selection/forward controls retained; measured bottleneck justifies infrastructure/native changes; no automatic rewrite or performance claims. Remain deferred until new scope approval. |
+| PI23 / KER-83 | Evaluate second-horizon and event-book capabilities last | PI22 / KER-82 | Minute scope qualified, snapshot/delta/reset/gap evidence and realistic costs establish data validity; latency/capacity results support any Rust migration; no ingestion/security guarantees relaxed. |
+| PI24 / KER-84 | Scope separate post-core simulation and paper-trading program | PI21 / KER-81 | Forecasting still owns no financial authority; simulator ledger/cost/fill limitations, risk/kill-switch/reconciliation/account-permission design reviewed; no live credentials or active order placement in this prediction issue. |
+| PI25 / KER-85 | Review later execution pilot only after independent risk qualification | PI24 / KER-84 | Prediction core complete, simulation/paper/risk/recovery/security gates and exact operator authorization precede any order adapter/key. Kill switches independent of forecasting/web; no profits promised. |
+
+## Optional MCP branch — planning extension 2026-10-19
+
+The [AI-agnostic MCP design](MCP.md) reuses shared typed services and the late private API/management work. A small contract is useful once training and qualification interfaces exist; building a separate early control plane would delay forecasting and duplicate authority. Reuse existing M3/M7 milestones rather than adding infrastructure stages. M7 retains the required dashboard branch and adds an **independently qualified optional MCP branch**; PI21 is governed by its existing issue DAG, not by completion of every optional interface.
+
+| Key | Deliverable | Blocked by | Gate |
+|---|---|---|---|
+| PI26 / KER-86 | Shared AI-client capability/approval contract, M3 | PI12 | Typed identity/ACL/DTO/error/pagination/budget/idempotency/configuration preview and approval fixtures; no MCP dependency or new prerequisite for early forecasting/model comparisons. |
+| PI27 / KER-87 | Optional read-only MCP adapter, M7 | PI26, PI19 | Authorized bounded health/catalog/quality/forecast/report/resources; optional package, stdio and authenticated private HTTP; explicit tested protocol profiles and caller/lifecycle isolation. |
+| PI28 / KER-88 | Bounded MCP operations/configuration, M7 | PI27, PI20 | Existing durable admission/cancel and policy budgets; independent server-bound human approval, revision/CAS/idempotency/audit/rollback; no privilege, holdout, promotion or execution bypass. |
+| PI29 / KER-89 | MCP security and real-client qualification, M7 | PI28, PI18 | Full unauthorized/injection/input/cancel/concurrency/disconnect/restart/audit/isolation matrix; exact client/build/protocol/auth/transport evidence. Hosted/tunnel access is separately authorized/conditional, unsupported profiles disabled. |
+
+PI26/KER-86, PI27/KER-87, PI28/KER-88 and PI29/KER-89 were created/read back in Backlog; the project remains Planned with 11 milestones and 30 issues. No blocker is added to PI02–PI04 or PI21; all previous priorities and dependency edges remain. Minute/second capabilities and trading retain their existing post-core sequencing. Read-only enablement needs its own scoped evidence; later management/profile enablement requires its additional security/interop gates. An SDK choice, tool annotation or client confirmation is not qualification or server authorization. [Source and compatibility limits](../research/MCP_EVIDENCE.md).
+
+## First implementation milestone after approval
+
+Approve PI00, then PI01 compatibility/contracts and **M1 (PI02–PI04)**: immutable input → PIT-eligible 1h/1d/7d/28d returns → chronological baselines → pre-outcome ledger and matured scoring through existing CPU workers and application services. Proposed initial market: a small liquid Bybit crypto universe with sufficient permitted history. Instruments, calendar, delay, budgets and numeric criteria are explicit policy decisions. No paid data integration, GPU fleet, dashboard or trading component is required for this pilot.
+
+Acceptance covers target/timing/leakage, cancellation/recovery, service/CLI parity and traceable baseline-relative forecasts. Significance or profitability cannot be a fabricated milestone output. Insufficient history/forward maturity limits claims; M2 expands scale and M3 seals qualification before broad search.
+
+## Foundation disposition after operator follow-up
+
+The Foundation backlog was retired in favor of the new roadmap and that Done issues remain untouched. The Foundation project is now **Canceled as superseded**, not Completed. Its 45 Done issues are unchanged; six unfinished issues are Canceled with their original scope/dependencies retained below a dated handover note.
+
+| Original issue | Disposition / active owner |
+|---|---|
+| F25 / KER-29 | Superseded by PI17 / KER-77: bounded peer-authorized read-only reports, no mutation/job/secret/arbitrary-path authority, no collection starvation. |
+| F26 / KER-30 | Optional Telegram capability, explicitly deferred outside the active core backlog. Original specification retained; reconsider only with separate later scope approval. |
+| F27 / KER-31 | Superseded by PI17: manual clean-host installation, dedicated identities/credentials, effective probes and reboot/restart. Telegram-specific units are optional. |
+| F28 / KER-32 | Superseded by PI18 / KER-78, linked to PI06 / KER-66: registered source/typed non-candle ingestion/archive/sync proof, second-provider job/replay conformance, author/operator guidance. |
+| F29 / KER-33 | Superseded by PI17: operator pruning previews/pins, trust anchors, safe disk pressure, independent backup restore and schema/rollback/new-epoch evidence. |
+| F30 / KER-34 | Superseded release plan; applicable gates carried into PI21 / KER-81. Original Foundation release is not represented as completed. |
+
+Before canceling old tasks, the active PI17/PI18/PI21 descriptions were strengthened and read back. PI21 explicitly retains at least a **72-hour public-data soak** with disconnects/restarts/accounting, simulated configured offline horizon/retention volume, interrupted/corrupt/conflicting synchronization and anchor recovery, installed/profile/security/recovery/extension qualification. A 72-hour run does not establish a 90-day retention envelope. Telegram delivery is optional; model/UI/notification failure must not stop healthy collection.
+
+No old blocker was copied into the new DAG, no Done issue was edited and no old issue was deleted/moved/renumbered. Readback compared all 45 Done snapshots (including descriptions, labels and timestamps) with zero differences; all original affected issue/project descriptions and blocking edges remain. The new project still has 26 Backlog issues and its 35-edge DAG is unchanged. Exact receipt and carried-forward requirements are in LINEAR_ROADMAP.json.
+
+## Deferred work
+
+D1 requires PI21 and new scope approval: minutes first, then seconds/books, with data/cost/latency benchmarks before infrastructure or Rust changes. D2 requires PI21 and independent authorization under [future trading design](FUTURE_TRADING.md). It authorizes no keys, active order adapter or live orders now. Trading can proceed independently of optional short-horizon work after core completion.
+
+## Unresolved policy and implementation blockers
+
+1. Approve architecture, universe/rights, availability plane, horizons, primary score, meaningful margin, effective sample/calibration/coverage gates, budgets and forward stopping rules before search.
+2. Establish adequate PIT history, delisting/mapping evidence and revision availability. Historical timestamps alone may be insufficient.
+3. Qualify selected native-engine release, model weights/licenses and environment. Floating docs or a code license do not admit a checkpoint.
+4. Qualify CPU/GPU hosts, quotas and lease acceptance. No universal hardware/driver containment is claimed.
+5. Schedule forward evidence honestly; overlapping weekly/monthly targets need matured outcomes and dependence-aware analysis.
+6. Commit/push is separate authorization. Drafts are local; public GitHub document links are not claimed before publication. The operator waived Drive updates; existing copies remain unchanged and are not a second canonical specification.
+
+## Actual external changes
+
+Created the new project, 11 milestones and 26 Backlog issues KER-60–KER-85. Initial readback verified all 35 blockers and milestones without changing any Foundation status. A later explicit operator follow-up then canceled the superseded Foundation project and six unfinished issues, while verifying every one of its 45 Done issues unchanged. PI17/PI18/PI21 gained explicit applicable acceptance; their Backlog states and dependency edges remain intact. No Foundation completion claim, Drive write, product implementation, commit or push occurred.
