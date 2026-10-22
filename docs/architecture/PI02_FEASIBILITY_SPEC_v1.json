@@ -1,0 +1,36 @@
+{
+  "schema": "scryntic.pi02.feasibility-spec.v1",
+  "policy_sha256": "d75c7c0278d011b38c5e2bfaff151e7f3071b56edca9dce3d1d883294f3a14b8",
+  "source_id": "binance-vision-usdm-1h",
+  "availability_plane": "historical-reconstruction",
+  "instruments": ["BTCUSDT", "ETHUSDT"],
+  "source_frequency_seconds": 3600,
+  "archive_months": ["2020-01", "2026-09"],
+  "expected_rows_per_instrument": 59160,
+  "expected_snapshot_sha256": {
+    "BTCUSDT": "e5d47f9bbefe051c113d31e0c576778ccfefe55b0ff0c2f39d4a6c767bdd540f",
+    "ETHUSDT": "b8f8720be93833d53a3ada4fd1de083884d3de4506ee833a55ac6dfb58b30835"
+  },
+  "origin_cadence_seconds": {
+    "3600": 3600,
+    "86400": 86400,
+    "604800": 86400,
+    "2419200": 86400
+  },
+  "feature_lookback_hours": 24,
+  "minimum_complete_fraction": "0.99",
+  "horizons_seconds": [3600, 86400, 604800, 2419200],
+  "splits_utc": {
+    "development": ["2020-01-01T00:00:00Z", "2025-01-01T00:00:00Z"],
+    "calibration": ["2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z"],
+    "exploratory_test": ["2026-01-01T00:00:00Z", "2026-10-01T00:00:00Z"]
+  },
+  "embargo_seconds": 2419200,
+  "endpoint_rule": "strictly-before-own-split-end",
+  "source_use": "private-noncommercial-historical-reconstruction-only",
+  "max_rows_per_instrument": 60000,
+  "max_memory_bytes": 4294967296,
+  "max_wall_seconds": 180,
+  "final_access_allowed": false,
+  "fitting_allowed": false
+}
