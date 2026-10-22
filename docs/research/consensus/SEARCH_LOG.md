@@ -30,7 +30,7 @@ Firecrawl search was attempted for `Empirical Asset Pricing via Machine Learning
 
 ## Focused follow-up after the initial redesign
 
-A bounded review was completed using the remaining allowance. Actual follow-up: **5 successful searches + 7 fetched paper records = 12 total Consensus tool calls**; no further Consensus call was made. Provider search counters are preserved, not treated as a billing audit. This supplement does not overwrite the original nine-attempt log.
+The operator requested a bounded review using the remaining allowance. Actual follow-up: **5 successful searches + 7 fetched paper records = 12 total Consensus tool calls**; no further Consensus call was made. Provider search counters are preserved, not treated as a billing audit. This supplement does not overwrite the original nine-attempt log.
 
 | Query | Results | Reported searches used / limit |
 |---|---:|---|
@@ -40,4 +40,4 @@ A bounded review was completed using the remaining allowance. Actual follow-up: 
 | large language model financial forecasting news look ahead bias pretraining return predictability contamination | 10 | 15 / 30 |
 | Hansen test superior predictive ability White reality check data snooping comparing many forecasting models 2005 | 10 | 17 / 30 |
 
-Seven fetched records and 49 discovery identities/ranks are saved in [FOLLOWUP_RECORDS.json](FOLLOWUP_RECORDS.json); read-depth, version/author corrections, provider citation counts and analyst paraphrases remain distinct. Full abstracts/snippets are not copied. Findings and proposed experiment refinements: Consensus follow-up. No model/runtime, Linear or Drive mutation was part of this collection.
+Seven fetched records and 49 discovery identities/ranks are saved in [FOLLOWUP_RECORDS.json](FOLLOWUP_RECORDS.json); read-depth, version/author corrections, provider citation counts and analyst paraphrases remain distinct. Full abstracts/snippets are not copied. Findings and proposed experiment refinements: [Consensus follow-up](../CONSENSUS_FOLLOWUP_2026-10-18.md). No model/runtime, Linear or Drive mutation was part of this collection.

@@ -1,0 +1,36 @@
+# Client transport only. The laptop must enforce the forwarding-only account.
+Include /etc/scryntic/bybit-link/peer.conf
+
+Host scryntic-bybit-broker
+    User scryntic-bybit-tunnel
+    BatchMode yes
+    IdentitiesOnly yes
+    IdentityAgent none
+    IdentityFile /var/lib/scryntic-bybit-link/id_ed25519
+    PreferredAuthentications publickey
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    NumberOfPasswordPrompts 0
+    ForwardAgent no
+    ForwardX11 no
+    RequestTTY no
+    SessionType none
+    PermitLocalCommand no
+    ControlMaster no
+    ControlPath none
+    StrictHostKeyChecking yes
+    HostKeyAlias scryntic-bybit-broker
+    UserKnownHostsFile /etc/scryntic/bybit-link/known_hosts
+    GlobalKnownHostsFile /dev/null
+    UpdateHostKeys no
+    VerifyHostKeyDNS no
+    CanonicalizeHostname no
+    ConnectTimeout 10
+    ConnectionAttempts 1
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+    ExitOnForwardFailure yes
+    StreamLocalBindMask 0007
+    StreamLocalBindUnlink yes
+    LocalForward /run/scryntic-bybit-link/broker.sock 127.0.0.1:8765
+    LogLevel ERROR

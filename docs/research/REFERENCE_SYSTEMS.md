@@ -159,4 +159,4 @@ This is targeted inspection of the linked paths, not an exhaustive source audit 
 
 ## Data-source and provider-MCP follow-up — 2026-10-20
 
-A targeted supplement reuses these commits and reviews README/data-download evidence for the operator's data-rights question. It records source hashes and separates software licences, third-party data entitlements, MCP interfaces and deterministic ingestion. It does not repeat or replace the source-level architecture review above.
+A [targeted supplement](PI00_PROVIDER_MCP_AND_REFERENCE_PATTERNS_2026-10-20.md) reuses these commits and reviews README/data-download evidence for the operator's data-rights question. It records source hashes and separates software licences, third-party data entitlements, MCP interfaces and deterministic ingestion. It does not repeat or replace the source-level architecture review above.

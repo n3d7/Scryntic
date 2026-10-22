@@ -1,0 +1,6 @@
+# Install as peer.conf only after verifying the laptop address and host key.
+# No passwords, API keys, secrets, ProxyCommand or additional forwards here.
+Host scryntic-bybit-broker
+    HostName REPLACE_WITH_PRIVATE_LAN_IP
+    Port 22
+    User scryntic-bybit-tunnel

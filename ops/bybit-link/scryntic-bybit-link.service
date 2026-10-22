@@ -1,0 +1,37 @@
+[Unit]
+Description=Scryntic restricted client transport to laptop Bybit broker
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/etc/scryntic/bybit-link/peer.conf
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+User=scryntic-bybit-link
+Group=scryntic-bybit-client
+RuntimeDirectory=scryntic-bybit-link
+RuntimeDirectoryMode=0750
+UMask=0007
+ExecStartPre=/usr/bin/test -s /etc/scryntic/bybit-link/known_hosts
+ExecStart=/usr/bin/ssh -N -T -F /etc/scryntic/bybit-link/ssh_config scryntic-bybit-broker
+Restart=always
+RestartSec=30
+TimeoutStopSec=10
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+TasksMax=16
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

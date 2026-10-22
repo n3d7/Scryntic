@@ -50,12 +50,20 @@ credentials/
 /.gnupg/
 .netrc
 .pypirc
+.npmrc
 
 *.key
 *.pem
 *.p12
 *.pfx
 *.crt
+*.ppk
+*.keytab
+*.kdbx
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
 
 # =========================
 # Local configuration
@@ -76,10 +84,10 @@ config.local.*
 
 .scryntic/
 
-state/
-runtime/
-staging/
-quarantine/
+/state/
+/runtime/
+/staging/
+/quarantine/
 
 # =========================
 # Databases / SQLite runtime
@@ -104,34 +112,33 @@ quarantine/
 # Market data / datasets
 # =========================
 
-data/*
-!data/.gitkeep
-!data/README.md
+/data/*
+!/data/.gitkeep
+!/data/README.md
 
-datasets/
-downloads/
-exports/
-archive/
-!src/scryntic/archive/
-!src/scryntic/archive/*.py
-!tests/archive/
-!tests/archive/*.py
+/datasets/
+/downloads/
+/exports/
+/archive/
 
 # =========================
 # ML / models
 # =========================
 
-models/
-!src/scryntic/models/
-!src/scryntic/models/*.py
-!tests/models/
-!tests/models/*.py
-checkpoints/
-artifacts/
+/models/
+/checkpoints/
+/artifacts/
 
-runs/
-mlruns/
-wandb/
+# Weight/checkpoint payloads stay local even outside the standard directories.
+*.safetensors
+*.gguf
+*.ckpt
+*.pt
+*.pth
+
+/runs/
+/mlruns/
+/wandb/
 
 # Model / framework caches
 .cache/
@@ -143,11 +150,11 @@ hf_cache/
 # Logs / temporary files
 # =========================
 
-logs/
+/logs/
 *.log
 
-tmp/
-temp/
+/tmp/
+/temp/
 *.tmp
 *.tmp.*
 *.temp
@@ -163,7 +170,7 @@ temp/
 # Backups / local snapshots
 # =========================
 
-backups/
+/backups/
 *.bak
 *.orig
 *.rej
@@ -197,28 +204,24 @@ Thumbs.db
 desktop.ini
 
 # =========================
-# Internal architecture / agent workflow
+# Shared agent skills and private machine state
 # =========================
 
-ARCHITECTURE.md
-
-.agents/
+# Share authored skills; keep other agent-local state private.
+/.agents/*
+!/.agents/readme.md
+!/.agents/skills/
 /.codex/
 /.superpowers/
 /.worktrees/
 /.sonarlint/
 /.mcp.json
 
-# Local agent plans and specifications; tracked history remains tracked
-/docs/superpowers/
-
-docs/WORKFLOW.md
-docs/HANDOFF.md
-
+# Personal instructions and filled continuation handoffs stay local.
 HANDOFF.md
 *.handoff.md
 
-.local/
+/.local/
 AGENTS.md
 
 # SonarQube scanner working directory
@@ -227,13 +230,12 @@ AGENTS.md
 # Private local checkpoint audit summaries
 /docs/local-audits/
 
-docs/RUNTIME.md
-
-local-audits
-
 # Generated measurements; keep benchmark profiles and curated fixtures versioned
 /benchmarks/results/
-/docs/performance/results/
-docs/task-reports/
+/docs/data/performance/results/
+/docs/task-reports/
 
-!ARCHITECTURE.md
+# Private local source captures and full provider terms remain off GitHub.
+/docs/research/bybit/API_TERMS_PDF_TEXT_2026-10-20.md
+/docs/research/bybit/BVAPO_LOCAL_SAVE_RECEIPT_2026-10-20.json
+/docs/research/bybit/FIRECRAWL_RECEIPT_2026-10-20.json

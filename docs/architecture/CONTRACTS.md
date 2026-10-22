@@ -10,7 +10,7 @@ F12 extends the Python port to additive `CONTRACT_VERSION` 1.1: the existing
 historical reconstruction, while recipe 1.1 requires the bounded cutoff and
 records exclusions. `application.clock` additionally declares immutable
 `ClockReading`/`SyncEvidence` and read-only status/reader ports. See
-[clock-quality monitoring](../CLOCK.md).
+[clock-quality monitoring](../data/CLOCK.md).
 
 | Owner/module | Contract and responsibility |
 | --- | --- |
@@ -105,7 +105,7 @@ identifier never causes an import or download.
 
 A `DatasetRef` identifies the exact immutable JSON manifest by SHA-256; the
 manifest binds input objects, recipes, environment and provenance in F08/F18.
-[F18 dataset contracts](../DATASETS.md) describe supported generations, immutable
+[F18 dataset contracts](../data/DATASETS.md) describe supported generations, immutable
 pins and restricted analytical inspection/export. Row count and schema are claims
 to verify against it, not authority to open
 paths. Application DTOs contain owned values only. Bounded identifier/cursor/
@@ -120,7 +120,7 @@ and enforcement (terms/review date, resource/loading requirements, approved use,
 local/remote policy); F21 enforces OS isolation. No real model may run under the
 F03 fake-provider path. Descriptors cannot resolve secrets or load code.
 
-[F20 provider jobs](../JOBS.md) implement the exact review/policy grants, closed
+[F20 provider jobs](../operations/JOBS.md) implement the exact review/policy grants, closed
 versioned job/response envelopes, durable cancellation/deadlines and fenced restart
 recovery over these owned provider/result contracts. Remote execution remains an
 explicitly authorized bounded loopback fixture, disabled by default.

@@ -1,0 +1,890 @@
+{
+  "version": 1,
+  "status": "approved_direction_pi00_policy_gate_open",
+  "date": "2026-10-19",
+  "external": {
+    "project": {
+      "id": "P-KER-2",
+      "uuid": "82134f1a-f944-4869-9e18-71b768e37a7c",
+      "url": "https://linear.app/kerigan/project/scryntic-predictive-intelligence-47ca383cd656",
+      "status": "Planned"
+    },
+    "milestones": {
+      "M0": {
+        "id": "e9d98906-42dd-456c-8938-d638cd170a2d",
+        "name": "M0 — Architecture approval and compatibility"
+      },
+      "M1": {
+        "id": "db6faa4a-f5ea-42fa-9f5d-0e4ddd15135c",
+        "name": "M1 — Long-horizon forecasting vertical slice"
+      },
+      "M2": {
+        "id": "488fb1d3-0261-4456-9596-913846127ea2",
+        "name": "M2 — Point-in-time signals and analytical scale"
+      },
+      "M3": {
+        "id": "a6bb3b6a-b225-49e5-a0fc-cfea11ba03fe",
+        "name": "M3 — Controlled predictive model qualification"
+      },
+      "M4": {
+        "id": "4f7a282b-b19b-4ba2-996c-bff81b0c77be",
+        "name": "M4 — Eligible CPU and GPU workers"
+      },
+      "M5": {
+        "id": "1fe2c573-d5a1-4025-946a-0adecd978e9a",
+        "name": "M5 — Bounded autonomous intelligence"
+      },
+      "M6": {
+        "id": "d650f275-10cc-4c6e-905f-260d99d9adeb",
+        "name": "M6 — Operational maturity and extension qualification"
+      },
+      "M7": {
+        "id": "0d2e008a-9048-41aa-8972-3d50d1390d2f",
+        "name": "M7 — Private dashboard and AI interfaces"
+      },
+      "M8": {
+        "id": "b066182b-ab8d-4197-800e-59fd5c4d6f6d",
+        "name": "M8 — Prediction core release"
+      },
+      "D1": {
+        "id": "1358e2e8-666d-4187-85d3-7b15341e2714",
+        "name": "D1 — Deferred minute and second forecasts"
+      },
+      "D2": {
+        "id": "d78557b0-103f-4a64-aa7e-7a97992917dc",
+        "name": "D2 — Deferred separate trading program"
+      }
+    },
+    "issues": {
+      "PI00": {
+        "id": "KER-60",
+        "uuid": "358771c9-f317-4133-a238-33fed9c53475",
+        "url": "https://linear.app/kerigan/issue/KER-60/pi00-approve-target-architecture-and-registered-research-policy",
+        "milestone": "M0",
+        "status": "In Progress"
+      },
+      "PI01": {
+        "id": "KER-61",
+        "uuid": "aa85e15e-e516-49e0-813a-46a7b244c7a1",
+        "url": "https://linear.app/kerigan/issue/KER-61/pi01-specify-additive-v2-contracts-and-preserve-v1-compatibility",
+        "milestone": "M0",
+        "status": "In Progress"
+      },
+      "PI02": {
+        "id": "KER-62",
+        "uuid": "3091c2d6-f003-4092-90a7-56fa269cf77f",
+        "url": "https://linear.app/kerigan/issue/KER-62/pi02-add-hourly-through-monthly-return-targets-and-pit-eligibility",
+        "milestone": "M1",
+        "status": "Backlog"
+      },
+      "PI03": {
+        "id": "KER-63",
+        "uuid": "9c25e3f0-09c0-4b76-961b-67cc0c412ffb",
+        "url": "https://linear.app/kerigan/issue/KER-63/pi03-deliver-chronological-long-horizon-baseline-comparisons",
+        "milestone": "M1",
+        "status": "Backlog"
+      },
+      "PI04": {
+        "id": "KER-64",
+        "uuid": "427a16b3-8a2e-4c91-bebd-f4f114caf0dd",
+        "url": "https://linear.app/kerigan/issue/KER-64/pi04-record-forward-forecasts-before-outcomes-and-score-maturation",
+        "milestone": "M1",
+        "status": "Backlog"
+      },
+      "PI05": {
+        "id": "KER-65",
+        "uuid": "07290a3f-e9bd-4f7f-873a-00d6249fc0f7",
+        "url": "https://linear.app/kerigan/issue/KER-65/pi05-qualify-bounded-analytical-scans-and-native-engine-choice",
+        "milestone": "M2",
+        "status": "Backlog"
+      },
+      "PI06": {
+        "id": "KER-66",
+        "uuid": "407bac29-aaa4-4d5a-aa38-fe69790141dd",
+        "url": "https://linear.app/kerigan/issue/KER-66/pi06-version-multi-family-availability-revisions-and-instrument",
+        "milestone": "M2",
+        "status": "Backlog"
+      },
+      "PI07": {
+        "id": "KER-67",
+        "uuid": "c61b8c95-5761-4495-9e8d-76eb62d52818",
+        "url": "https://linear.app/kerigan/issue/KER-67/pi07-add-fitted-feature-registry-with-replay-and-online-parity",
+        "milestone": "M2",
+        "status": "Backlog"
+      },
+      "PI08": {
+        "id": "KER-68",
+        "uuid": "4809f7c7-819b-4917-9f41-f72bb18dcc46",
+        "url": "https://linear.app/kerigan/issue/KER-68/pi08-seal-final-holdout-and-implement-trial-and-qualification-registry",
+        "milestone": "M3",
+        "status": "Backlog"
+      },
+      "PI12": {
+        "id": "KER-69",
+        "uuid": "c3b0b884-8c8e-4eaa-a1ac-13fa0163a0a4",
+        "url": "https://linear.app/kerigan/issue/KER-69/pi12-generalize-fixed-baseline-jobs-to-admitted-training-and",
+        "milestone": "M3",
+        "status": "Backlog"
+      },
+      "PI09": {
+        "id": "KER-70",
+        "uuid": "f6b7ecb5-d0c7-42bb-af17-241168253c74",
+        "url": "https://linear.app/kerigan/issue/KER-70/pi09-compare-regularized-statistics-and-gradient-boosting-under-fixed",
+        "milestone": "M3",
+        "status": "Backlog"
+      },
+      "PI10": {
+        "id": "KER-71",
+        "uuid": "e8700d69-7a54-4997-819e-e70672081ab1",
+        "url": "https://linear.app/kerigan/issue/KER-71/pi10-qualify-probabilities-calibration-ensembles-and-economic",
+        "milestone": "M3",
+        "status": "Backlog"
+      },
+      "PI11": {
+        "id": "KER-72",
+        "uuid": "31308076-872a-435b-9c0e-4b4109985c5d",
+        "url": "https://linear.app/kerigan/issue/KER-72/pi11-evaluate-isolated-deep-and-foundation-model-challengers",
+        "milestone": "M3",
+        "status": "Backlog"
+      },
+      "PI13": {
+        "id": "KER-73",
+        "uuid": "07bc5e3d-3e67-4bf9-8b8b-7d2f0ff0fbff",
+        "url": "https://linear.app/kerigan/issue/KER-73/pi13-enroll-remote-cpu-workers-with-leases-and-verified-result",
+        "milestone": "M4",
+        "status": "Backlog"
+      },
+      "PI14": {
+        "id": "KER-74",
+        "uuid": "6547b2f0-a3f9-4ad5-89e9-e8d6d4610529",
+        "url": "https://linear.app/kerigan/issue/KER-74/pi14-qualify-a-separate-eligible-gpu-execution-profile",
+        "milestone": "M4",
+        "status": "Backlog"
+      },
+      "PI15": {
+        "id": "KER-75",
+        "uuid": "1ad8c418-0878-4e20-853d-7b9e73f25b40",
+        "url": "https://linear.app/kerigan/issue/KER-75/pi15-automate-bounded-hypotheses-search-and-retraining",
+        "milestone": "M5",
+        "status": "Backlog"
+      },
+      "PI16": {
+        "id": "KER-76",
+        "uuid": "d7407a3e-0c5b-484f-857b-cddbe1fa9909",
+        "url": "https://linear.app/kerigan/issue/KER-76/pi16-monitor-matured-forecast-skill-and-govern-promotion-and-fallback",
+        "milestone": "M5",
+        "status": "Backlog"
+      },
+      "PI17": {
+        "id": "KER-77",
+        "uuid": "ea4cf909-c87d-439c-9072-86ffd5416478",
+        "url": "https://linear.app/kerigan/issue/KER-77/pi17-qualify-deployment-capacity-retention-upgrade-and-disaster",
+        "milestone": "M6",
+        "status": "Backlog"
+      },
+      "PI18": {
+        "id": "KER-78",
+        "uuid": "28736aa1-17ab-42fe-8e46-adcf2edb3d88",
+        "url": "https://linear.app/kerigan/issue/KER-78/pi18-prove-extension-compatibility-and-document-operator-journeys",
+        "milestone": "M6",
+        "status": "Backlog"
+      },
+      "PI19": {
+        "id": "KER-79",
+        "uuid": "e5db9ff8-3010-4f6f-aa3b-5dfe906a6ee5",
+        "url": "https://linear.app/kerigan/issue/KER-79/pi19-add-private-read-only-api-and-forecast-comparison-dashboard",
+        "milestone": "M7",
+        "status": "Backlog"
+      },
+      "PI20": {
+        "id": "KER-80",
+        "uuid": "fb752fb4-71f7-4c68-ab50-c781ee66c536",
+        "url": "https://linear.app/kerigan/issue/KER-80/pi20-expose-scoped-management-and-consistent-private-ux",
+        "milestone": "M7",
+        "status": "Backlog"
+      },
+      "PI21": {
+        "id": "KER-81",
+        "uuid": "16e5f1d9-f4e4-473e-93fb-e68c65fbc232",
+        "url": "https://linear.app/kerigan/issue/KER-81/pi21-qualify-the-completed-prediction-core",
+        "milestone": "M8",
+        "status": "Backlog"
+      },
+      "PI22": {
+        "id": "KER-82",
+        "uuid": "b1e32ed4-15cc-426c-9886-422e838a93b5",
+        "url": "https://linear.app/kerigan/issue/KER-82/pi22-evaluate-minute-horizon-forecasting-after-core-completion",
+        "milestone": "D1",
+        "status": "Backlog"
+      },
+      "PI23": {
+        "id": "KER-83",
+        "uuid": "d0b0b9bf-8349-4f29-bd9a-178f39e1b2d0",
+        "url": "https://linear.app/kerigan/issue/KER-83/pi23-evaluate-second-horizon-and-event-book-capabilities-last",
+        "milestone": "D1",
+        "status": "Backlog"
+      },
+      "PI24": {
+        "id": "KER-84",
+        "uuid": "92ce500e-a041-4a20-b69a-ded699a2af5e",
+        "url": "https://linear.app/kerigan/issue/KER-84/pi24-scope-separate-post-core-simulation-and-paper-trading-program",
+        "milestone": "D2",
+        "status": "Backlog"
+      },
+      "PI25": {
+        "id": "KER-85",
+        "uuid": "dd7ac76d-ccf3-403f-92ab-a4b88413bd93",
+        "url": "https://linear.app/kerigan/issue/KER-85/pi25-review-later-execution-pilot-only-after-independent-risk",
+        "milestone": "D2",
+        "status": "Backlog"
+      },
+      "PI26": {
+        "id": "KER-86",
+        "uuid": "90cddf57-95dc-4a45-b6ba-395cb1ea3a4b",
+        "url": "https://linear.app/kerigan/issue/KER-86/pi26-specify-shared-ai-client-capability-and-approval-contracts",
+        "title": "PI26 — Specify shared AI-client capability and approval contracts"
+      },
+      "PI27": {
+        "id": "KER-87",
+        "uuid": "1072cabb-0116-4797-b8e1-40a6c0e79bf1",
+        "url": "https://linear.app/kerigan/issue/KER-87/pi27-add-optional-read-only-mcp-adapter-and-localprivate-transports",
+        "title": "PI27 — Add optional read-only MCP adapter and local/private transports"
+      },
+      "PI28": {
+        "id": "KER-88",
+        "uuid": "ba8aa8d1-5aae-4318-b4a7-9e9b27dd0bee",
+        "url": "https://linear.app/kerigan/issue/KER-88/pi28-expose-bounded-mcp-operations-and-approved-configuration-changes",
+        "title": "PI28 — Expose bounded MCP operations and approved configuration changes"
+      },
+      "PI29": {
+        "id": "KER-89",
+        "uuid": "540b290a-d6c5-4cec-85a0-07e59f2787fc",
+        "url": "https://linear.app/kerigan/issue/KER-89/pi29-qualify-mcp-trust-boundaries-and-real-client-interoperability",
+        "title": "PI29 — Qualify MCP trust boundaries and real client interoperability"
+      }
+    },
+    "drive": {
+      "action": "no_write",
+      "reason": "User explicitly waived Drive updates after discovery; no Drive mutation performed."
+    },
+    "verification": {
+      "date": "2026-10-18",
+      "project_status": "Planned",
+      "milestones": 11,
+      "issues": 26,
+      "all_issue_states": "Backlog",
+      "dependency_edges": 35,
+      "issue_milestone_and_dependency_readback": "passed",
+      "foundation_issues_checked": 51,
+      "foundation_status_changes": 0,
+      "foundation_original_dependencies": "preserved",
+      "drive_writes": 0
+    },
+    "foundation_disposition": {
+      "date": "2026-10-18",
+      "status": "verified",
+      "authorization": "Explicit operator follow-up: retire competing Foundation roadmap; do not touch Done issues.",
+      "project_state": "Canceled",
+      "release_completion_claim": false,
+      "done_issues_protected": 45,
+      "done_fields_changed": 0,
+      "pending_issues_state": "Canceled",
+      "pending_issues": {
+        "KER-29": {
+          "replacement": [
+            "KER-77"
+          ],
+          "disposition": "superseded",
+          "reason": "Required bounded read-only operational reporting is explicitly carried into PI17; bot-specific transport is not a core dependency."
+        },
+        "KER-30": {
+          "replacement": [],
+          "disposition": "optional_deferred",
+          "reason": "Telegram is optional and outside the active prediction-core program. No replacement issue is created merely to keep a second backlog alive. Reconsider only under separate later scope approval."
+        },
+        "KER-31": {
+          "replacement": [
+            "KER-77"
+          ],
+          "disposition": "superseded",
+          "reason": "Necessary operator-controlled deployment/credential/control/reboot qualification is carried into PI17; Telegram-specific units are optional."
+        },
+        "KER-32": {
+          "replacement": [
+            "KER-78",
+            "KER-66"
+          ],
+          "disposition": "superseded",
+          "reason": "Extension/versioning/author guidance and concrete non-candle source plus second-provider conformance are carried into PI18 and PI06."
+        },
+        "KER-33": {
+          "replacement": [
+            "KER-77"
+          ],
+          "disposition": "superseded",
+          "reason": "Pin-aware retention, pruning previews, independent backup/restore, migration and rollback/anchor checks are carried into PI17."
+        },
+        "KER-34": {
+          "replacement": [
+            "KER-81"
+          ],
+          "disposition": "superseded_release_gate",
+          "reason": "The original Foundation release is not claimed complete. Its applicable technical gates (including 72-hour public-data soak, configured offline/retention volume and recovery/security/extension checks) carry into PI21; redesigned-core qualification is separate."
+        }
+      },
+      "modified_active_items": [
+        "KER-77",
+        "KER-78",
+        "KER-81"
+      ],
+      "telegram": "Optional, deferred outside active core backlog; original KER-30 retained as historical spec.",
+      "original_descriptions_and_dependency_edges_preserved": true,
+      "readback": {
+        "done_checked": 45,
+        "done_changed": [],
+        "counts": {
+          "Canceled": 6,
+          "Done": 45
+        },
+        "foundation_project_state": "Canceled",
+        "original_project_description_retained": true,
+        "new_project_issues": 26,
+        "new_project_states": {
+          "Backlog": 26
+        },
+        "new_project_hasNextPage": false,
+        "descriptions_and_dependencies_changed": []
+      }
+    },
+    "mcp_extension": {
+      "date": "2026-10-19",
+      "status": "created_and_read_back_planning_only",
+      "design": "docs/architecture/MCP.md",
+      "evidence": "docs/research/MCP_EVIDENCE.md",
+      "items": [
+        "PI26",
+        "PI27",
+        "PI28",
+        "PI29"
+      ],
+      "existing_dependency_edges_preserved": 35,
+      "new_dependency_edges": 7,
+      "new_early_forecast_or_PI21_dependencies": 0,
+      "implementation_performed": false,
+      "client_interoperability_tests_performed": false,
+      "runtime_installs": 0,
+      "commits_or_pushes": 0,
+      "verification": {
+        "date": "2026-10-19",
+        "project_status": "Planned",
+        "milestones": 11,
+        "issues": 30,
+        "all_issue_states": "Backlog",
+        "total_dependency_edges": 42,
+        "new_dependency_edges": 7,
+        "new_issue_status_priority_milestone_and_blockers": "passed",
+        "all_26_previous_issue_title_priority_status_milestone_id": "preserved",
+        "targeted_existing_issue_scope_and_unrelated_relations": "preserved",
+        "all_26_previous_local_item_definitions_and_35_edges": "preserved",
+        "PI21_blockers": "unchanged",
+        "Done_issue_mutations": 0,
+        "M7_name": "Private dashboard and AI interfaces"
+      }
+    },
+    "pi00_pi01_execution": {
+      "date": "2026-10-19",
+      "operator_architecture_decision": "approved",
+      "PI00": "In Progress",
+      "PI01": "Backlog",
+      "research_policy_frozen": false,
+      "PI01_implementation_started": false,
+      "gate_record": "docs/PI00_GATE_RECORD_v1.json",
+      "gate_record_sha256": "1bbba3fe58283214efadd58b848b7c75c0d5f1d48638110d52cfe1e6a1f666df",
+      "blocker": "Current applicable public Bybit V5 retention/internal-ML rights remain unverified. Service-region eligibility does not establish data-use rights. Bybit remains unadmitted.",
+      "scope": "Only KER-60 updated; no PI02/unrelated issue, milestone, dependency, Done history, code, training, Drive, staging, commit or push change.",
+      "rights_checkpoint": "docs/research/PI00_DATA_RIGHTS_2026-10-19.md",
+      "bybit_tools_available_after_reconnect": true,
+      "bybit_tools_invoked": false
+    }
+  },
+  "project": {
+    "name": "Scryntic — Predictive Intelligence",
+    "summary": "Validated long-horizon forecasting first; PIT research, controlled qualification and eligible compute; late private UX; short horizons and trading deferred.",
+    "team": "KER"
+  },
+  "milestones": [
+    {
+      "key": "M0",
+      "name": "Architecture approval and compatibility",
+      "gate": "Approve target/policy, reserve an untouched final period and establish minimal trial/access accounting plus additive compatibility before any fit or comparison."
+    },
+    {
+      "key": "M1",
+      "name": "Long-horizon forecasting vertical slice",
+      "gate": "First functional priority: feasible 1h/1d/7d/28d return targets, bounded resampling, fixed isolated baseline fit/evaluate and pre-outcome ledger; extend current launcher/services rather than assume existing training support."
+    },
+    {
+      "key": "M2",
+      "name": "Point-in-time signals and analytical scale",
+      "gate": "Bounded batch scans, bitemporal revisions/instrument mapping and shared fitted feature definitions. Add signal adapters only with a justified hypothesis and rights."
+    },
+    {
+      "key": "M3",
+      "name": "Controlled predictive model qualification",
+      "gate": "Expand early holdout/trial controls into independent qualification, then general local training and fixed-budget statistical/boosting/probabilistic/deep/foundation comparisons."
+    },
+    {
+      "key": "M4",
+      "name": "Eligible CPU and GPU workers",
+      "gate": "Enrolled remote CPU agent and separate GPU profile with reproducible environments, recovery/fencing and independent result acceptance; general local training is established in M3."
+    },
+    {
+      "key": "M5",
+      "name": "Bounded autonomous intelligence",
+      "gate": "Budgeted hypothesis/search/retrain workflows, matured live performance, champion selection/fallback, revocation and rollback. Research cannot change its authority or production software."
+    },
+    {
+      "key": "M6",
+      "name": "Operational maturity and extension qualification",
+      "gate": "Declared capacity, deployment, observability, retention/backup/upgrade/DR, operator docs and extension conformance. Reuse relevant Foundation work without changing its history."
+    },
+    {
+      "key": "M7",
+      "name": "Private dashboard and AI interfaces",
+      "gate": "Late private authenticated API/dashboard over shared services, default read-only roles and scoped management. Dashboard outage cannot stop core services. Optional MCP profiles are a separately qualified side branch; they do not add a PI21 prerequisite."
+    },
+    {
+      "key": "M8",
+      "name": "Prediction core release",
+      "gate": "Evidence-qualified core completion, including long-horizon forward records, scientific/technical gates, supported CPU/GPU profiles and recovery/UX. Does not require profitable forecasts or a trading bot."
+    },
+    {
+      "key": "D1",
+      "name": "Deferred minute and second forecasts",
+      "gate": "Starts only after core release and separate scope approval; benchmark data/latency needs before native rewrites or infrastructure."
+    },
+    {
+      "key": "D2",
+      "name": "Deferred separate trading program",
+      "gate": "Only after core completion and new authorization: simulation/paper first, then separately reviewed risk/execution program. No active order placement or credentials in the prediction program."
+    }
+  ],
+  "items": [
+    {
+      "key": "PI00",
+      "milestone": "M0",
+      "title": "Approve target architecture and registered research policy",
+      "depends_on": [],
+      "scope": "Review ARCHITECTURE.md and ADRs. Select initial universe, permitted data history/rights, horizons, availability plane, compute/storage budgets and task-specific primary score, meaningful margin, sample/calibration/coverage gates. Reserve a genuinely uninspected final chronological period and label-access rule before the first fit/feature comparison; if history is already seen, designate a later untouched/forward period instead.",
+      "acceptance": "Explicit operator architecture approval and frozen benchmark policy exist before implementation/search. Unknowns and holdout-access policy are recorded; this issue must not be auto-completed by roadmap creation. Final-period reservation and access history are explicit; public historical availability alone does not make a previously inspected period untouched.",
+      "related_foundation": [],
+      "state": "In Progress"
+    },
+    {
+      "key": "PI01",
+      "milestone": "M0",
+      "title": "Specify additive v2 contracts and preserve v1 compatibility",
+      "depends_on": [
+        "PI00"
+      ],
+      "scope": "Inventory current datasets/jobs/providers/CLI, pin regression fixtures and define target/feature/distribution/experiment/task schemas and v1 adapters. Implement the minimal append-only trial/holdout-access ledger and protected final-range exclusion before any baseline fitting or ablation; M1/M2 use development data only.",
+      "acceptance": "Old archive/dataset/forecast identities remain readable; unknown major versions fail closed; missing historical availability stays unknown; no in-place rewrite, lost pin or anchor reset. Review migration/rollback fixtures. Every early trial, failure, intervention and final-range access is recorded; early jobs cannot read reserved labels.",
+      "related_foundation": [
+        "KER-22",
+        "KER-23",
+        "KER-24",
+        "KER-28"
+      ],
+      "state": "In Progress"
+    },
+    {
+      "key": "PI02",
+      "milestone": "M1",
+      "title": "Add hourly through monthly return targets and PIT eligibility",
+      "depends_on": [
+        "PI01"
+      ],
+      "scope": "Choose and preregister source frequency, forecast cadence and sufficient permitted history per horizon. Add bounded deterministic finalized-bar resampling and duration/calendar-based v2 endpoint extraction for 1h/1d/7d/28d returns; preserve availability and raw lineage. Existing 1-128-step and 10,000-row v1 limits are not silently widened.",
+      "acceptance": "A feasibility gate proves each horizon expressible with the chosen cadence, input history, matured train/validation/test counts and bounded resources before baseline work. Missing history blocks the affected capability. Resampling/gap/late-revision/time-quality fixtures pass; no look-ahead aggregation, manufactured bars or availability; v1 step/row caps remain intact.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI03",
+      "milestone": "M1",
+      "title": "Deliver chronological long-horizon baseline comparisons",
+      "depends_on": [
+        "PI02"
+      ],
+      "scope": "Add a minimal fixed baseline fit/evaluate task on the existing verified CPU launcher and durable job acceptance path: approved zero-return, train-only historical mean, regularized linear/AR and declared probabilistic algorithms. No arbitrary training endpoint. Extend chronological evaluation with common asset cutoffs, interval purge and justified embargo.",
+      "acceptance": "Actual bounded baseline fit/evaluate runs under the qualified launcher; missing controls fail closed. Train-only transforms, label maturity, cancellation/recovery and negative leakage fixtures pass. Paired per-horizon scores/exclusions reproduce; service/CLI agree; baseline retained on null evidence; no advantage inferred from price-level fit. All comparisons use development ranges and the PI01 trial ledger, never the reserved final period.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI04",
+      "milestone": "M1",
+      "title": "Record forward forecasts before outcomes and score maturation",
+      "depends_on": [
+        "PI03"
+      ],
+      "scope": "Add immutable forecast ledger and scheduled approved baseline inference, evidence classes, acceptance deadline, outcome maturation/correction records and local comparison workflows.",
+      "acceptance": "Forecast accepted durably before outcome or marked late; duplicates/conflicts and restart preserve identity; immature labels are not scored; backcasts/replay/forward cannot be conflated; CLI/TUI services expose understandable status.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI05",
+      "milestone": "M2",
+      "title": "Qualify bounded analytical scans and native-engine choice",
+      "depends_on": [
+        "PI04"
+      ],
+      "scope": "Benchmark current batched PyArrow against isolated DuckDB/optional Polars on registered long-horizon workloads, removing repeated scan overhead before language changes.",
+      "acceptance": "Record full-job time/RSS/spill/bytes and semantic parity including exclusions; enforce file/network/extension/resource limits and cancellation; select minimum sufficient engine/version or retain current path. No invented capacity/Rust gain.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI06",
+      "milestone": "M2",
+      "title": "Version multi-family availability, revisions and instrument mapping",
+      "depends_on": [
+        "PI04"
+      ],
+      "scope": "Define bitemporal facts, cross-venue contract/unit/universe identity, rights/retention and conformance; select only a justified next signal or venue, rather than implement every adapter.",
+      "acceptance": "Fixtures cover late facts/revisions, symbol reuse, contracts, gaps, resets/reorg where relevant and missing history; mappings are known/effective-time safe; immutable provenance and licensed reproducibility remain intact.",
+      "related_foundation": [
+        "KER-32"
+      ],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI07",
+      "milestone": "M2",
+      "title": "Add fitted feature registry with replay and online parity",
+      "depends_on": [
+        "PI05",
+        "PI06"
+      ],
+      "scope": "Approved return/volatility/volume/factor recipes, masks, train-fitted state, invalidation/lineage and declared native batch semantics.",
+      "acceptance": "Same input/origin/recipe yields parity for batch/replay/live; calibration/fit state never sees future; revisions invalidate affected caches; ablations and rights gate optional funding/OI/news/macro/on-chain groups. Ablations use development ranges and append to the early trial ledger; final labels remain sealed.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI08",
+      "milestone": "M3",
+      "title": "Seal final holdout and implement trial and qualification registry",
+      "depends_on": [
+        "PI07"
+      ],
+      "scope": "Expand the early PI00/PI01 holdout/trial controls into the full independent qualification and scoped release registry before broad model search: verify final-range access history, nested split protocol, immutable release identities and technical/scientific state separation.",
+      "acceptance": "Research cannot inspect final labels or promote; every trial/failure/seed/variant/access is retained from the first baseline. If any reserved period was observed/consumed, it is disqualified as untouched and replaced by a genuinely later unseen period. Exhausted holdouts cannot be silently reused; registry/revocation and deterministic scoring are verified.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI09",
+      "milestone": "M3",
+      "title": "Compare regularized statistics and gradient boosting under fixed budgets",
+      "depends_on": [
+        "PI12"
+      ],
+      "scope": "Run bounded preregistered statistical/tabular contests on identical PIT snapshots and chronological folds, with training-only feature selection and dependence-aware inference.",
+      "acceptance": "Retain all trial results and cost/resource evidence; validate against naive/statistical baselines by horizon/regime with effect sizes and registered multiple-testing policy; winner may remain baseline.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI10",
+      "milestone": "M3",
+      "title": "Qualify probabilities, calibration, ensembles and economic diagnostics",
+      "depends_on": [
+        "PI09"
+      ],
+      "scope": "Implement proper distribution/event scores, chronological calibration, out-of-fold equal/learned ensembles and fixed cost/exposure sensitivity diagnostics.",
+      "acceptance": "Coverage and width, Brier/log/pinball/CRPS as applicable, sample/abstention counts and conservative fees/spread/funding/slippage are visible. Calibration/weights use matured permitted data; no final-test strategy tuning or execution/fill claims.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI11",
+      "milestone": "M3",
+      "title": "Evaluate isolated deep and foundation-model challengers",
+      "depends_on": [
+        "PI10"
+      ],
+      "scope": "Compare modest global sequence and selected NeuralForecast/Chronos/TimesFM candidates within registered budgets and separate runtime/model license admission.",
+      "acceptance": "Exact weights/runtime/corpus/cutoff limits recorded; unknown pretraining overlap qualified; same data/protocol and compute costs retained; independent forward shadow required for strong claims; reject complexity without robust incremental value.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI12",
+      "milestone": "M3",
+      "title": "Generalize fixed baseline jobs to admitted training and evaluation tasks",
+      "depends_on": [
+        "PI08"
+      ],
+      "scope": "Generalize the M1 fixed baseline task into reusable approved ML training/evaluation task kinds, environment/input/output/resource manifests and separate scorer-label scopes using F20/F21/F22 state and admission primitives. Do not create a second scheduler or treat current forecast-only provider interfaces as already supporting training.",
+      "acceptance": "Actual isolated CPU fit/evaluate succeeds; missing controls fail closed; restart/cancel/deadline/OOM/output attacks preserve durable acceptance and pins; no collector/operational credentials or arbitrary shell/code admission.",
+      "related_foundation": [
+        "KER-24",
+        "KER-25",
+        "KER-26"
+      ],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI13",
+      "milestone": "M4",
+      "title": "Enroll remote CPU workers with leases and verified result acceptance",
+      "depends_on": [
+        "PI11",
+        "PI12"
+      ],
+      "scope": "Narrow authenticated host agent, capability expiry/revocation, immutable transfer, leases/heartbeats/fencing, retry and idempotent acceptance; coordinator stays single-owner.",
+      "acceptance": "Partition/expired lease/stale result/duplicate/conflict/coordinator restart/host revoke cases pass; model sandbox has no transport secrets/network; trusted recomputation/requalification catches fabricated output scenarios; no exactly-once execution claim.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI14",
+      "milestone": "M4",
+      "title": "Qualify a separate eligible GPU execution profile",
+      "depends_on": [
+        "PI13"
+      ],
+      "scope": "Pin approved GPU/runtime/driver/devices and task capabilities, packaging and numerical tolerance; retain mandatory CPU fallback.",
+      "acceptance": "Effective device/resource/cleanup/time/VRAM/reproducibility and hostile-input evidence on a declared host; CPU evidence not reused as GPU proof. If hardware/control evidence absent, profile stays ineligible and GPU completion remains blocked.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI15",
+      "milestone": "M5",
+      "title": "Automate bounded hypotheses, search and retraining",
+      "depends_on": [
+        "PI11",
+        "PI13"
+      ],
+      "scope": "Approved feature/model/search templates, reservations for CPU/GPU/storage/money/trials, scheduling, stop rules and complete interventions/hypothesis ledger.",
+      "acceptance": "Budget exhaustion/failed trials/drift storms/restart stop safely; no production source edits/new dependencies/credentials or validation-policy changes; independent qualification remains mandatory; initial promotion manual, later explicit scoped policy.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI16",
+      "milestone": "M5",
+      "title": "Monitor matured forecast skill and govern promotion and fallback",
+      "depends_on": [
+        "PI04",
+        "PI08",
+        "PI15"
+      ],
+      "scope": "Shadow/champion comparisons, input and performance drift, delayed-label calibration, baseline fallback, revocation and immutable rollback.",
+      "acceptance": "Record forecasts pre-outcome; dependence/minimum evidence checks prevent noisy automatic promotion; data-quality failure and degradation drill fallback/retrain/rollback; monitor lineage, coverage/width/abstention and cost sensitivity.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI17",
+      "milestone": "M6",
+      "title": "Qualify deployment, capacity, retention, upgrade and disaster recovery",
+      "depends_on": [
+        "PI16"
+      ],
+      "scope": "Declare service objectives/profiles, fixed systemd/credential roles, health/audit, disk-pressure policy, pin-aware retention, consistent backup/restore and upgrade rollback. Reuse relevant Foundation evidence after scope checks.",
+      "acceptance": "Measured workload meets registered budgets; restart/forced stop/disk full/corrupt transfer/restore/rollback drills preserve anchors, pins and artifacts; no credential leaks or scope broadening. Foundation F25-F30 statuses are not changed by partial reuse.",
+      "related_foundation": [
+        "KER-29",
+        "KER-31",
+        "KER-33",
+        "KER-34"
+      ],
+      "state": "Backlog",
+      "foundation_handover_requirements": "## Foundation handover — 2026-10-18\n\nThe operator explicitly consolidated the unfinished Foundation roadmap. Applicable requirements from F25/KER-29, F27/KER-31 and F29/KER-33 remain mandatory here:\n\n- Provide bounded read-only health/alerts/collection/coverage reporting through a peer-authorized Unix facade or an equivalently restricted local application service. Permit only approved fields/methods; reject unauthorized/oversized input. The reporting principal cannot mutate collector configuration/state, launch jobs, resolve secrets or choose arbitrary paths/SQL; reports cannot starve collection.\n- Demonstrate manual clean-host installation on the declared Linux profile, dedicated identities and fixed collector/transfer/parser/model roles, credential/time prerequisites, effective-control probes and restart/reboot resumption. No automatic privileged installer or generic elevation helper.\n- Operator-only retention/pruning previews protect dataset/model/evidence pins, manifests and trust anchors. Disk pressure fails safely; independent backup restore reproduces dataset/anchor; migration and failed-upgrade rollback preserve history or require an explicit new epoch. No rollback-induced chain/sequence reuse.\n\nTelegram-specific methods/units are optional, outside the core gate. Superseding old tasks is not implementation completion; keep this task Backlog and preserve its existing blockers.\n\n"
+    },
+    {
+      "key": "PI18",
+      "milestone": "M6",
+      "title": "Prove extension compatibility and document operator journeys",
+      "depends_on": [
+        "PI17"
+      ],
+      "scope": "Source/provider/task conformance, installed profiles, operator/incident runbooks, glossary and shared service/CLI/TUI workflows.",
+      "acceptance": "A bounded extra source/family and provider/task exercise passes relevant contracts without unrelated restructuring; installation/help work headlessly; meaningful failures and cancellation are consistent; documentation reflects delivered evidence only.",
+      "related_foundation": [
+        "KER-32",
+        "KER-28"
+      ],
+      "state": "Backlog",
+      "foundation_handover_requirements": "## Foundation handover — 2026-10-18\n\nF28/KER-32's applicable acceptance is retained explicitly: a separately registered test source and typed non-candle family must pass ingestion/archive/synchronization conformance without edits to unrelated services; a second provider must pass durable-job/replay contracts. Provide source/provider author guides, versioning rules, reusable fixtures, unsupported-capability diagnostics and operator troubleshooting. Demonstrate installed CLI/dataset/model workflows. PI06/KER-66 owns family/identity policy; this task owns end-to-end extension proof. Telegram is not a dependency. Keep Backlog; old-task cancellation does not satisfy these gates.\n\n"
+    },
+    {
+      "key": "PI19",
+      "milestone": "M7",
+      "title": "Add private read-only API and forecast comparison dashboard",
+      "depends_on": [
+        "PI17"
+      ],
+      "scope": "Late web adapter over current services with VPN/private bind/firewall, strong authentication, per-action roles, safe sessions/rendering, limits and audit.",
+      "acceptance": "Unauthorized/CSRF/injection/oversized requests fail; default principal read-only; views expose horizon/evidence/baseline/calibration/coverage/version; dashboard/API/auth outage leaves collection/forecast services and CLI operating.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI20",
+      "milestone": "M7",
+      "title": "Expose scoped management and consistent private UX",
+      "depends_on": [
+        "PI19",
+        "PI16"
+      ],
+      "scope": "Explicit roles for approved job actions, model promotion and operator review, progressive advanced settings and shared validation; no shell/SQL/file/install surface.",
+      "acceptance": "Service/CLI/TUI/web parity, safe errors, resource-owner cancellation and reauthentication/audit for sensitive actions pass operator journeys; web failure and privilege separation are demonstrated.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI21",
+      "milestone": "M8",
+      "title": "Qualify the completed prediction core",
+      "depends_on": [
+        "PI18",
+        "PI20",
+        "PI11",
+        "PI13",
+        "PI14"
+      ],
+      "scope": "Release inventory covering long-horizon forecasts, PIT/reproducibility/security, remote CPU/GPU profiles, bounded research/qualification, matured forward evidence, operations and private UX.",
+      "acceptance": "All scope-specific registered technical/scientific gates have auditable outcomes; unresolved blockers prevent completion. A baseline/null result is valid, not fabricated predictive advantage. Minute/second forecasting and trading are not prerequisites.",
+      "related_foundation": [
+        "KER-34"
+      ],
+      "state": "Backlog",
+      "foundation_handover_requirements": "## Foundation release-gate handover — 2026-10-18\n\nThe original Foundation v1 release was not completed. Its applicable reliability/security qualification is retained in this redesigned core gate, in addition to the predictive/worker/private-UX requirements already below:\n\n- At least 72 hours of continuous public-data collection on the declared workload/profile, injecting network disconnects and graceful/forced restarts. Account for every locally committed input as archived, pending or explicitly rejected; bound queue/memory/disk growth and expose observed/unknown gaps. This does not establish universal scale.\n- Simulate the configured offline horizon and retention volume with fixtures, then reconnect a separate workstation. Verify repeated/interrupted pull, corrupt objects, history conflicts and local-anchor recovery. A 72-hour soak does not prove a 90-day retention envelope.\n- Clean locked build/install and installed profiles; admitted model/dependency inventory; unit, adapter, integration, crash/recovery, hostile-input, secret-redaction, effective OS-control and import-boundary checks; dataset/replay rebuild and operator/extension documentation. Missing critical evidence blocks release; revised policy must not silently erase a failed criterion.\n- Demonstrate systemd restart/reboot, degraded clock, disk pressure and independent backup restore. Model/UI/optional notification failures must not stop healthy collection. Real credentials remain absent from CI and are limited to approved operator-controlled smoke tests where required.\n\nTelegram delivery is optional and excluded from prediction-core completion. Core readiness does not require profitable forecasts. Keep Backlog; Foundation cancellation does not qualify either release.\n\n"
+    },
+    {
+      "key": "PI22",
+      "milestone": "D1",
+      "title": "Evaluate minute-horizon forecasting after core completion",
+      "depends_on": [
+        "PI21"
+      ],
+      "scope": "Separate approval of minute targets, data availability/quality and latency service objectives, then comparative model and workload experiments.",
+      "acceptance": "Core gate complete; same PIT/selection/forward controls retained; measured bottleneck justifies infrastructure/native changes; no automatic rewrite or performance claims. Remain deferred until new scope approval.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI23",
+      "milestone": "D1",
+      "title": "Evaluate second-horizon and event-book capabilities last",
+      "depends_on": [
+        "PI22"
+      ],
+      "scope": "Separate approval of venue-specific trades/books, reconstruction validity, burst/replay and low-latency requirements; benchmark Python/native/Rust candidates.",
+      "acceptance": "Minute scope qualified, snapshot/delta/reset/gap evidence and realistic costs establish data validity; latency/capacity results support any Rust migration; no ingestion/security guarantees relaxed.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI24",
+      "milestone": "D2",
+      "title": "Scope separate post-core simulation and paper-trading program",
+      "depends_on": [
+        "PI21"
+      ],
+      "scope": "After new explicit authorization, create independently owned strategy/risk/execution roadmap consuming ForecastPublished; deterministic cost/fill assumptions and paper environment first.",
+      "acceptance": "Forecasting still owns no financial authority; simulator ledger/cost/fill limitations, risk/kill-switch/reconciliation/account-permission design reviewed; no live credentials or active order placement in this prediction issue.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI25",
+      "milestone": "D2",
+      "title": "Review later execution pilot only after independent risk qualification",
+      "depends_on": [
+        "PI24"
+      ],
+      "scope": "Deferred approval gate for a separate trading project, account authority, scoped credentials and staged live execution. This roadmap item authorizes no implementation or provisioning now.",
+      "acceptance": "Prediction core complete, simulation/paper/risk/recovery/security gates and exact operator authorization precede any order adapter/key. Kill switches independent of forecasting/web; no profits promised.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI26",
+      "milestone": "M3",
+      "title": "Specify shared AI-client capability and approval contracts",
+      "depends_on": [
+        "PI12"
+      ],
+      "scope": "Define a small transport-neutral application-service contract for authenticated subject/client context, capability/object visibility, typed DTOs, opaque object IDs, pagination/errors, idempotent admission and canonical configuration preview/approval/apply/rollback. Map the proposed MCP surface to existing Services workflows and identify absent common service support. Freeze conservative numeric quotas and allowed configuration fields. Documentation/schema/fixture contract only; no MCP runtime dependency. This is an independent branch after admitted training/qualification, not a prerequisite for early forecasting or model comparisons.",
+      "acceptance": "Reviewed operation-to-service/capability/data-class matrix covers read-only, preauthorized operations and narrow management. Caller identity never comes from tool arguments/_meta. DTO/schema fixtures exclude arbitrary paths, SQL, URLs, code, secrets, roles/security-policy changes, hidden qualification data, promotion and trading. The approval contract binds authenticated subject/client/action, exact normalized diff hash, base revision, target scope, policy version, expiry and single-use durable consumption; client confirmations cannot mint approval. Define cumulative budget/idempotency/cancel semantics, safe error/output caps and resource ACLs. Preserve v1 readers and existing service/CLI/TUI behavior; no new dependency on PI02–PI04 or PI21.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI27",
+      "milestone": "M7",
+      "title": "Add optional read-only MCP adapter and local/private transports",
+      "depends_on": [
+        "PI26",
+        "PI19"
+      ],
+      "scope": "Implement the optional official-protocol Python adapter over the authenticated private application facade. Expose authorized health/catalog/source/data-quality/model/compute and released forecast/report/comparison/job views plus fixed documentation/schema resources. Start with operator-managed stdio; add a separately qualified authenticated private Streamable HTTP profile. Pin/review official SDK and transitive licenses/lock impact. No new business logic or durable MCP store; no operational mutation tools in this task.",
+      "acceptance": "Read-only schemas and structured/text responses, bounded bytes/rows/deadlines, caller-bound paging/cache and direct resource ACLs pass contract tests. SDK auth is explicitly configured and tested for issuer/subject/client/resource/audience/scope, Origin/Host and proxy trust; SDK defaults and annotations do not prove security. Current stateless discovery and explicitly supported older initialize/session profiles are tested separately; unsupported versions/capabilities fail safely. Secrets/hidden labels/raw paths/raw exceptions are absent, including diagnostic/error cases. Adapter is an optional separate process/package; concurrent request ownership and kill/disconnect/auth outage do not close shared services or stop collection/forecast/CLI. Read-only enablement requires its scoped client/security evidence; management remains disabled pending PI28/PI29.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI28",
+      "milestone": "M7",
+      "title": "Expose bounded MCP operations and approved configuration changes",
+      "depends_on": [
+        "PI27",
+        "PI20"
+      ],
+      "scope": "Map allowed forecast/research submission, owned-job inspection/cancellation and narrow validated configuration proposals/apply/rollback to existing application management. Use immutable registered dataset/recipe/model/task IDs and operator-approved aggregate resource/trial policies. Forecast models must already be production-eligible; research candidates gain no promotion authority. Human-sensitive changes use trusted CLI/TUI/private-dashboard approval of authoritative diffs; MCP cannot approve itself.",
+      "acceptance": "Unauthorized/forged/out-of-scope inputs have no mutation. Idempotent admission persists one receipt before acknowledgement; lost replies/retries recover by owner/key and conflicting manifests fail. Explicit cancellation preserves existing durable job states and cannot cancel another owner; invocation disconnect does not cancel accepted jobs. Approval deny/expiry/replay/client-subject substitution/diff alteration/stale revision/policy drift/concurrent apply and crash recovery preserve one audited outcome. Rollback revalidates/reapproves reversible changes and does not claim to undo consumed compute or exposed data. Cumulative multi-client CPU/GPU/time/storage/concurrency/trial quotas, sealed-holdout/research/qualification boundaries, pre-outcome forecasts and secret redaction remain enforced by shared services. No shell/SQL/filesystem/install/security-policy/enrollment/promotion/trading endpoint.",
+      "related_foundation": [],
+      "state": "Backlog"
+    },
+    {
+      "key": "PI29",
+      "milestone": "M7",
+      "title": "Qualify MCP trust boundaries and real client interoperability",
+      "depends_on": [
+        "PI28",
+        "PI18"
+      ],
+      "scope": "Run the canonical MCP security/failure-isolation/client matrix on synthetic/public fixtures. Record exact server/SDK/protocol/client build/surface/account policy and transport. Qualify nominated Codex CLI/IDE and Claude Code local stdio/private HTTP separately; evaluate ChatGPT direct HTTPS versus Secure MCP Tunnel and hosted Claude only for separately authorized available deployments. No broad compatibility claim from SDK selection or offline protocol fixtures.",
+      "acceptance": "Evidence covers unauthorized mutations/resources, forged metadata, injection/malformed/oversized inputs, traversal/SSRF/unsafe metadata redirects, output/secret/holdout filtering, approval/configuration races, cumulative quotas, two principals/connections, cancellation/completion/lost reply/restart, audit integrity/failure/restore and adapter/auth/tunnel/slow-client/flood isolation while core services continue. Real nominated client tests verify discovery/pagination/schema/text+structured output/resources where supported, OAuth login/refresh/revoke/scopes/actual callback registration and supported protocol fallback; confirm client allow settings cannot replace server approval. Mark unavailable/unsupported profiles explicitly; record provider/data-export and ingress/egress decisions before hosted tests. Enable only evidence-qualified capability/profile combinations, retain disable/rollback procedure, and leave existing PI21 release dependencies intact.",
+      "related_foundation": [],
+      "state": "Backlog"
+    }
+  ],
+  "execution_checkpoint": {
+    "recorded_at": "2026-10-20T21:56:58.021055+00:00",
+    "refreshed_items": [
+      "KER-60",
+      "KER-61"
+    ],
+    "source": "Current issue readback; all unrelated statuses/dependencies preserved",
+    "scope": "Approved steps1–3: synthetic qualification, registered rules, protective contracts/ledger. No PI02/fitting.",
+    "source_admission": "pending",
+    "completion": "Neither issue Done; full PI00 gate remains open",
+    "record": "docs/architecture/PI00_GATE_RECORD_v1.json",
+    "issue_states": {
+      "KER-60": "In Progress",
+      "KER-61": "In Progress"
+    },
+    "comment_ids": [
+      "c117ca24-d166-49ef-a57b-cc0fb6cc41b5",
+      "374ca1b4-0ff3-46ae-8e60-166c28543e07"
+    ],
+    "result": "Protective PI01 technical scope verified locally; PI00 source/coverage gate open. KER-60->KER-61->KER-62 retained; no PI02."
+  }
+}

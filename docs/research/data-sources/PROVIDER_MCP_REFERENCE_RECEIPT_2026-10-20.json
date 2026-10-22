@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.0",
+  "recorded_at": "2026-10-20T17:10:27Z",
+  "scope": "Read-only provider MCP/source-document assessment; no connection installation or data/account calls",
+  "repository_metadata": {
+    "bybit-exchange/trading-mcp": {
+      "commit": "363811eda6a5b3f863c9a76e0788227ba163f860",
+      "date": "2026-10-14T07:32:28Z",
+      "license": "MIT",
+      "tree_truncated": false
+    },
+    "massive-com/mcp_massive": {
+      "commit": "1e161a8c50b69bd467b092e0721e30908ab94eb6",
+      "date": "2026-10-08T14:13:06Z",
+      "license": "MIT",
+      "tree_truncated": false
+    }
+  },
+  "source_files": {
+    "bybit-exchange/trading-mcp/src/server.ts": {
+      "url": "https://raw.githubusercontent.com/bybit-exchange/trading-mcp/363811eda6a5b3f863c9a76e0788227ba163f860/src/server.ts",
+      "sha256": "b3bc132416b0ab3449dd5175de35d8ca5488ae3b1c1e3308382fe140415d28ef",
+      "lines": 111
+    },
+    "bybit-exchange/trading-mcp/src/tools/market/getKline.ts": {
+      "url": "https://raw.githubusercontent.com/bybit-exchange/trading-mcp/363811eda6a5b3f863c9a76e0788227ba163f860/src/tools/market/getKline.ts",
+      "error": "HTTP Error 404: Not Found"
+    },
+    "bybit-exchange/trading-mcp/src/client/rest-client.ts": {
+      "url": "https://raw.githubusercontent.com/bybit-exchange/trading-mcp/363811eda6a5b3f863c9a76e0788227ba163f860/src/client/rest-client.ts",
+      "sha256": "76f613dcb501b7484d65f7e51904e8198f64059eb93c24bb3e1d91aa41991365",
+      "lines": 105
+    },
+    "massive-com/mcp_massive/src/mcp_massive/server.py": {
+      "url": "https://raw.githubusercontent.com/massive-com/mcp_massive/1e161a8c50b69bd467b092e0721e30908ab94eb6/src/mcp_massive/server.py",
+      "sha256": "910ca6992019d2aff86d7891c8d66de359810280040dd2aba3a71208dab2a2b3",
+      "lines": 539
+    },
+    "massive-com/mcp_massive/src/mcp_massive/store.py": {
+      "url": "https://raw.githubusercontent.com/massive-com/mcp_massive/1e161a8c50b69bd467b092e0721e30908ab94eb6/src/mcp_massive/store.py",
+      "sha256": "be462a6e6aaa378260d6affdab47c2353f98a137fdb19df64b17316092f553fd",
+      "lines": 1058
+    }
+  },
+  "additional_bybit_files": {
+    "src/utils/approval.ts": {
+      "url": "https://raw.githubusercontent.com/bybit-exchange/trading-mcp/363811eda6a5b3f863c9a76e0788227ba163f860/src/utils/approval.ts",
+      "sha256": "6b3c5a7911c5cc3cc527185e8ec74e14f98a5289ea53f992ef1d09279d8783c5",
+      "lines": 87
+    },
+    "src/tools/market/getMarketKline.ts": {
+      "url": "https://raw.githubusercontent.com/bybit-exchange/trading-mcp/363811eda6a5b3f863c9a76e0788227ba163f860/src/tools/market/getMarketKline.ts",
+      "sha256": "74aaa5edee0d58f171af2ce8a634df091f370a640a34aa8da717ffbd4bb77ab5",
+      "lines": 20
+    }
+  },
+  "reference_followup_files": [
+    {
+      "repo": "microsoft/qlib",
+      "commit": "54355232463878d2eebb91fe0ee5fa7fa1f5976c",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/microsoft/qlib/54355232463878d2eebb91fe0ee5fa7fa1f5976c/README.md",
+      "sha256": "e9f7cc8eeb60e3fe3784ec496e350ecb584157c3240cda0651c20acb26fd9037",
+      "lines": 654,
+      "bytes": 44277
+    },
+    {
+      "repo": "freqtrade/freqtrade",
+      "commit": "84e5657e698ec6ff279c6a4c04c7591dfefaec74",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/freqtrade/freqtrade/84e5657e698ec6ff279c6a4c04c7591dfefaec74/README.md",
+      "sha256": "119d586166ae397b05f9763caf7f90e2d27792f90c8455c04ac3455e14a40d89",
+      "lines": 236,
+      "bytes": 12770
+    },
+    {
+      "repo": "nautechsystems/nautilus_trader",
+      "commit": "6875261266758e379d7af4213b327ea78fa8da01",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/nautechsystems/nautilus_trader/6875261266758e379d7af4213b327ea78fa8da01/README.md",
+      "sha256": "fb59fc43d9c585018b6e1ea77504d28111be7d30dc6e08a1da1eb4ad78ad39aa",
+      "lines": 690,
+      "bytes": 40010
+    },
+    {
+      "repo": "bmoscon/cryptofeed",
+      "commit": "ad986f01743ddbb81f65981ecf4946c8d629520e",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/bmoscon/cryptofeed/ad986f01743ddbb81f65981ecf4946c8d629520e/README.md",
+      "sha256": "d2ef8d1db63350783e806583bc562fe1c4f818859d7a8f7c97e556a68cd1ba95",
+      "lines": 191,
+      "bytes": 7335
+    },
+    {
+      "repo": "hummingbot/hummingbot",
+      "commit": "9af100d6822da7d2d0291a906c730ef172284ee2",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/hummingbot/hummingbot/9af100d6822da7d2d0291a906c730ef172284ee2/README.md",
+      "sha256": "179e404ee85129a0b714d234246b0b9c13345f1ce19f50dd065e8c83af28c1c7",
+      "lines": 224,
+      "bytes": 16992
+    },
+    {
+      "repo": "Nixtla/neuralforecast",
+      "commit": "6c11accfbcfdd62a40ef69a7c81e3d9c7f272682",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/Nixtla/neuralforecast/6c11accfbcfdd62a40ef69a7c81e3d9c7f272682/README.md",
+      "sha256": "0360a4f3d8ebb24c880e8675a8a57cc325af32210d729b6f492608b102fdfe37",
+      "lines": 194,
+      "bytes": 14539
+    },
+    {
+      "repo": "amazon-science/chronos-forecasting",
+      "commit": "1224fafa91e1ecd6674f5204066b159e40b5e4a1",
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/amazon-science/chronos-forecasting/1224fafa91e1ecd6674f5204066b159e40b5e4a1/README.md",
+      "sha256": "7f9e55723daadb20f79f3d76d23370888301d917f075e9eafa3e780c78f9ff35",
+      "lines": 163,
+      "bytes": 11168
+    },
+    {
+      "repo": "freqtrade/freqtrade",
+      "commit": "84e5657e698ec6ff279c6a4c04c7591dfefaec74",
+      "path": "docs/data-download.md",
+      "url": "https://raw.githubusercontent.com/freqtrade/freqtrade/84e5657e698ec6ff279c6a4c04c7591dfefaec74/docs/data-download.md",
+      "sha256": "8e3d82ee2b5c72f97c124a7331698433f1a2df26e2ca38c59e8f2e76c55d77b4",
+      "lines": 319,
+      "bytes": 17706
+    },
+    {
+      "repo": "microsoft/qlib",
+      "commit": "54355232463878d2eebb91fe0ee5fa7fa1f5976c",
+      "path": "scripts/data_collector/README.md",
+      "url": "https://raw.githubusercontent.com/microsoft/qlib/54355232463878d2eebb91fe0ee5fa7fa1f5976c/scripts/data_collector/README.md",
+      "sha256": "41acb599102acdaa7dae20f6364cab4ff96d8a03042f9363b4fa2e21ad5c1877",
+      "lines": 60,
+      "bytes": 2362
+    }
+  ],
+  "registry_lookups": {
+    "bybit-official-trading-server": {
+      "exit_code": 0,
+      "result": {
+        "status": "discovered",
+        "slug": "bybit-exchange-trading-mcp",
+        "message": "This server was new to the registry \u2014 this lookup just submitted it for identity resolution and a priority scan. Its record will publish once the scan lands; check back shortly."
+      }
+    },
+    "binance-mcp": {
+      "exit_code": 0,
+      "result": {
+        "status": "queued",
+        "slug": "binance-mcp",
+        "message": "This server is known to the registry but its record is not published yet. This lookup bumped it into the priority scan lane \u2014 check back shortly."
+      }
+    },
+    "mcp_massive": {
+      "exit_code": 0,
+      "result": {
+        "status": "unknown",
+        "message": "Not in the registry, and it does not resolve to an MCP-shaped npm package. If it exists under a different name, try search_registry; the query has been logged as unmet demand either way."
+      }
+    }
+  },
+  "exposed_metadata_counts": {
+    "bybit": 5,
+    "binance": 90,
+    "massive": 4
+  },
+  "metadata_counts_are_not_permission_certification": true,
+  "new_mcp_connections": 0,
+  "provider_tools_invoked": 0,
+  "credentials_requested_or_inspected": false,
+  "product_changes": false,
+  "firefox_modified": false
+}

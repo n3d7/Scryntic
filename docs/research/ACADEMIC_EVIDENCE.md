@@ -154,7 +154,7 @@ Report policy results separately with risk/exposure constraints, gross and net m
 
 ### Subsequent focused Consensus review
 
-A further bounded literature check was completed after the original architecture delivery. The seven-study supplement adds crypto-factor/basis evidence, a newer TabPFN-2 challenger, LLM-news contamination diagnostics and the original SPA test's estimation-scheme restriction. These are research refinements, not additional adopted models or implementation authorization. [Separate fetched metadata/call ledger](consensus/FOLLOWUP_RECORDS.json) preserves the original archive unchanged.
+The operator requested a further bounded literature check after the original architecture delivery. [The seven-study supplement](CONSENSUS_FOLLOWUP_2026-10-18.md) adds crypto-factor/basis evidence, a newer TabPFN-2 challenger, LLM-news contamination diagnostics and the original SPA test's estimation-scheme restriction. These are research refinements, not additional adopted models or implementation authorization. [Separate fetched metadata/call ledger](consensus/FOLLOWUP_RECORDS.json) preserves the original archive unchanged.
 
 - This is a targeted evidence review, not a systematic review or an exhaustive survey. Search queries, fetched-record metadata, and analyst paraphrases are preserved in [Consensus SEARCH_LOG.md](consensus/SEARCH_LOG.md) and [PAPER_RECORDS.json](consensus/PAPER_RECORDS.json).
 - Hours-to-weeks **financial return** evidence is substantially narrower here than generic forecasting evidence. The cited monthly equity and early-crypto studies do not settle 4-hour or weekly live predictability. A point-in-time benchmark on the chosen universe is the next research dependency.

@@ -25,9 +25,9 @@ No unresolved findings remained in that targeted recheck. It reviewed the propos
 
 ## External readback
 
-Created Scryntic — Predictive Intelligence, state **Planned**, 11 milestones, 26 issues **KER-60–KER-85**, all **Backlog**. Readback checked each issue's project, milestone and exact blockers: **35 blocking edges**, no mismatches. Milestone order was verified. PI00/KER-60 is an uncompleted operator-approval gate.
+Created [Scryntic — Predictive Intelligence](https://linear.app/kerigan/project/scryntic-predictive-intelligence-47ca383cd656), state **Planned**, 11 milestones, 26 issues **KER-60–KER-85**, all **Backlog**. Readback checked each issue's project, milestone and exact blockers: **35 blocking edges**, no mismatches. Milestone order was verified. PI00/KER-60 is an uncompleted operator-approval gate.
 
-Read back all 51 Foundation issues: **zero status changes**. Detailed readback of F25–F30 also confirms unchanged descriptions and original blocking dependencies. Added related links provide traceability only; they do not claim old or new work is complete. Exact issue URLs/IDs and verification receipt are retained in LINEAR_ROADMAP.json.
+Read back all 51 Foundation issues: **zero status changes**. Detailed readback of F25–F30 also confirms unchanged descriptions and original blocking dependencies. Added related links provide traceability only; they do not claim old or new work is complete. Exact issue URLs/IDs and verification receipt are retained in [LINEAR_ROADMAP.json](../architecture/LINEAR_ROADMAP.json).
 
 Drive was inspected read-only before the operator waived updates; **zero Drive writes**, no notice/upload/share. No GitHub repository write, commit, push, PR or merge was performed. The Debian host was not used.
 
@@ -37,7 +37,7 @@ The proposal still requires operator approval, a chosen universe/data-rights pro
 
 ## Subsequent authorized Foundation disposition
 
-The old Foundation program was retired the old Linear program without touching Done. The Foundation project and its six unfinished F25–F30 issues were set to **Canceled as superseded**, not Done/Completed. Before cancellation, applicable reporting/deployment/retention/extension/release acceptance was carried into PI17/KER-77, PI18/KER-78 and PI21/KER-81; Telegram was explicitly left optional/deferred outside the active core queue.
+The operator then explicitly requested retiring the old Linear program without touching Done. The Foundation project and its six unfinished F25–F30 issues were set to **Canceled as superseded**, not Done/Completed. Before cancellation, applicable reporting/deployment/retention/extension/release acceptance was carried into PI17/KER-77, PI18/KER-78 and PI21/KER-81; Telegram was explicitly left optional/deferred outside the active core queue.
 
 Fresh readback compared all **45 Done** issue snapshots before/after, including returned title, description, status, labels, updated/completed timestamps and project/parent identity: **zero changed fields**. The old project has 45 Done / 6 Canceled and no active backlog. Original project/affected issue descriptions are retained as suffixes; all affected original blocking edges remain. The new project retains **26 Backlog** issues; the three amended issues keep their original blockers/states. Rich-text normalization converts inserted issue references to Linear mentions, so readback checks semantic requirements and preserved original bodies rather than literal patch-byte equality.
 
@@ -48,7 +48,7 @@ The follow-up updates only administrative roadmap/documentation state. No Done i
 At the operator's request, five further Consensus searches and seven fetches were made, with a conservative ceiling of 12 total tool calls. Seven paper metadata records and 49 discovery identities/ranks are retained in `consensus/FOLLOWUP_RECORDS.json`; the previous archive remains unchanged. Primary read depth, unavailable retrievals, version/author corrections and popularity-count limitations are recorded in `CONSENSUS_FOLLOWUP_2026-10-18.md`. No full abstracts or model binaries are copied. This adds research recommendations only; no Linear/Drive mutation, implementation, model execution, commit or push was performed.
 # MCP planning addendum — 2026-10-19
 
-This later approved extension changes architecture/research/roadmap documentation and Linear planning only. The original validation record above remains historical.
+This later operator-authorized extension changes architecture/research/roadmap documentation and Linear planning only. The original validation record above remains historical.
 
 - Current official MCP 2026-07-28, pinned Python SDK v2.3.0 GitHub source, Context7 (2 resolves/3 queries), official OpenAI Developers/Claude client docs and two SOFA searches/three fetched posts supplied targeted research. [Evidence/read-depth/tool limits](MCP_EVIDENCE.md).
 - Independent focused architecture review found no Important/Critical issue; its minor bearer-token replay clarification was applied. A follow-up reviewed the integrated architecture/ADR/threat/roadmap result and found no remaining Important/Critical or useful minor gap in that scope. The Codex Security threat-model workflow and source review were used; advisory TAC was `not_granted`. A standalone managed design-review artifact was saved as `hardening/mcp-interface-design-review-2026-10-19.md`, SHA-256 `b2013eee33ad3f12edb28d2e5f7b258bb468d2f3f6de2ec3f4112b3e15e6899a`; this is not a completed scan or runtime qualification.

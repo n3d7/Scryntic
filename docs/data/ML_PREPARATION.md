@@ -1,7 +1,7 @@
 # Configurable ML feature preparation
 
 Implemented scope: opt-in, features-only preparation over existing accepted imports
-and the [F18 dataset service](../DATASETS.md). The same typed request is available
+and the [F18 dataset service](DATASETS.md). The same typed request is available
 through CLI and TUI. It does not download data, implement a Binance adapter,
 train models, generate future labels or admit a source into PI00.
 
@@ -115,8 +115,8 @@ preparation mechanism, not unrestricted ML execution.
 No future-return target generation, fitting, ablation or tournament is admitted
 by this capability. The complete PI00 scientific/source policy and PI01
 trial/holdout safeguards remain required before new research execution; see
-the gate record and
-execution checkpoint.
+the local-only gate record and
+local-only execution checkpoint.
 
 Focused tests cover strict policy parsing, source denial before publication,
 label rejection, unchanged v1 identities, CLI request mapping, durable export,

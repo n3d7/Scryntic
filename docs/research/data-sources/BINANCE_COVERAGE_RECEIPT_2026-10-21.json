@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-20T22:21:52.576273+00:00",
+  "plan_sha256": "a1b7392a37abe5d03a79f2ac08de09934b251d3d8bbfb5ddd02c8e204c70f21e",
+  "status": "complete",
+  "requests": 324,
+  "transferred_bytes": 6161557,
+  "expanded_bytes": 14356485,
+  "elapsed_seconds": 112.49,
+  "errors": [],
+  "fitting": false,
+  "production_dataset_created": false,
+  "final_labels_read": false,
+  "files": 162,
+  "archive_receipt_sha256": "e1a90fd1fb53d52721da5db378ba5e6b22fc7d323f52d05356c1530d7fffca6c",
+  "instruments": {
+    "BTCUSDT": {
+      "archives": 81,
+      "rows": 59160,
+      "missing": 0,
+      "duplicates": 0
+    },
+    "ETHUSDT": {
+      "archives": 81,
+      "rows": 59160,
+      "missing": 0,
+      "duplicates": 0
+    }
+  }
+}

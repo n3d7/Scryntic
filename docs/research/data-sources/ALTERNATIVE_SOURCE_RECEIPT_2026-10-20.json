@@ -1,0 +1,1730 @@
+{
+  "schema_version": "1.0",
+  "recorded_date": "2026-10-20",
+  "purpose": "Alternative data-source research, not acquisition/admission",
+  "github_metadata": {
+    "github_head": {
+      "url": "https://api.github.com/repos/binance/binance-public-data/commits/master",
+      "status": 200,
+      "result": {
+        "sha": "d571690eb66760763b0bd6e27e8cd35603c7e244",
+        "html_url": "https://github.com/binance/binance-public-data/commit/d571690eb66760763b0bd6e27e8cd35603c7e244",
+        "size": null,
+        "date": "2026-10-16T14:18:28Z"
+      }
+    },
+    "github_terms": {
+      "url": "https://api.github.com/repos/binance/binance-public-data/contents/TERMS_AND_CONDITIONS.md?ref=master",
+      "status": 200,
+      "result": {
+        "sha": "d47bf55acfd83456d6fe57b31f400b42bda83c19",
+        "html_url": "https://github.com/binance/binance-public-data/blob/master/TERMS_AND_CONDITIONS.md",
+        "size": 9807
+      }
+    },
+    "github_readme": {
+      "url": "https://api.github.com/repos/binance/binance-public-data/contents/README.md?ref=master",
+      "status": 200,
+      "result": {
+        "sha": "e01e34a0b0cd91d62386a5a237190a3167138bae",
+        "html_url": "https://github.com/binance/binance-public-data/blob/master/README.md",
+        "size": 5282
+      }
+    }
+  },
+  "source_pins": {
+    "TERMS_AND_CONDITIONS.md": {
+      "url": "https://raw.githubusercontent.com/binance/binance-public-data/d571690eb66760763b0bd6e27e8cd35603c7e244/TERMS_AND_CONDITIONS.md",
+      "bytes": 9807,
+      "git_blob_sha": "d47bf55acfd83456d6fe57b31f400b42bda83c19",
+      "sha256": "99c4921dbe023cd68c1a447775707d621453cc78aec6ac0bfe2e6c06a5114ee0"
+    },
+    "README.md": {
+      "url": "https://raw.githubusercontent.com/binance/binance-public-data/d571690eb66760763b0bd6e27e8cd35603c7e244/README.md",
+      "bytes": 5282,
+      "git_blob_sha": "e01e34a0b0cd91d62386a5a237190a3167138bae",
+      "sha256": "2e133d9945a9263a02781369078e72805eff074680f305cd5460016471c6caad"
+    }
+  },
+  "hourly_catalogues": {
+    "BTCUSDT": {
+      "url": "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?prefix=data/futures/um/monthly/klines/BTCUSDT/1h/&max-keys=200",
+      "status": 200,
+      "truncated": "false",
+      "archive_count": 81,
+      "compressed_bytes": 3073926,
+      "first_listed_month": "2020-01",
+      "last_listed_month": "2026-09",
+      "missing_month_filenames": [],
+      "missing_checksum_filenames": [],
+      "objects": [
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-01.zip",
+          "bytes": 37271,
+          "modified": "2021-06-14T06:12:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-14T06:12:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-02.zip",
+          "bytes": 35268,
+          "modified": "2021-06-14T05:03:43.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-14T05:03:43.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-03.zip",
+          "bytes": 38166,
+          "modified": "2021-06-28T06:11:19.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T06:11:19.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-04.zip",
+          "bytes": 36833,
+          "modified": "2021-06-28T07:00:17.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T07:00:17.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-05.zip",
+          "bytes": 38289,
+          "modified": "2021-06-28T08:40:18.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T08:40:18.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-06.zip",
+          "bytes": 36260,
+          "modified": "2021-06-28T10:10:01.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T10:10:01.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-07.zip",
+          "bytes": 37043,
+          "modified": "2021-06-28T11:24:37.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T11:24:37.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-08.zip",
+          "bytes": 37996,
+          "modified": "2021-06-28T12:46:42.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T12:46:42.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-09.zip",
+          "bytes": 36859,
+          "modified": "2021-06-28T16:21:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T16:21:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-10.zip",
+          "bytes": 38117,
+          "modified": "2021-06-28T18:26:43.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T18:26:43.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-11.zip",
+          "bytes": 37893,
+          "modified": "2021-06-28T21:15:36.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T21:15:36.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-12.zip",
+          "bytes": 39316,
+          "modified": "2021-06-28T23:47:08.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2020-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T23:47:08.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-01.zip",
+          "bytes": 40346,
+          "modified": "2021-06-29T02:46:08.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-29T02:46:08.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-02.zip",
+          "bytes": 36379,
+          "modified": "2021-03-02T20:46:34.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-03-02T20:46:34.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-03.zip",
+          "bytes": 40163,
+          "modified": "2021-06-09T14:52:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-09T14:52:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-04.zip",
+          "bytes": 38669,
+          "modified": "2021-06-09T11:16:01.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-09T11:16:01.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-05.zip",
+          "bytes": 40697,
+          "modified": "2021-06-17T19:50:21.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-17T19:50:21.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-06.zip",
+          "bytes": 39207,
+          "modified": "2021-09-12T08:27:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-09-12T08:27:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-07.zip",
+          "bytes": 40038,
+          "modified": "2021-08-01T20:58:59.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-08-01T20:58:59.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-08.zip",
+          "bytes": 40160,
+          "modified": "2021-09-02T15:34:32.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-09-02T15:34:32.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-09.zip",
+          "bytes": 38738,
+          "modified": "2021-10-01T14:11:37.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-10-01T14:11:37.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-10.zip",
+          "bytes": 40087,
+          "modified": "2021-11-01T14:57:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-11-01T14:57:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-11.zip",
+          "bytes": 38610,
+          "modified": "2021-12-01T11:49:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-12-01T11:49:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-12.zip",
+          "bytes": 40053,
+          "modified": "2022-01-07T16:18:06.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2021-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2022-01-07T16:18:06.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-01.zip",
+          "bytes": 39953,
+          "modified": "2023-12-18T13:44:21.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-12-18T13:44:21.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-02.zip",
+          "bytes": 35964,
+          "modified": "2024-01-08T12:14:15.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T12:14:15.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-03.zip",
+          "bytes": 39024,
+          "modified": "2024-01-08T13:32:59.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T13:32:59.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-04.zip",
+          "bytes": 37478,
+          "modified": "2024-01-08T14:17:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T14:17:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-05.zip",
+          "bytes": 39107,
+          "modified": "2024-08-20T18:09:41.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-08-20T18:09:41.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-06.zip",
+          "bytes": 37922,
+          "modified": "2023-12-20T14:51:49.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-12-20T14:51:49.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-07.zip",
+          "bytes": 38784,
+          "modified": "2023-09-21T06:14:00.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-09-21T06:14:00.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-08.zip",
+          "bytes": 38388,
+          "modified": "2023-06-12T11:48:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-06-12T11:48:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-09.zip",
+          "bytes": 37283,
+          "modified": "2022-10-26T14:11:26.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2022-10-26T14:11:26.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-10.zip",
+          "bytes": 37838,
+          "modified": "2022-11-17T18:57:20.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2022-11-17T18:57:20.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-11.zip",
+          "bytes": 36889,
+          "modified": "2022-12-25T20:57:03.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2022-12-25T20:57:03.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-12.zip",
+          "bytes": 36820,
+          "modified": "2023-01-17T18:31:33.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2022-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-01-17T18:31:33.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-01.zip",
+          "bytes": 37766,
+          "modified": "2023-02-17T16:28:52.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-02-17T16:28:52.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-02.zip",
+          "bytes": 34682,
+          "modified": "2023-09-19T08:44:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-09-19T08:44:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-03.zip",
+          "bytes": 38700,
+          "modified": "2023-04-22T17:53:45.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-04-22T17:53:45.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-04.zip",
+          "bytes": 37139,
+          "modified": "2023-08-07T08:15:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-08-07T08:15:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-05.zip",
+          "bytes": 38198,
+          "modified": "2024-01-08T08:00:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T08:00:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-06.zip",
+          "bytes": 37120,
+          "modified": "2023-07-02T16:46:25.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-07-02T16:46:25.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-07.zip",
+          "bytes": 37558,
+          "modified": "2024-01-08T07:28:22.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T07:28:22.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-08.zip",
+          "bytes": 37282,
+          "modified": "2024-01-08T07:47:41.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T07:47:41.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-09.zip",
+          "bytes": 35974,
+          "modified": "2024-01-08T08:19:57.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T08:19:57.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-10.zip",
+          "bytes": 37679,
+          "modified": "2024-01-08T08:25:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T08:25:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-11.zip",
+          "bytes": 36685,
+          "modified": "2024-01-08T08:33:32.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T08:33:32.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-12.zip",
+          "bytes": 38475,
+          "modified": "2024-01-08T08:41:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2023-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T08:41:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-01.zip",
+          "bytes": 38890,
+          "modified": "2024-02-18T13:55:42.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-02-18T13:55:42.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-02.zip",
+          "bytes": 36374,
+          "modified": "2024-03-17T15:30:57.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-03-17T15:30:57.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-03.zip",
+          "bytes": 39301,
+          "modified": "2024-04-17T19:24:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-04-17T19:24:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-04.zip",
+          "bytes": 37804,
+          "modified": "2024-05-17T14:15:15.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-05-17T14:15:15.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-05.zip",
+          "bytes": 38427,
+          "modified": "2024-06-17T13:42:53.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-06-17T13:42:53.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-06.zip",
+          "bytes": 36794,
+          "modified": "2024-07-17T14:15:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-07-17T14:15:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-07.zip",
+          "bytes": 38700,
+          "modified": "2024-08-17T13:29:19.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-08-17T13:29:19.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-08.zip",
+          "bytes": 38718,
+          "modified": "2024-09-17T13:56:10.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-09-17T13:56:10.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-09.zip",
+          "bytes": 37266,
+          "modified": "2024-10-17T15:47:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-10-17T15:47:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-10.zip",
+          "bytes": 38285,
+          "modified": "2024-11-21T21:56:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-11-21T21:56:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-11.zip",
+          "bytes": 37741,
+          "modified": "2024-12-17T13:51:49.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-12-17T13:51:49.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-12.zip",
+          "bytes": 38950,
+          "modified": "2025-01-17T13:29:11.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2024-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-01-17T13:29:11.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-01.zip",
+          "bytes": 38915,
+          "modified": "2025-02-17T13:27:55.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-02-17T13:27:55.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-02.zip",
+          "bytes": 34861,
+          "modified": "2025-03-17T13:35:18.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-03-17T13:35:18.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-03.zip",
+          "bytes": 38723,
+          "modified": "2025-04-17T13:41:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-04-17T13:41:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-04.zip",
+          "bytes": 37389,
+          "modified": "2025-05-17T13:45:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-05-17T13:45:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-05.zip",
+          "bytes": 38805,
+          "modified": "2025-06-02T09:16:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-06-02T09:16:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-06.zip",
+          "bytes": 37374,
+          "modified": "2025-07-17T14:13:00.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-07-17T14:13:00.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-07.zip",
+          "bytes": 38443,
+          "modified": "2025-08-02T08:58:24.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-08-02T08:58:24.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-08.zip",
+          "bytes": 38617,
+          "modified": "2025-09-02T11:16:31.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-09-02T11:16:31.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-09.zip",
+          "bytes": 37022,
+          "modified": "2025-10-02T09:11:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-10-02T09:11:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-10.zip",
+          "bytes": 38885,
+          "modified": "2025-11-02T09:50:43.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-11-02T09:50:43.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-11.zip",
+          "bytes": 37564,
+          "modified": "2025-12-02T09:35:27.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-12-02T09:35:27.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-12.zip",
+          "bytes": 38148,
+          "modified": "2026-01-02T10:44:36.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2025-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-01-02T10:44:36.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-01.zip",
+          "bytes": 38152,
+          "modified": "2026-02-02T10:20:24.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-02-02T10:20:24.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-02.zip",
+          "bytes": 35154,
+          "modified": "2026-03-02T09:14:25.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-03-02T09:14:26.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-03.zip",
+          "bytes": 38671,
+          "modified": "2026-04-02T09:16:15.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-04-02T09:16:15.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-04.zip",
+          "bytes": 36965,
+          "modified": "2026-05-02T09:07:10.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-05-02T09:07:10.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-05.zip",
+          "bytes": 37968,
+          "modified": "2026-06-02T10:57:54.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-06-02T10:57:54.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-06.zip",
+          "bytes": 37239,
+          "modified": "2026-07-02T12:04:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-07-02T12:04:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-07.zip",
+          "bytes": 37864,
+          "modified": "2026-08-02T10:44:42.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-08-02T10:44:42.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-08.zip",
+          "bytes": 37864,
+          "modified": "2026-09-02T09:48:59.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-09-02T09:48:59.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-09.zip",
+          "bytes": 36887,
+          "modified": "2026-10-02T09:36:21.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/BTCUSDT/1h/BTCUSDT-1h-2026-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-10-02T09:36:21.000Z"
+        }
+      ],
+      "rows_downloaded_or_inspected": false
+    },
+    "ETHUSDT": {
+      "url": "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?prefix=data/futures/um/monthly/klines/ETHUSDT/1h/&max-keys=200",
+      "status": 200,
+      "truncated": "false",
+      "archive_count": 81,
+      "compressed_bytes": 3073213,
+      "first_listed_month": "2020-01",
+      "last_listed_month": "2026-09",
+      "missing_month_filenames": [],
+      "missing_checksum_filenames": [],
+      "objects": [
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-01.zip",
+          "bytes": 34389,
+          "modified": "2021-06-14T06:12:39.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-14T06:12:39.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-02.zip",
+          "bytes": 33463,
+          "modified": "2021-06-14T05:03:44.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-14T05:03:44.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-03.zip",
+          "bytes": 35834,
+          "modified": "2021-06-28T06:11:20.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T06:11:20.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-04.zip",
+          "bytes": 34570,
+          "modified": "2021-06-28T07:00:18.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T07:00:18.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-05.zip",
+          "bytes": 35601,
+          "modified": "2021-06-28T08:40:19.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T08:40:19.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-06.zip",
+          "bytes": 34088,
+          "modified": "2021-06-28T10:10:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T10:10:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-07.zip",
+          "bytes": 35287,
+          "modified": "2021-06-28T11:24:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T11:24:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-08.zip",
+          "bytes": 36475,
+          "modified": "2021-06-28T12:46:44.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T12:46:44.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-09.zip",
+          "bytes": 35551,
+          "modified": "2021-06-28T16:21:06.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T16:21:06.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-10.zip",
+          "bytes": 36029,
+          "modified": "2021-06-28T18:26:46.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T18:26:46.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-11.zip",
+          "bytes": 36130,
+          "modified": "2021-06-28T21:15:39.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T21:15:39.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-12.zip",
+          "bytes": 37396,
+          "modified": "2021-06-28T23:47:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2020-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-28T23:47:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-01.zip",
+          "bytes": 39064,
+          "modified": "2021-06-29T02:46:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-29T02:46:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-02.zip",
+          "bytes": 35218,
+          "modified": "2021-03-02T20:49:32.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-03-02T20:49:32.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-03.zip",
+          "bytes": 38670,
+          "modified": "2021-06-09T14:52:34.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-09T14:52:34.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-04.zip",
+          "bytes": 37789,
+          "modified": "2021-06-09T11:16:07.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-09T11:16:07.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-05.zip",
+          "bytes": 40016,
+          "modified": "2021-06-17T19:50:27.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-06-17T19:50:27.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-06.zip",
+          "bytes": 38197,
+          "modified": "2021-09-12T08:28:04.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-09-12T08:28:04.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-07.zip",
+          "bytes": 39189,
+          "modified": "2021-08-01T20:59:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-08-01T20:59:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-08.zip",
+          "bytes": 39246,
+          "modified": "2021-09-02T15:34:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-09-02T15:34:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-09.zip",
+          "bytes": 38083,
+          "modified": "2021-10-01T14:11:46.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-10-01T14:11:46.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-10.zip",
+          "bytes": 39084,
+          "modified": "2021-11-01T14:57:35.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-11-01T14:57:35.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-11.zip",
+          "bytes": 37694,
+          "modified": "2021-12-01T11:49:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2021-12-01T11:49:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-12.zip",
+          "bytes": 39028,
+          "modified": "2022-01-07T16:18:15.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2021-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2022-01-07T16:18:15.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-01.zip",
+          "bytes": 39124,
+          "modified": "2023-12-18T13:44:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-12-18T13:44:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-02.zip",
+          "bytes": 35542,
+          "modified": "2024-01-08T12:14:23.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T12:14:23.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-03.zip",
+          "bytes": 38896,
+          "modified": "2024-01-08T13:33:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T13:33:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-04.zip",
+          "bytes": 37521,
+          "modified": "2024-01-08T14:17:11.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-08T14:17:11.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-05.zip",
+          "bytes": 39016,
+          "modified": "2024-08-20T18:09:48.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-08-20T18:09:48.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-06.zip",
+          "bytes": 38115,
+          "modified": "2023-12-20T14:51:57.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-12-20T14:51:57.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-07.zip",
+          "bytes": 39382,
+          "modified": "2023-09-21T06:14:08.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-09-21T06:14:08.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-08.zip",
+          "bytes": 39567,
+          "modified": "2023-06-12T11:49:07.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-06-12T11:49:07.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-09.zip",
+          "bytes": 38290,
+          "modified": "2022-10-26T14:11:35.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2022-10-26T14:11:35.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-10.zip",
+          "bytes": 38837,
+          "modified": "2022-11-17T18:57:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2022-11-17T18:57:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-11.zip",
+          "bytes": 37911,
+          "modified": "2022-12-09T13:39:37.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2022-12-09T13:39:37.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-12.zip",
+          "bytes": 38206,
+          "modified": "2023-01-17T18:31:45.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-01-17T18:31:45.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-01.zip",
+          "bytes": 38614,
+          "modified": "2023-02-17T16:29:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-02-17T16:29:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-02.zip",
+          "bytes": 35138,
+          "modified": "2023-09-19T08:44:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-09-19T08:44:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-03.zip",
+          "bytes": 38991,
+          "modified": "2023-04-22T17:53:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-04-22T17:53:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-04.zip",
+          "bytes": 37617,
+          "modified": "2023-08-07T08:16:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-08-07T08:16:05.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-05.zip",
+          "bytes": 38504,
+          "modified": "2023-06-01T17:18:27.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-06-01T17:18:27.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-06.zip",
+          "bytes": 37299,
+          "modified": "2023-07-02T16:46:37.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-07-02T16:46:37.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-07.zip",
+          "bytes": 37939,
+          "modified": "2023-11-18T13:45:23.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-11-18T13:45:23.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-08.zip",
+          "bytes": 37647,
+          "modified": "2023-11-18T15:44:08.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-11-18T15:44:08.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-09.zip",
+          "bytes": 36218,
+          "modified": "2023-11-18T15:54:59.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-11-18T15:54:59.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-10.zip",
+          "bytes": 38084,
+          "modified": "2023-11-18T18:11:27.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-11-18T18:11:27.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-11.zip",
+          "bytes": 37387,
+          "modified": "2023-12-17T13:30:26.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2023-12-17T13:30:26.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-12.zip",
+          "bytes": 38764,
+          "modified": "2024-01-02T06:03:42.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2023-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-01-02T06:03:42.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-01.zip",
+          "bytes": 38917,
+          "modified": "2024-02-18T13:55:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-02-18T13:55:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-02.zip",
+          "bytes": 36577,
+          "modified": "2024-03-17T15:31:06.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-03-17T15:31:06.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-03.zip",
+          "bytes": 39568,
+          "modified": "2024-04-17T19:25:09.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-04-17T19:25:09.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-04.zip",
+          "bytes": 38134,
+          "modified": "2024-05-17T14:15:24.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-05-17T14:15:24.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-05.zip",
+          "bytes": 39214,
+          "modified": "2024-06-17T13:43:01.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-06-17T13:43:01.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-06.zip",
+          "bytes": 37466,
+          "modified": "2024-07-17T14:15:11.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-07-17T14:15:11.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-07.zip",
+          "bytes": 39099,
+          "modified": "2024-08-17T13:29:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-08-17T13:29:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-08.zip",
+          "bytes": 39125,
+          "modified": "2024-09-17T13:56:18.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-09-17T13:56:18.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-09.zip",
+          "bytes": 37665,
+          "modified": "2024-10-17T15:47:50.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-10-17T15:47:50.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-10.zip",
+          "bytes": 38803,
+          "modified": "2024-11-21T21:56:49.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-11-21T21:56:49.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-11.zip",
+          "bytes": 38440,
+          "modified": "2024-12-17T13:51:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2024-12-17T13:51:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-12.zip",
+          "bytes": 39614,
+          "modified": "2025-01-17T13:29:21.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2024-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-01-17T13:29:21.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-01.zip",
+          "bytes": 39367,
+          "modified": "2025-02-17T13:28:04.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-02-17T13:28:04.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-02.zip",
+          "bytes": 35832,
+          "modified": "2025-03-17T13:35:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-03-17T13:35:28.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-03.zip",
+          "bytes": 39488,
+          "modified": "2025-04-17T13:42:06.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-04-17T13:42:06.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-04.zip",
+          "bytes": 38095,
+          "modified": "2025-05-17T13:45:47.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-05-17T13:45:47.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-05.zip",
+          "bytes": 39704,
+          "modified": "2025-06-02T09:16:25.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-06-02T09:16:25.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-06.zip",
+          "bytes": 38255,
+          "modified": "2025-07-17T14:13:13.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-07-17T14:13:13.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-07.zip",
+          "bytes": 39827,
+          "modified": "2025-08-02T08:58:36.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-08-02T08:58:36.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-08.zip",
+          "bytes": 40225,
+          "modified": "2025-09-02T11:16:43.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-09-02T11:16:43.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-09.zip",
+          "bytes": 38299,
+          "modified": "2025-10-02T09:12:04.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-10-02T09:12:04.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-10.zip",
+          "bytes": 39876,
+          "modified": "2025-11-02T09:50:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-10.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-11-02T09:50:56.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-11.zip",
+          "bytes": 38603,
+          "modified": "2025-12-02T09:35:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-11.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2025-12-02T09:35:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-12.zip",
+          "bytes": 39357,
+          "modified": "2026-01-02T10:44:50.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2025-12.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-01-02T10:44:51.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-01.zip",
+          "bytes": 39239,
+          "modified": "2026-02-02T10:20:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-01.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-02-02T10:20:38.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-02.zip",
+          "bytes": 36046,
+          "modified": "2026-03-02T09:14:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-02.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-03-02T09:14:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-03.zip",
+          "bytes": 39550,
+          "modified": "2026-04-02T09:16:30.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-03.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-04-02T09:16:30.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-04.zip",
+          "bytes": 37859,
+          "modified": "2026-05-02T09:07:25.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-04.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-05-02T09:07:25.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-05.zip",
+          "bytes": 38839,
+          "modified": "2026-06-02T10:58:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-05.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-06-02T10:58:12.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-06.zip",
+          "bytes": 38024,
+          "modified": "2026-07-02T12:04:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-06.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-07-02T12:04:58.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-07.zip",
+          "bytes": 38922,
+          "modified": "2026-08-02T10:45:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-07.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-08-02T10:45:02.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-08.zip",
+          "bytes": 38672,
+          "modified": "2026-09-02T09:49:16.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-08.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-09-02T09:49:16.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-09.zip",
+          "bytes": 37812,
+          "modified": "2026-10-02T09:36:40.000Z"
+        },
+        {
+          "key": "data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2026-09.zip.CHECKSUM",
+          "bytes": 89,
+          "modified": "2026-10-02T09:36:40.000Z"
+        }
+      ],
+      "rows_downloaded_or_inspected": false
+    }
+  },
+  "additional_legal_retrieval": {
+    "ai_policy": {
+      "url": "https://bin.bnbstatic.com/static/cms/cg08ou2ak0tn7mcplvfg/file/70c8937ef687f2e81dea643381aa9fe57fd9b0fc5c86a943e99ba8047382ea49.pdf",
+      "status": 200,
+      "bytes": 609941,
+      "sha256": "70c8937ef687f2e81dea643381aa9fe57fd9b0fc5c86a943e99ba8047382ea49",
+      "content_type": "application/pdf",
+      "extraction_returncode": 0,
+      "extracted_chars": 81651
+    },
+    "countries": {
+      "url": "https://www.binance.com/en/legal/list-of-prohibited-countries",
+      "status": 202,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "content_type": "text/html; charset=UTF-8",
+      "visible_chars": 0
+    }
+  },
+  "tool_failures": [
+    "local Firecrawl MCP Transport closed",
+    "local Firecrawl CLI SSH No route to host",
+    "web GitHub commits API unavailable; direct public HTTPS succeeded",
+    "Binance LICENSE path404; no software-license conclusion"
+  ],
+  "market_rows_downloaded": false,
+  "archive_checksum_contents_verified": false,
+  "source_switched": false,
+  "pi00_completed": false,
+  "pi01_started": false,
+  "firefox_modified": false
+}

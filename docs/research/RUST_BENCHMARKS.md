@@ -1,6 +1,6 @@
 # Python, native engines and Rust placement
 
-Status: proposed engineering decisions, 2026-10-18. No new performance benchmark was executed in this assignment. Existing [F10 measurements](../performance/f10-operating-envelope.md) support retaining the current raw codec on its measured workload; they do not compare Python with Rust or qualify a larger analytical workload.
+Status: proposed engineering decisions, 2026-10-18. No new performance benchmark was executed in this assignment. Existing [F10 measurements](../data/performance/f10-operating-envelope.md) support retaining the current raw codec on its measured workload; they do not compare Python with Rust or qualify a larger analytical workload.
 
 ## Alternatives
 

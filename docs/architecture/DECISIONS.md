@@ -1,6 +1,6 @@
 # Architecture decision records
 
-Initial decisions: 2026-10-18; MCP addition: 2026-10-19. The **architectural direction, ADRs and roadmap were approved on 2026-10-19**. Execution is limited to conservative M0 preparation and PI01 after the complete PI00 policy gate; approval does not waive scientific/legal/security requirements or authorize later tasks/publication. Current gate record. No measured benefit or delivered redesign is implied. [Canonical architecture](../../ARCHITECTURE.md), evidence index.
+Initial decisions: 2026-10-18; MCP addition: 2026-10-19. The operator **approved the architectural direction, ADRs and roadmap on 2026-10-19**. Execution is limited to conservative M0 preparation and PI01 after the complete PI00 policy gate; approval does not waive scientific/legal/security requirements or authorize later tasks/publication. Current gate record retained locally. No measured benefit or delivered redesign is implied. [Canonical architecture](../../ARCHITECTURE.md), [evidence index](../research/WORKING_RECORD.md).
 
 ## ADR-PI-001 — Long-horizon forecasting is the first functional product
 
@@ -18,7 +18,7 @@ Initial decisions: 2026-10-18; MCP addition: 2026-10-19. The **architectural dir
 
 **Alternatives:** retain every row-wise path indefinitely; replace storage with PostgreSQL/Kafka immediately; adopt a large Nautilus-style Rust core. The first risks avoidable scaling cost; the others add migration and operational cost without a measured need.
 
-**Evidence:** current F18/F19 source and [F10 measurements](../performance/f10-operating-envelope.md); [native/source patterns](../research/REFERENCE_SYSTEMS.md); [benchmarks and migration criteria](../research/RUST_BENCHMARKS.md). No Python-versus-Rust benchmark has been run here.
+**Evidence:** current F18/F19 source and [F10 measurements](../data/performance/f10-operating-envelope.md); [native/source patterns](../research/REFERENCE_SYSTEMS.md); [benchmarks and migration criteria](../research/RUST_BENCHMARKS.md). No Python-versus-Rust benchmark has been run here.
 
 **Reversal:** recorded end-to-end SLO failures after batching/native optimization, or actual multi-writer/availability needs. A microbenchmark, language preference or generic “Rust is faster” claim is insufficient.
 
@@ -76,7 +76,7 @@ Initial decisions: 2026-10-18; MCP addition: 2026-10-19. The **architectural dir
 
 **Consequences:** preserve old architecture bytes, remove canonical architecture's ignore rule and document discrepancies. Repository documents are canonical; remote copies are dated references. The operator subsequently waived Drive updates, so the inspected copies remain unchanged. [Migration](MIGRATION.md) and [current-state evidence](../research/CURRENT_STATE.md) define compatibility and remaining gaps. Commit/push remains a separate explicit authorization.
 
-**Authorized follow-up:** the old Linear program was retired to avoid a competing backlog, with Done issues untouched. Cancel the old project and unfinished F25–F30 as superseded; preserve descriptions/relations and explicitly carry applicable acceptance into PI17/PI18/PI21 before cancellation. Telegram is optional/deferred outside the active core backlog. This is cancellation of an unfinished plan, not release completion. Readback verified all 45 Done issue snapshots unchanged; [disposition](ROADMAP.md#foundation-disposition-after-operator-follow-up).
+**Authorized follow-up:** the operator then requested that the old Linear program stop competing with the new one, with Done issues untouched. Cancel the old project and unfinished F25–F30 as superseded; preserve descriptions/relations and explicitly carry applicable acceptance into PI17/PI18/PI21 before cancellation. Telegram is optional/deferred outside the active core backlog. This is cancellation of an unfinished plan, not release completion. Readback verified all 45 Done issue snapshots unchanged; [disposition](ROADMAP.md#foundation-disposition-after-operator-follow-up).
 
 ## ADR-PI-009 — Optional AI-agnostic MCP over shared application services
 

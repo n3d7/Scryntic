@@ -11,7 +11,7 @@ v1 deployment.
 There are no published GitHub releases or established supported-release/backport
 matrix. Please identify the affected commit and reproduce against current `main`
 where possible. Runtime and dependency profiles are documented in
-[QUALITY.md](docs/QUALITY.md); runtime compatibility is not a security-support SLA.
+[QUALITY.md](docs/validation/QUALITY.md); runtime compatibility is not a security-support SLA.
 
 ## Reporting vulnerabilities
 
@@ -35,7 +35,7 @@ authority: Scryntic has no order placement, cancellation, withdrawal, account
 management or live trading execution capability. Models must not receive exchange
 credentials, credential handles or execution authority. Current providers are
 locally selected fakes; provider descriptors do not authorize downloaded code,
-real model loading or cloud disclosure. See [CONTRACTS.md](docs/CONTRACTS.md).
+real model loading or cloud disclosure. See [CONTRACTS.md](docs/architecture/CONTRACTS.md).
 
 ## Implemented controls
 
@@ -44,11 +44,11 @@ real model loading or cloud disclosure. See [CONTRACTS.md](docs/CONTRACTS.md).
   retained chain verification and atomic validated-import/anchor acceptance.
   Anchor backups restore transport trust, never data conformance. Server jail
   and read-only account enforcement remain operator prerequisites; complete
-  deployment qualification belongs to F27. See [F17 guide](docs/sync/F17_PULL.md).
+  deployment qualification belongs to F27. See [F17 guide](docs/data/sync/F17_PULL.md).
 
 - **Hostile imports:** bounded sealed snapshots, restricted native decoder and
   independently validated primitive IPC; transactional conformance catalog and
-  repeat restricted inspection. See [IMPORTS.md](docs/IMPORTS.md) for the qualified
+  repeat restricted inspection. See [IMPORTS.md](docs/data/IMPORTS.md) for the qualified
   profile, probes, retention/recovery behavior and remaining limits.
 
 - **Configuration and credentials:** bounded, strict configuration validation;
@@ -58,23 +58,23 @@ real model loading or cloud disclosure. See [CONTRACTS.md](docs/CONTRACTS.md).
   owning adapter, excluded from ordinary configuration, redacted in wrapper
   representations and non-pickleable. Buffer clearing does not guarantee erasure
   of Python/native copies; raw payloads are not automatically redacted.
-  See [CONFIGURATION.md](docs/CONFIGURATION.md).
+  See [CONFIGURATION.md](docs/operations/CONFIGURATION.md).
 - **Supply chain:** pinned runtime/tools/backend, locked dependency profiles and
   hash-constrained builds; lint, typing, tests, package-integrity checks and
   known-vulnerability audits. CI actions are pinned to full commit SHAs, with
   read-only repository permissions and no persisted checkout credentials.
   Provisioning executes trusted tooling; lock hashes and passing audits do not
-  prove dependencies safe. See [QUALITY.md](docs/QUALITY.md).
+  prove dependencies safe. See [QUALITY.md](docs/validation/QUALITY.md).
 - **Inputs:** bounded envelopes, queues and archive operations; explicit local
   `ArchiveLimits`; typed normalization outcomes/rejections and validated provider
   result correlation. Limits do not establish source truth or native-parser
   isolation. Real exchange adapters and feed recovery are not implemented yet.
-  See [NORMALIZATION.md](docs/NORMALIZATION.md).
+  See [NORMALIZATION.md](docs/data/NORMALIZATION.md).
 - **Durable ingestion:** one writer/connection per private state directory,
   verified SQLite WAL/FULL settings and transactional acceptance. A record is
   acknowledged only after commit; original bytes, identity and hash are retained.
   Queue admission is not durable acceptance, and messages lost before commit are
-  not recoverable by this guarantee. See [INGESTION.md](docs/INGESTION.md).
+  not recoverable by this guarantee. See [INGESTION.md](docs/data/INGESTION.md).
 - **Publication and recovery:** immutable no-replace object/manifest installation
   with file/directory synchronization, canonical hash validation, reserved input
   identities and exact prepared-manifest bytes. Manifest durability precedes the
@@ -84,8 +84,8 @@ real model loading or cloud disclosure. See [CONTRACTS.md](docs/CONTRACTS.md).
   or delete uncertain inputs/orphans. Production raw storage remains
   `parquet-pyarrow-v1`, with a prior F07 fixture tested for readability. Codec
   implementations are selected locally; archived identifiers never select
-  executable imports/downloads. See [F11 recovery qualification](docs/publication/f11-recovery.md)
-  and [F10 operating envelope](docs/performance/f10-operating-envelope.md).
+  executable imports/downloads. See [F11 recovery qualification](docs/data/publication/f11-recovery.md)
+  and [F10 operating envelope](docs/data/performance/f10-operating-envelope.md).
 
 ## Integrity is not truth
 
@@ -102,7 +102,7 @@ their owner, and retained metadata cannot reconstruct missing objects.
 Real-model admission/worker
 isolation (F20–F21) and least-privilege deployment profiles (F27) are not current
 guarantees. Configuration switches do not implement these services. F16 imports
-use the restricted boundary in [IMPORTS.md](docs/IMPORTS.md). Trusted collector-side
+use the restricted boundary in [IMPORTS.md](docs/data/IMPORTS.md). Trusted collector-side
 Parquet readers still run in-process and must not be used as an import API.
 Catalog acceptance never authorizes later in-process native decoding. F16 host
 qualification is separate from F21 model qualification.
