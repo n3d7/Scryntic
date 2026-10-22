@@ -226,7 +226,7 @@ class ResearchLedger:
         elif kind in ("access_allowed", "access_denied"):
             if set(fields) != {"operation", "manifest_sha256"} or fields[
                 "operation"
-            ] not in ("inspect", "export", "build"):
+            ] not in ("inspect", "export", "build", "pi02-build"):
                 raise ValueError("Invalid access event")
             digest(fields["manifest_sha256"])
         elif kind == "trial":
@@ -345,6 +345,61 @@ class ResearchLedger:
         )
         if not allowed:
             raise ResearchDenied("Reserved, labelled or unqualified range denied")
+
+    def check_pi02_input(self, manifest_sha256: str, manifest: dict[str, Any]) -> None:
+        """Admit one verified development-only v2 input without opening v1 builds."""
+        r = self.reservation
+        fields = {
+            "schema",
+            "policy_sha256",
+            "source_id",
+            "snapshot_sha256",
+            "source_use_sha256",
+            "instrument",
+            "availability_plane",
+            "time_range_ns",
+            "row_count",
+            "label_horizon_seconds",
+        }
+        valid_shape = type(manifest) is dict and set(manifest) == fields
+        times = manifest.get("time_range_ns") if valid_shape else None
+        try:
+            allowed = bool(
+                valid_shape
+                and manifest_sha256
+                == sha256(canonical_json_bytes(manifest)).hexdigest()
+                and manifest["schema"] == "scryntic.pi02.development-input.v1"
+                and manifest["policy_sha256"] == r.policy_sha256
+                and manifest["source_id"] == "binance-vision-usdm-1h"
+                and manifest["instrument"] in ("BTCUSDT", "ETHUSDT")
+                and manifest["availability_plane"] == "historical-reconstruction"
+                and type(manifest["snapshot_sha256"]) is str
+                and len(manifest["snapshot_sha256"]) == 64
+                and type(manifest["source_use_sha256"]) is str
+                and len(manifest["source_use_sha256"]) == 64
+                and type(manifest["row_count"]) is int
+                and 0 < manifest["row_count"] <= 120_000
+                and type(manifest["label_horizon_seconds"]) is int
+                and manifest["label_horizon_seconds"] == 0
+                and type(times) is list
+                and len(times) == 2
+                and all(
+                    type(t) is int and 0 <= t <= r.development_end_ns for t in times
+                )
+                and times[0] < times[1]
+            )
+            if allowed:
+                digest(manifest["snapshot_sha256"])
+                digest(manifest["source_use_sha256"])
+        except (TypeError, ValueError):
+            allowed = False
+        self._append(
+            "access_allowed" if allowed else "access_denied",
+            manifest_sha256,
+            {"operation": "pi02-build", "manifest_sha256": manifest_sha256},
+        )
+        if not allowed:
+            raise ResearchDenied("PI02 input is not a qualified development snapshot")
 
     def trial(
         self, trial_id: str, config_sha256: str, phase: str, attempt: int
