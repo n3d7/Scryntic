@@ -27,26 +27,41 @@ def main(stage: list[int] | None = None) -> None:
     from scryntic.jobs.codec import decode_attempt, encode_response
     from scryntic.model_worker.controls import effective_controls
     from scryntic.model_worker.profile import (
+        BASELINE_CPU,
         REQUEST_PATH,
         SYNTHETIC_CPU,
-        WIRE_BYTES,
         IsolationError,
     )
     from scryntic.model_worker.wire import document
     from scryntic.models.definitions import definition
+    from scryntic.research.baselines import REQUEST_BYTES
 
     stage[0] = 71
     with open(REQUEST_PATH, "rb") as stream:
-        data = stream.read(WIRE_BYTES + 1)
+        data = stream.read(REQUEST_BYTES + 1)
+    baseline = False
     try:
         request = document(data, "attempt host mode")
         model = None
     except IsolationError:
-        request = document(data, "attempt host mode model context")
-        model = definition(request["model"])
-        if model.adapter is None:
-            raise IsolationError("Unexpected model workload") from None
-    profile = model.profile if model is not None else SYNTHETIC_CPU
+        try:
+            request = document(data, "attempt host mode model context")
+            model = definition(request["model"])
+            if model.adapter is None:
+                raise IsolationError("Unexpected model workload") from None
+        except IsolationError:
+            request = document(
+                data, "baseline_attempt host mode baseline_input", maximum=REQUEST_BYTES
+            )
+            model = None
+            baseline = True
+    profile = (
+        BASELINE_CPU
+        if baseline
+        else model.profile
+        if model is not None
+        else SYNTHETIC_CPU
+    )
     stage[0] = 72
     if profile.allow_threads:
         restrict_syscalls(allow_threads=True)
@@ -56,31 +71,105 @@ def main(stage: list[int] | None = None) -> None:
     stage[0] = 73
     controls = (
         effective_controls(request["host"], profile, stage=stage)
-        if model is not None
+        if model is not None or baseline
         else effective_controls(request["host"], stage=stage)
     )
     stage[0] = 74
     mode = request["mode"]
-    _probe_mode(mode, model is not None)
-    attempt = decode_attempt(request["attempt"].encode("utf-8"))
+    if baseline and mode not in ("execute", "baseline-probe"):
+        raise IsolationError("Unexpected fixed baseline operation")
+    if not baseline:
+        _probe_mode(mode, model is not None)
     started = time.monotonic_ns()
+    baseline_usage: dict[str, int] | None = None
     stage[0] = 75
-    result = _forecast(attempt, request, model)
-    stage[0] = 76
-    data = _result_bytes(encode_response(attempt, result), mode)
+    if baseline:
+        import json
+        from hashlib import sha256
+
+        from scryntic.research.baseline_jobs import decode_attempt as baseline_attempt
+        from scryntic.research.baseline_jobs import encode_response as baseline_response
+        from scryntic.research.baseline_scores import evaluate_algorithm
+
+        if type(request["baseline_input"]) is not str:
+            raise IsolationError("Unexpected fixed baseline operation")
+        from scryntic.research.baselines import _pairs
+
+        fixed_attempt = baseline_attempt(
+            json.loads(request["baseline_attempt"], object_pairs_hook=_pairs)
+        )
+        fixed_input = request["baseline_input"].encode("utf-8")
+        from scryntic.research.baseline_jobs import workload_identity
+
+        if fixed_attempt.job.workload_sha256 != workload_identity():
+            raise IsolationError("Fixed baseline application inventory changed")
+        if sha256(fixed_input).hexdigest() != fixed_attempt.job.input_sha256:
+            raise IsolationError("Fixed baseline input changed")
+        if mode == "baseline-probe":
+            from scryntic.research.baselines import validate_input
+
+            validate_input(fixed_input)
+            measured = resource.getrusage(resource.RUSAGE_SELF)
+            os.write(
+                1,
+                canonical_json_bytes(
+                    {
+                        "version": 3,
+                        "controls": controls,
+                        "probe": {
+                            "schema": "scryntic.pi03.worker-probe.v1",
+                            "job_sha256": fixed_attempt.job.sha256,
+                            "input_sha256": fixed_attempt.job.input_sha256,
+                            "model_fitted": False,
+                            "final_labels_accessed": False,
+                        },
+                        "usage": {
+                            "elapsed_ns": time.monotonic_ns() - started,
+                            "cpu_ns": int(
+                                (measured.ru_utime + measured.ru_stime) * 10**9
+                            ),
+                            "max_rss_kib": measured.ru_maxrss,
+                        },
+                    }
+                ),
+            )
+            return
+        evaluation = evaluate_algorithm(fixed_input, fixed_attempt.job.algorithm)
+        evaluation["workload_sha256"] = fixed_attempt.job.workload_sha256
+        measured = resource.getrusage(resource.RUSAGE_SELF)
+        baseline_usage = {
+            "elapsed_ns": time.monotonic_ns() - started,
+            "cpu_ns": int((measured.ru_utime + measured.ru_stime) * 10**9),
+            "max_rss_kib": measured.ru_maxrss,
+        }
+        evaluation["resource_usage"] = baseline_usage
+        evaluation["controls_sha256"] = sha256(
+            canonical_json_bytes(controls)
+        ).hexdigest()
+        stage[0] = 76
+        data = baseline_response(fixed_attempt, evaluation)
+    else:
+        attempt = decode_attempt(request["attempt"].encode("utf-8"))
+        result = _forecast(attempt, request, model)
+        stage[0] = 76
+        data = _result_bytes(encode_response(attempt, result), mode)
     stage[0] = 77
     message: dict[str, Any] = {
-        "version": 2 if model is not None else 1,
+        "version": 3 if baseline else 2 if model is not None else 1,
         "controls": controls,
         "response": data.decode("utf-8"),
     }
-    if model is not None:
+    if model is not None or baseline:
         usage = resource.getrusage(resource.RUSAGE_SELF)
-        message["usage"] = {
-            "elapsed_ns": time.monotonic_ns() - started,
-            "cpu_ns": int((usage.ru_utime + usage.ru_stime) * 10**9),
-            "max_rss_kib": usage.ru_maxrss,
-        }
+        message["usage"] = (
+            baseline_usage
+            if baseline_usage is not None
+            else {
+                "elapsed_ns": time.monotonic_ns() - started,
+                "cpu_ns": int((usage.ru_utime + usage.ru_stime) * 10**9),
+                "max_rss_kib": usage.ru_maxrss,
+            }
+        )
     os.write(1, canonical_json_bytes(message))
 
 

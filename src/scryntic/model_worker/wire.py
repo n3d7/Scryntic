@@ -16,9 +16,9 @@ def _pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
-def document(data: bytes, fields: str) -> dict[str, Any]:
+def document(data: bytes, fields: str, *, maximum: int = WIRE_BYTES) -> dict[str, Any]:
     try:
-        if type(data) is not bytes or not 0 < len(data) <= WIRE_BYTES:
+        if type(data) is not bytes or not 0 < len(data) <= maximum:
             raise ValueError
         value = json.loads(data.decode("utf-8", "strict"), object_pairs_hook=_pairs)
         if (

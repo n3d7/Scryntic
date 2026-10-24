@@ -6,9 +6,11 @@ import sqlite3
 import threading
 import time
 import uuid
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator
 from contextlib import ExitStack, contextmanager
 from types import TracebackType
+from typing import Self, cast
 
 from scryntic.application.analysis import ForecastArtifactRef
 from scryntic.configuration.paths import Installation, directory
@@ -21,6 +23,7 @@ from scryntic.jobs.contracts import (
     JobRequest,
     JobState,
 )
+from scryntic.jobs.durable import DurableArtifact, DurableRecord, DurableRequest
 from scryntic.sqlite_state import connect_pinned, open_private_file, schema_matches
 
 _LOCK = "provider-jobs.lock"
@@ -47,7 +50,26 @@ class JobError(ValueError):
     """Fixed bounded job diagnostics never contain provider bodies or credentials."""
 
 
-class JobStore:
+class DurableJobStore[Request: DurableRequest, Artifact: DurableArtifact](ABC):
+    _lock_name = _LOCK
+    _database_name = _DATABASE
+
+    @abstractmethod
+    def _encode_job(self, job: Request) -> bytes: ...
+
+    @abstractmethod
+    def _decode_job(self, data: bytes) -> Request: ...
+
+    @abstractmethod
+    def _artifact(
+        self, job: Request, state: JobState, value: object
+    ) -> Artifact | None: ...
+
+    @abstractmethod
+    def _validate_artifact(
+        self, active: DurableRecord[Request, Artifact], artifact: Artifact
+    ) -> None: ...
+
     def __init__(
         self,
         installation: Installation,
@@ -69,18 +91,22 @@ class JobStore:
             state_fd = self._resources.enter_context(
                 directory(installation.state_dir, installation.owner_uid, private=True)
             )
-            lock_fd = open_private_file(state_fd, _LOCK, installation.owner_uid)
+            lock_fd = open_private_file(
+                state_fd, self._lock_name, installation.owner_uid
+            )
             self._resources.callback(os.close, lock_fd)
             try:
                 fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 raise JobError("Provider job state already owned") from None
-            database_fd = open_private_file(state_fd, _DATABASE, installation.owner_uid)
+            database_fd = open_private_file(
+                state_fd, self._database_name, installation.owner_uid
+            )
             self._resources.callback(os.close, database_fd)
             self._connection = connect_pinned(
                 state_fd,
-                _DATABASE,
-                ((_LOCK, lock_fd), (_DATABASE, database_fd)),
+                self._database_name,
+                ((self._lock_name, lock_fd), (self._database_name, database_fd)),
                 self._resources,
                 unsafe_file_error=JobError("Unsafe provider job state file"),
             )
@@ -147,12 +173,11 @@ class JobStore:
         if db.execute("SELECT count(*) FROM jobs").fetchone()[0] > self._max_jobs:
             raise JobError("Persisted job quota exceeded")
 
-    @staticmethod
-    def _record(row: tuple[object, ...]) -> JobRecord:
+    def _record(self, row: tuple[object, ...]) -> DurableRecord[Request, Artifact]:
         request_id, data, digest, state, attempt, token, result, reason, updated = row
         if type(data) is not bytes:
             raise JobError("Invalid persisted job request")
-        job = decode_job(data)
+        job = self._decode_job(data)
         if request_id != job.job_id or digest != job.sha256:
             raise JobError("Persisted job identity mismatch")
         if (
@@ -163,8 +188,8 @@ class JobStore:
             raise JobError("Invalid persisted job state")
         integer(attempt, 0)
         integer(updated, 0)
-        checked_token = JobStore._optional_text(token)
-        checked_reason = JobStore._optional_text(reason)
+        checked_token = self._optional_text(token)
+        checked_reason = self._optional_text(reason)
         selected = JobState(state)
         if attempt > MAX_ATTEMPTS or ((attempt == 0) != (token is None)):
             raise JobError("Invalid persisted attempt")
@@ -172,8 +197,8 @@ class JobStore:
             raise JobError("Invalid persisted attempt token")
         if updated < job.submitted_ns:
             raise JobError("Invalid persisted job history")
-        artifact = JobStore._artifact(job, selected, result)
-        return JobRecord(
+        artifact = self._artifact(job, selected, result)
+        return DurableRecord(
             job, selected, attempt, checked_token, artifact, checked_reason, updated
         )
 
@@ -183,38 +208,28 @@ class JobStore:
             raise JobError("Invalid persisted job text")
         return value
 
-    @staticmethod
-    def _artifact(
-        job: JobRequest, state: JobState, value: object
-    ) -> ForecastArtifactRef | None:
-        if (state is JobState.SUCCEEDED) != (value is not None):
-            raise JobError("Invalid persisted result registration")
-        if value is None:
-            return None
-        if type(value) is not str:
-            raise JobError("Invalid persisted artifact")
-        return ForecastArtifactRef(
-            value,
-            job.forecast.dataset,
-            job.review.descriptor.provider_id,
-            job.review.descriptor.model.revision or "",
-        )
-
-    def _read(self, job_id: str) -> JobRecord:
+    def _read(self, job_id: str) -> DurableRecord[Request, Artifact]:
         row = self._connection.execute(_SELECT_JOB, (job_id,)).fetchone()
         if row is None:
             raise JobError("Unknown provider job")
         return self._record(row)
 
     def _write(
-        self, record: JobRecord, state: JobState, now: int, *, reason: str | None = None
+        self,
+        record: DurableRecord[Request, Artifact],
+        state: JobState,
+        now: int,
+        *,
+        reason: str | None = None,
     ) -> None:
         self._connection.execute(
             "UPDATE jobs SET state=?, reason=?, updated_ns=? WHERE request_id=?",
             (state.value, reason, max(now, record.updated_ns), record.job.job_id),
         )
 
-    def _expire(self, record: JobRecord, now: int) -> JobRecord:
+    def _expire(
+        self, record: DurableRecord[Request, Artifact], now: int
+    ) -> DurableRecord[Request, Artifact]:
         if record.state not in TERMINAL:
             if now < record.updated_ns:
                 self._write(record, JobState.FAILED, now, reason="clock_regression")
@@ -260,8 +275,8 @@ class JobStore:
                             record.attempt,
                         )
 
-    def submit(self, job: JobRequest) -> JobRecord:
-        data = encode_job(job)
+    def submit(self, job: Request) -> DurableRecord[Request, Artifact]:
+        data = self._encode_job(job)
         with self._transaction():
             row = self._connection.execute(_SELECT_JOB, (job.job_id,)).fetchone()
             if row is not None:
@@ -283,17 +298,19 @@ class JobStore:
             )
             return self._read(job.job_id)
 
-    def get(self, job_id: str) -> JobRecord:
+    def get(self, job_id: str) -> DurableRecord[Request, Artifact]:
         with self._transaction():
             return self._expire(self._read(job_id), self.now())
 
-    def find(self, job_id: str) -> JobRecord | None:
+    def find(self, job_id: str) -> DurableRecord[Request, Artifact] | None:
         with self._transaction():
             row = self._connection.execute(_SELECT_JOB, (job_id,)).fetchone()
             return None if row is None else self._expire(self._record(row), self.now())
 
-    def claim(self, job_id: str, *, resume: bool = False) -> JobRecord:
-        claimed: JobRecord | None = None
+    def claim(
+        self, job_id: str, *, resume: bool = False
+    ) -> DurableRecord[Request, Artifact]:
+        claimed: DurableRecord[Request, Artifact] | None = None
         with self._transaction():
             now = self.now()
             record = self._expire(self._read(job_id), now)
@@ -313,7 +330,7 @@ class JobStore:
             raise JobError("Job is not ready for this execution")
         return claimed
 
-    def cancel(self, job_id: str) -> JobRecord:
+    def cancel(self, job_id: str) -> DurableRecord[Request, Artifact]:
         with self._transaction():
             now = self.now()
             record = self._expire(self._read(job_id), now)
@@ -323,10 +340,10 @@ class JobStore:
 
     def finish(
         self,
-        active: JobRecord,
+        active: DurableRecord[Request, Artifact],
         state: JobState | str,
         *,
-        artifact: ForecastArtifactRef | None = None,
+        artifact: Artifact | None = None,
         reason: str | None = None,
     ) -> bool:
         target = JobState(state)
@@ -334,12 +351,8 @@ class JobStore:
             raise JobError("Invalid job completion state")
         if (target is JobState.SUCCEEDED) != (artifact is not None):
             raise JobError("Invalid success registration")
-        if artifact is not None and (
-            artifact.dataset != active.job.forecast.dataset
-            or artifact.provider_id != active.job.review.descriptor.provider_id
-            or artifact.model_revision != active.job.review.descriptor.model.revision
-        ):
-            raise JobError("Artifact does not match provider job")
+        if artifact is not None:
+            self._validate_artifact(active, artifact)
         with self._transaction():
             now = self.now()
             record = self._expire(self._read(active.job.job_id), now)
@@ -372,7 +385,9 @@ class JobStore:
                 counts[JobState(state)] = count
             return counts
 
-    def list(self, *, limit: int = 100, offset: int = 0) -> tuple[JobRecord, ...]:
+    def list(
+        self, *, limit: int = 100, offset: int = 0
+    ) -> tuple[DurableRecord[Request, Artifact], ...]:
         """Read a bounded stable page, applying the normal durable expiry rules."""
         integer(limit, 1)
         integer(offset, 0)
@@ -391,7 +406,7 @@ class JobStore:
             self._closed = True
             self._resources.close()
 
-    def __enter__(self) -> "JobStore":
+    def __enter__(self) -> Self:
         self._check()
         return self
 
@@ -402,3 +417,69 @@ class JobStore:
         traceback: TracebackType | None,
     ) -> None:
         self.close()
+
+
+class JobStore(DurableJobStore[JobRequest, ForecastArtifactRef]):
+    def _record(self, row: tuple[object, ...]) -> JobRecord:
+        record = super()._record(row)
+        return JobRecord(
+            record.job,
+            record.state,
+            record.attempt,
+            record.token,
+            record.artifact,
+            record.reason,
+            record.updated_ns,
+        )
+
+    def submit(self, job: JobRequest) -> JobRecord:
+        return cast(JobRecord, super().submit(job))
+
+    def get(self, job_id: str) -> JobRecord:
+        return cast(JobRecord, super().get(job_id))
+
+    def find(self, job_id: str) -> JobRecord | None:
+        return cast(JobRecord | None, super().find(job_id))
+
+    def claim(self, job_id: str, *, resume: bool = False) -> JobRecord:
+        return cast(JobRecord, super().claim(job_id, resume=resume))
+
+    def cancel(self, job_id: str) -> JobRecord:
+        return cast(JobRecord, super().cancel(job_id))
+
+    def list(self, *, limit: int = 100, offset: int = 0) -> tuple[JobRecord, ...]:
+        return cast(tuple[JobRecord, ...], super().list(limit=limit, offset=offset))
+
+    def _encode_job(self, job: JobRequest) -> bytes:
+        return encode_job(job)
+
+    def _decode_job(self, data: bytes) -> JobRequest:
+        return decode_job(data)
+
+    def _artifact(
+        self, job: JobRequest, state: JobState, value: object
+    ) -> ForecastArtifactRef | None:
+        if (state is JobState.SUCCEEDED) != (value is not None):
+            raise JobError("Invalid persisted result registration")
+        if value is None:
+            return None
+        if type(value) is not str:
+            raise JobError("Invalid persisted artifact")
+        return ForecastArtifactRef(
+            value,
+            job.forecast.dataset,
+            job.review.descriptor.provider_id,
+            job.review.descriptor.model.revision or "",
+        )
+
+    def _validate_artifact(
+        self,
+        active: DurableRecord[JobRequest, ForecastArtifactRef],
+        artifact: ForecastArtifactRef,
+    ) -> None:
+        if (
+            artifact.dataset != active.job.forecast.dataset
+            or artifact.provider_id != active.job.review.descriptor.provider_id
+            or artifact.model_revision != active.job.review.descriptor.model.revision
+        ):
+            raise JobError("Artifact does not match provider job")

@@ -1,23 +1,45 @@
 """Admission and validation own result acceptance; provider tasks own no state."""
 
-import asyncio
-import sqlite3
 from collections.abc import Callable
+from typing import cast
 
 from scryntic.application.analysis import ForecastArtifactRef
 from scryntic.application.providers import ForecastRequest
 from scryntic.forecast.artifact import ImmutableForecastStore
 from scryntic.jobs.admission import AdmissionPolicy
 from scryntic.jobs.codec import decode_response
-from scryntic.jobs.contracts import TERMINAL, JobRecord, JobRequest, JobState
+from scryntic.jobs.contracts import JobAttempt, JobRecord, JobRequest, JobState
+from scryntic.jobs.durable import DurableAttempt, DurableRecord
 from scryntic.jobs.fake import JobProvider
 from scryntic.jobs.inputs import InputReader
 from scryntic.jobs.result import AdmittedForecast
+from scryntic.jobs.runner import DurableRunner, Executor
 from scryntic.jobs.store import JobError, JobStore
-from scryntic.research.ledger import ResearchLedger, guard_dataset
+from scryntic.research.ledger import guard_dataset
 
 
-class JobService:
+class ForecastExecutor:
+    def __init__(self, provider: JobProvider) -> None:
+        self.provider = provider
+
+    async def execute(self, attempt: DurableAttempt[JobRequest]) -> bytes:
+        return await self.provider.execute(
+            JobAttempt(attempt.job, attempt.number, attempt.token)
+        )
+
+
+class JobService(DurableRunner[JobRequest, ForecastArtifactRef]):
+    _store: JobStore
+
+    def _executor(self, job: JobRequest) -> Executor[JobRequest]:
+        return ForecastExecutor(self._validate(job))
+
+    async def run(self, job_id: str, *, resume: bool = False) -> JobRecord:
+        return cast(JobRecord, await super().run(job_id, resume=resume))
+
+    def cancel(self, job_id: str) -> JobRecord:
+        return cast(JobRecord, super().cancel(job_id))
+
     def __init__(
         self,
         store: JobStore,
@@ -36,14 +58,11 @@ class JobService:
         }
         if len(self._providers) != len(providers) or len(providers) > 64:
             raise JobError("Duplicate/unbounded provider registrations")
-        self._store = store
+        super().__init__(store, max_active=max_active)
         self._policy = policy
         self._artifacts = artifacts
         self._inputs = inputs
-        self._max_active = max_active
         self._fault = fault
-        self._closing = False
-        self._active: dict[str, asyncio.Task[bytes]] = {}
 
     def _validate(self, job: JobRequest) -> JobProvider:
         if self._closing:
@@ -78,11 +97,6 @@ class JobService:
         self._audit(job, "registered", 0)
         return self._store.submit(job)
 
-    def _audit(self, job: JobRequest, phase: str, attempt: int) -> None:
-        if ResearchLedger.active(self._store.installation):
-            with ResearchLedger(self._store.installation) as ledger:
-                ledger.trial(job.job_id, job.sha256, phase, attempt)
-
     def submit(
         self,
         request: ForecastRequest,
@@ -110,25 +124,15 @@ class JobService:
         )
         return self.submit_job(job)
 
-    def cancel(self, job_id: str) -> JobRecord:
-        try:
-            before = self._store.get(job_id)
-            try:
-                self._audit(before.job, "intervention", before.attempt)
-            finally:
-                record = self._store.cancel(job_id)
-        finally:
-            task = self._active.get(job_id)
-            if task is not None:
-                task.cancel()
-        return record
-
     def _point(self, phase: str) -> None:
         if self._fault is not None:
             self._fault(phase)
 
-    def _accept(self, active: JobRecord, data: bytes) -> None:
-        attempt = active.execution()
+    def _accept(
+        self, active: DurableRecord[JobRequest, ForecastArtifactRef], data: bytes
+    ) -> None:
+        raw_attempt = active.execution()
+        attempt = JobAttempt(raw_attempt.job, raw_attempt.number, raw_attempt.token)
         result = decode_response(data, attempt)
         job = active.job
         accepted = AdmittedForecast(
@@ -141,69 +145,6 @@ class JobService:
         self._point("after_artifact")
         if self._store.finish(active, JobState.SUCCEEDED, artifact=reference):
             self._point("after_success")
-
-    def _cancelled(self, active: JobRecord) -> None:
-        try:
-            self._audit(active.job, "intervention", active.attempt)
-        finally:
-            if self._closing:
-                self._store.finish(active, JobState.INTERRUPTED, reason="shutdown")
-            else:
-                self._store.cancel(active.job.job_id)
-
-    async def run(self, job_id: str, *, resume: bool = False) -> JobRecord:
-        if self._closing:
-            raise JobError("Provider job service is closing")
-        existing = self._store.get(job_id)
-        if existing.state in TERMINAL and not resume:
-            return existing
-        if len(self._active) >= self._max_active or job_id in self._active:
-            raise JobError("Provider execution already active or quota reached")
-        active = self._store.claim(job_id, resume=resume)
-        if active.state is not JobState.RUNNING:
-            return active
-        try:
-            self._audit(active.job, "started", active.attempt)
-            provider = self._validate(active.job)
-            await self._execute(active, provider)
-        except asyncio.CancelledError:
-            self._cancelled(active)
-            if self._owner_cancelled():
-                raise
-        except Exception:
-            self._store.finish(active, JobState.FAILED, reason="provider_failed")
-        record = self._store.get(job_id)
-        self._audit(record.job, record.state.value, record.attempt)
-        return record
-
-    @staticmethod
-    def _owner_cancelled() -> bool:
-        owner = asyncio.current_task()
-        return owner is not None and bool(owner.cancelling())
-
-    async def _execute(self, active: JobRecord, provider: JobProvider) -> None:
-        task = asyncio.create_task(provider.execute(active.execution()))
-        job_id = active.job.job_id
-        self._active[job_id] = task
-        remaining = max(0, active.job.deadline_ns - self._store.now()) / 1_000_000_000
-        timeout = asyncio.timeout(remaining)
-        try:
-            async with timeout:
-                data = await task
-            if self._owner_cancelled():
-                raise asyncio.CancelledError
-            if timeout.expired():
-                self._store.finish(active, JobState.DEADLINE_EXPIRED, reason="deadline")
-            else:
-                self._accept(active, data)
-        except TimeoutError:
-            state = JobState.DEADLINE_EXPIRED if timeout.expired() else JobState.FAILED
-            reason = "deadline" if timeout.expired() else "provider_timeout"
-            self._store.finish(active, state, reason=reason)
-        finally:
-            self._active.pop(job_id, None)
-            if not task.done():
-                task.cancel()
 
     def result(self, job_id: str) -> ForecastArtifactRef:
         record = self._store.get(job_id)
@@ -218,25 +159,3 @@ class JobService:
         }:
             raise JobError("Accepted artifact job binding mismatch")
         return record.artifact
-
-    async def aclose(self) -> None:
-        self._closing = True
-        tasks = tuple(self._active.items())
-        failure: Exception | None = None
-        try:
-            for job_id, _ in tasks:
-                try:
-                    active = self._store.get(job_id)
-                    self._store.finish(active, JobState.INTERRUPTED, reason="shutdown")
-                except (OSError, ValueError, sqlite3.Error) as error:
-                    if failure is None:
-                        failure = error
-        finally:
-            for _, task in tasks:
-                task.cancel()
-            if tasks:
-                await asyncio.gather(
-                    *(task for _, task in tasks), return_exceptions=True
-                )
-        if failure is not None:
-            raise failure

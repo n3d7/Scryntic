@@ -9,6 +9,7 @@ from scryntic.application.providers import ForecastRequest
 from scryntic.domain.identity import SchemaRef, Version
 from scryntic.domain.validation import identifier, integer
 from scryntic.jobs.admission import AdmissionPolicy, ModelReview, fingerprint
+from scryntic.jobs.durable import DurableAttempt, DurableRecord
 
 JOB_SCHEMA = SchemaRef("scryntic.provider-job", Version(1, 0))
 RESPONSE_SCHEMA = SchemaRef("scryntic.provider-response", Version(1, 0))
@@ -99,27 +100,13 @@ class JobRequest:
 
 
 @dataclass(frozen=True, slots=True)
-class JobAttempt:
-    job: JobRequest
-    number: int
-    token: str
-
-    def __post_init__(self) -> None:
-        integer(self.number, 1)
-        identifier(self.token)
-        if self.number > MAX_ATTEMPTS or len(self.token) != 32:
-            raise ValueError("Invalid job attempt fence")
+class JobAttempt(DurableAttempt[JobRequest]):
+    """Preserved v1 runtime class over the shared immutable attempt fields."""
 
 
 @dataclass(frozen=True, slots=True)
-class JobRecord:
-    job: JobRequest
-    state: JobState
-    attempt: int
-    token: str | None
-    artifact: ForecastArtifactRef | None
-    reason: str | None
-    updated_ns: int
+class JobRecord(DurableRecord[JobRequest, ForecastArtifactRef]):
+    """Preserved v1 runtime class and execution type."""
 
     def execution(self) -> JobAttempt:
         if self.state is not JobState.RUNNING or self.token is None:
