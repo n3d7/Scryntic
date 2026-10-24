@@ -1,0 +1,52 @@
+{
+  "final_labels_accessed": false,
+  "fold": "forward-development-1",
+  "horizons": {
+    "2419200": {
+      "block_duration_seconds": 6307200,
+      "claim_floor_met": false,
+      "dependence_adjusted_nonoverlapping_blocks": 17,
+      "exclusions": {
+        "immature-or-boundary-label": 28
+      },
+      "nonoverlapping_minimum_duration_blocks": 43,
+      "paired_origins_per_asset": 1190
+    },
+    "3600": {
+      "block_duration_seconds": 6307200,
+      "claim_floor_met": false,
+      "dependence_adjusted_nonoverlapping_blocks": 17,
+      "exclusions": {
+        "immature-or-boundary-label": 1
+      },
+      "nonoverlapping_minimum_duration_blocks": 1218,
+      "paired_origins_per_asset": 29231
+    },
+    "604800": {
+      "block_duration_seconds": 6307200,
+      "claim_floor_met": false,
+      "dependence_adjusted_nonoverlapping_blocks": 17,
+      "exclusions": {
+        "immature-or-boundary-label": 7
+      },
+      "nonoverlapping_minimum_duration_blocks": 173,
+      "paired_origins_per_asset": 1211
+    },
+    "86400": {
+      "block_duration_seconds": 6307200,
+      "claim_floor_met": false,
+      "dependence_adjusted_nonoverlapping_blocks": 17,
+      "exclusions": {
+        "immature-or-boundary-label": 1
+      },
+      "nonoverlapping_minimum_duration_blocks": 1217,
+      "paired_origins_per_asset": 1217
+    }
+  },
+  "independence": "structural bounds; training-estimated dependence may reduce effective counts",
+  "input_sha256": "bf30c207a6e952cc3a033b053ec4ac651f69cd42a743e3172dc8e79e99c1aff3",
+  "model_fitted": false,
+  "schema": "scryntic.pi03.prefit-counts.v1",
+  "spec_sha256": "2ba095a3763b16a28b6c58b30b2f37f42bdeca1cbf669beb43a79ce5963cd099",
+  "training_dependence_days": 73
+}

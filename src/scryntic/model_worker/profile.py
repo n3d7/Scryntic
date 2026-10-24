@@ -96,7 +96,7 @@ class CPUProfile:
     environment: tuple[tuple[str, str], ...]
 
     def require_owned(self) -> None:
-        if self not in (SYNTHETIC_CPU, FORECAST_CPU):
+        if self not in (SYNTHETIC_CPU, FORECAST_CPU, BASELINE_CPU):
             raise IsolationError("Unknown fixed CPU profile")
 
     @property
@@ -160,6 +160,22 @@ FORECAST_CPU = CPUProfile(
             }
         ).items()
     ),
+)
+
+# PI03 uses the registered resource ceiling without a model runtime, network,
+# thread creation, or additional writable mounts.
+BASELINE_CPU = CPUProfile(
+    "pi03-cpu-v1",
+    4 * 1024**3,
+    8 * 1024**3,
+    90,
+    180,
+    8,
+    32,
+    0,
+    False,
+    READONLY_MOUNTS,
+    tuple(ENVIRONMENT.items()),
 )
 
 

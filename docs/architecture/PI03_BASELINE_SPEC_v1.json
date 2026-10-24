@@ -1,0 +1,61 @@
+{
+  "schema": "scryntic.pi03.baseline-spec.v1",
+  "issue": "KER-63",
+  "policy_sha256": "d75c7c0278d011b38c5e2bfaff151e7f3071b56edca9dce3d1d883294f3a14b8",
+  "feasibility_spec_sha256": "5624726a3ba868579da0fa26ab125fbe8df3eb3bcd0189723725a9951ec8e0f3",
+  "source_id": "binance-vision-usdm-1h",
+  "availability_plane": "historical-reconstruction",
+  "instruments": ["BTCUSDT", "ETHUSDT"],
+  "snapshot_sha256": {
+    "BTCUSDT": "e5d47f9bbefe051c113d31e0c576778ccfefe55b0ff0c2f39d4a6c767bdd540f",
+    "ETHUSDT": "b8f8720be93833d53a3ada4fd1de083884d3de4506ee833a55ac6dfb58b30835"
+  },
+  "development_utc": ["2020-01-01T00:00:00Z", "2025-01-01T00:00:00Z"],
+  "folds": [
+    {
+      "id": "forward-development-1",
+      "training_origins_utc": ["2020-01-02T00:00:00Z", "2021-08-01T00:00:00Z"],
+      "fit_cutoff_utc": "2021-08-01T00:00:00Z",
+      "evaluation_origins_utc": ["2021-09-01T00:00:00Z", "2025-01-01T00:00:00Z"],
+      "expected_complete_origins_per_asset": {"3600": 29231, "86400": 1217, "604800": 1211, "2419200": 1190},
+      "minimum_duration_nonoverlapping_blocks_per_asset": {"3600": 1218, "86400": 1217, "604800": 173, "2419200": 43}
+    }
+  ],
+  "horizons_seconds": [3600, 86400, 604800, 2419200],
+  "origin_cadence_seconds": {"3600": 3600, "86400": 86400, "604800": 86400, "2419200": 86400},
+  "feature_lookback_hours": 24,
+  "label": "log(close_at_origin_plus_horizon / close_at_origin)",
+  "maturity": "endpoint + 60 seconds strictly before the training fit cutoff or evaluation end; historical first-seen times remain unknown",
+  "purge": "all feature and label intervals stay in development; training label endpoint plus observation delay strictly precedes fit cutoff; feature intervals of scored origins begin more than 28 days after fit cutoff; touching boundaries excluded",
+  "embargo_seconds": 2419200,
+  "algorithms": ["zero", "historical-mean", "ridge-ar-1", "ridge-ar-24", "volatility-empirical"],
+  "ridge": {"alpha": "1.0", "lags": [1, 24], "features": "most recent hourly log returns", "standardization": "training-only population mean and standard deviation; constant features use scale 1", "intercept": "unpenalized"},
+  "probabilistic": {
+    "algorithm": "volatility-empirical",
+    "family": "training-only empirical distribution of horizon returns divided by origin trailing-24-hour root-mean-square hourly return times sqrt(horizon_hours); evaluation rescales that frozen empirical distribution using only the scored origin trailing returns",
+    "scale_floor": "0.000000000001",
+    "quantiles": ["0.025", "0.10", "0.50", "0.90", "0.975"],
+    "quantile_rule": "linear interpolation at (n-1)*q in the sorted training sample",
+    "point_forecast": "median",
+    "direction_probability": "Jeffreys-smoothed positive fraction of nonzero training standardized returns; true zero labels excluded from binary scores and counted",
+    "scores": ["pinball", "80-percent-coverage-and-width", "95-percent-coverage-and-width", "direction-brier", "direction-log-score"],
+    "calibration": "report observed calibration; never assume calibrated; no fitted calibration or use of the policy calibration partition"
+  },
+  "comparison": {
+    "pairs": "identical per-horizon asset/origin/outcome identities across all algorithms; fail comparison if identities or exclusions differ",
+    "primary": "return MAE; equal weight assets then horizons; strongest point-baseline selected on this development fold only",
+    "secondary": ["return RMSE", "direction-balanced-accuracy-with-zero-ties", "magnitude-MAE"],
+    "bootstrap": "paired chronological moving-block bootstrap of UTC daily loss sums/counts; identical sampled origin windows across assets and algorithms; 2000 draws; seed 42",
+    "dependence": "estimate from training-only daily mean returns and absolute returns: largest lag up to 112 days with absolute autocorrelation exceeding 2/sqrt(n), plus one day; block duration is max(registered minimum, horizon, dependence span); insufficient effective blocks denies a claim",
+    "multiplicity": "Holm familywise alpha 0.05 over all declared algorithm/horizon contrasts; simultaneous 95-percent lower bounds use Bonferroni family tails; failed trials remain in the declared family",
+    "minimum_blocks": {"3600": 240, "86400": 120, "604800": 60, "2419200": 40},
+    "minimum_relative_mae_margin": "0.02",
+    "decision": "retain the strongest registered baseline; no challenger promotion, final claim or profitability inference; null or insufficient evidence retains baseline"
+  },
+  "budget": {"total_attempted_configurations_including_failures": 8, "registered_algorithms": 5, "max_active_jobs": 1, "cpu_seconds_per_job": 90, "wall_seconds_per_job": 180, "memory_bytes": 4294967296, "address_space_bytes": 8589934592, "cpu_threads": 1, "tasks": 8, "request_bytes": 4194304, "response_bytes": 2097152},
+  "fixed_job": "application-owned PI03 task only; versioned canonical request binds algorithm, spec, source rights, snapshot, development input and attempt fence; shared durable job state machine and verified CPU controls; controls checked before fitting and before result acceptance",
+  "result": "immutable development result binds job, attempt, algorithm, spec, input and paired origin/outcome digests; records scores, daily loss sums/counts, exclusions, parameters, resource usage, evidence limitations and final_labels_accessed=false",
+  "fitting_allowed": true,
+  "final_access_allowed": false,
+  "pi04_allowed": false
+}

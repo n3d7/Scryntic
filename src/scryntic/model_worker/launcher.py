@@ -9,16 +9,19 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 from scryntic.archive.canonical import canonical_json_bytes
 from scryntic.jobs.admission import ModelReview
 from scryntic.jobs.codec import decode_response, encode_attempt
-from scryntic.jobs.contracts import JobAttempt
+from scryntic.jobs.contracts import JobAttempt, JobRequest
+from scryntic.jobs.durable import DurableAttempt
 from scryntic.jobs.fake import require_fixture
 from scryntic.model_worker.controls import namespace_ids, verify_controls
 from scryntic.model_worker.profile import (
+    BASELINE_CPU,
+    FORECAST_CPU,
     PROPERTIES,
     SYNTHETIC_CPU,
     WIRE_BYTES,
@@ -30,6 +33,8 @@ from scryntic.model_worker.wire import document
 from scryntic.models.definitions import definition
 from scryntic.models.inventory import RuntimeBundle
 from scryntic.models.window import ForecastWindow
+from scryntic.research.baseline_jobs import BaselineJob
+from scryntic.research.baselines import REQUEST_BYTES, RESPONSE_BYTES
 
 _MANAGER = ["/usr/bin/systemctl", "--system", "--no-ask-password"]
 _PATH = re.compile(r"/[A-Za-z0-9_./-]+")
@@ -113,7 +118,7 @@ def _command(
     )
     if Path("/usr/lib64").is_dir():
         binds += " /usr/lib64:/usr/lib64 /usr/lib64:/lib64"
-    if profile != SYNTHETIC_CPU:
+    if profile == FORECAST_CPU:
         binds += f" {root / 'model'}:/model {root / 'runtime'}:/runtime"
     properties = [
         *(PROPERTIES if profile == SYNTHETIC_CPU else profile.properties),
@@ -252,10 +257,37 @@ class CPUWorker:
             raise IsolationError("Runtime workload requires a registered adapter")
         self.last_controls: dict[str, Any] | None = None
         self.last_usage: dict[str, int] | None = None
+        self._baseline_active = False
+        self._baseline_probe = False
 
     @property
     def profile(self) -> CPUProfile:
+        if self._baseline_active:
+            return BASELINE_CPU
         return self._model.profile if self._model is not None else SYNTHETIC_CPU
+
+    async def execute_baseline(
+        self, attempt: DurableAttempt[BaselineJob], data: bytes
+    ) -> bytes:
+        if self._baseline_active or self._model is not None:
+            raise IsolationError("PI03 worker already active or bound to a model")
+        self._baseline_active = True
+        try:
+            return await self._run(attempt, "execute", baseline=data)
+        finally:
+            self._baseline_active = False
+
+    async def probe_baseline(
+        self, attempt: DurableAttempt[BaselineJob], data: bytes
+    ) -> bytes:
+        """Qualify the fixed profile and input binding without forming labels or fitting."""
+        if self._baseline_active or self._model is not None:
+            raise IsolationError("PI03 worker already active or bound to a model")
+        self._baseline_active = self._baseline_probe = True
+        try:
+            return await self._run(attempt, "baseline-probe", baseline=data)
+        finally:
+            self._baseline_active = self._baseline_probe = False
 
     async def execute_window(
         self, attempt: JobAttempt, window: ForecastWindow
@@ -300,6 +332,23 @@ class CPUWorker:
         if attempt.job.review.descriptor.execution != "local":
             raise IsolationError("CPU worker requires local admission")
 
+    def _verify_baseline(
+        self, attempt: DurableAttempt[BaselineJob], data: bytes
+    ) -> None:
+        from hashlib import sha256
+
+        from scryntic.research.baseline_jobs import workload_identity
+        from scryntic.research.baselines import validate_input
+
+        if type(attempt.job) is not BaselineJob or self._model is not None:
+            raise IsolationError("Unregistered fixed PI03 workload")
+        attempt.job.__post_init__()
+        if attempt.job.workload_sha256 != workload_identity():
+            raise IsolationError("PI03 application inventory changed")
+        validate_input(data)
+        if sha256(data).hexdigest() != attempt.job.input_sha256:
+            raise IsolationError("PI03 immutable input mismatch")
+
     async def _snapshot(self, root: Path) -> None:
         if self._bundle is not None:
             # Join cancellation during snapshotting before removing its
@@ -321,15 +370,34 @@ class CPUWorker:
                 raise
 
     async def _run(
-        self, attempt: JobAttempt, mode: str, window: ForecastWindow | None = None
+        self,
+        attempt: JobAttempt | DurableAttempt[BaselineJob],
+        mode: str,
+        window: ForecastWindow | None = None,
+        *,
+        baseline: bytes | None = None,
     ) -> bytes:
         self.last_controls = None
         self.last_usage = None
         try:
             if platform.system() != "Linux" or platform.machine() != "x86_64":
                 raise IsolationError("Unsupported CPU worker host")
-            self._verify_workload(attempt, window)
-            data = encode_attempt(attempt)
+            if baseline is None:
+                if not isinstance(attempt.job, JobRequest):
+                    raise IsolationError("Unexpected forecast job")
+                self._verify_workload(attempt, window)
+                data = encode_attempt(attempt)
+            else:
+                from scryntic.research.baseline_jobs import (
+                    encode_attempt as baseline_attempt,
+                )
+
+                self._verify_baseline(
+                    cast(DurableAttempt[BaselineJob], attempt), baseline
+                )
+                data = canonical_json_bytes(
+                    baseline_attempt(cast(DurableAttempt[BaselineJob], attempt))
+                )
             with tempfile.TemporaryDirectory(prefix="scryntic-model-") as temporary:
                 staging = Path(temporary)
                 root = staging / "root"
@@ -374,10 +442,19 @@ class CPUWorker:
                     request_value.update(
                         model=self._model.name, context=window.projection()
                     )
+                if baseline is not None:
+                    request_value = {
+                        "baseline_attempt": data.decode("utf-8"),
+                        "host": host,
+                        "mode": mode,
+                        "baseline_input": baseline.decode("utf-8"),
+                    }
+                    if len(canonical_json_bytes(request_value)) > REQUEST_BYTES:
+                        raise IsolationError("PI03 worker request byte limit")
                 request.write_bytes(canonical_json_bytes(request_value))
                 request.chmod(0o444)  # private 0700 ancestor; read-only unit bind
                 unit = "scryntic-model-" + uuid4().hex + ".service"
-                if self._model is None:
+                if self._model is None and baseline is None:
                     command = await asyncio.to_thread(_command, root, request, unit)
                 else:
                     command = await asyncio.to_thread(
@@ -400,7 +477,7 @@ class CPUWorker:
         command: list[str],
         unit: str,
         host: dict[str, Any],
-        attempt: JobAttempt,
+        attempt: JobAttempt | DurableAttempt[BaselineJob],
     ) -> bytes:
         spawn = asyncio.create_task(
             asyncio.create_subprocess_exec(
@@ -431,7 +508,14 @@ class CPUWorker:
             if process.stdout is None or process.stderr is None:
                 raise IsolationError("Worker IPC unavailable")
             drains = [
-                asyncio.create_task(_drain(process.stdout, WIRE_BYTES)),
+                asyncio.create_task(
+                    _drain(
+                        process.stdout,
+                        2 * RESPONSE_BYTES + 65536
+                        if self._baseline_active
+                        else WIRE_BYTES,
+                    )
+                ),
                 asyncio.create_task(_drain(process.stderr, 4096)),
             ]
             async with asyncio.timeout(self.profile.wall_seconds + 5):
@@ -443,20 +527,32 @@ class CPUWorker:
             await _join_cleanup(process, unit, drains)
 
     def _decode_worker(
-        self, output: bytes, host: dict[str, Any], attempt: JobAttempt
+        self,
+        output: bytes,
+        host: dict[str, Any],
+        attempt: JobAttempt | DurableAttempt[BaselineJob],
     ) -> bytes:
+        if self._baseline_probe:
+            return self._decode_baseline_probe(
+                output, host, cast(DurableAttempt[BaselineJob], attempt)
+            )
         fields = "version controls response" + (
-            " usage" if self._model is not None else ""
+            " usage" if self._model is not None or self._baseline_active else ""
         )
-        value = document(output, fields)
+        value = document(
+            output,
+            fields,
+            maximum=2 * RESPONSE_BYTES + 65536 if self._baseline_active else WIRE_BYTES,
+        )
         if (
             type(value["version"]) is not int
-            or value["version"] != (2 if self._model is not None else 1)
+            or value["version"]
+            != (3 if self._baseline_active else 2 if self._model is not None else 1)
             or type(value["response"]) is not str
         ):
             raise IsolationError("Unsupported worker response")
         verify_controls(value["controls"], host, self.profile)
-        if self._model is not None:
+        if self._model is not None or self._baseline_active:
             usage = value["usage"]
             maxima = {
                 "elapsed_ns": (self.profile.wall_seconds + 5) * 10**9,
@@ -474,9 +570,64 @@ class CPUWorker:
                 raise IsolationError("Invalid bounded worker resource report")
             self.last_usage = usage
         response = value["response"].encode("utf-8", "strict")
-        decode_response(response, attempt)
+        if self._baseline_active:
+            from scryntic.research.baseline_jobs import (
+                decode_response as baseline_response,
+            )
+
+            baseline_result = baseline_response(
+                response, cast(DurableAttempt[BaselineJob], attempt)
+            )
+            from hashlib import sha256
+
+            if (
+                baseline_result["resource_usage"] != value["usage"]
+                or baseline_result["controls_sha256"]
+                != sha256(canonical_json_bytes(value["controls"])).hexdigest()
+            ):
+                raise IsolationError("PI03 control or usage report binding mismatch")
+        else:
+            decode_response(response, cast(JobAttempt, attempt))
         self.last_controls = value["controls"]
         return response
+
+    def _decode_baseline_probe(
+        self, output: bytes, host: dict[str, Any], attempt: DurableAttempt[BaselineJob]
+    ) -> bytes:
+        value = document(output, "version controls probe usage")
+        if type(value["version"]) is not int or value["version"] != 3:
+            raise IsolationError("Unexpected PI03 qualification version")
+        verify_controls(value["controls"], host, self.profile)
+        probe = value["probe"]
+        expected = {
+            "schema": "scryntic.pi03.worker-probe.v1",
+            "job_sha256": attempt.job.sha256,
+            "input_sha256": attempt.job.input_sha256,
+            "model_fitted": False,
+            "final_labels_accessed": False,
+        }
+        usage = value["usage"]
+        maxima = {
+            "elapsed_ns": self.profile.wall_seconds * 10**9,
+            "cpu_ns": self.profile.cpu_seconds * 10**9,
+            "max_rss_kib": self.profile.memory // 1024,
+        }
+        if (
+            type(probe) is not dict
+            or probe != expected
+            or probe["model_fitted"] is not False
+            or probe["final_labels_accessed"] is not False
+            or type(usage) is not dict
+            or set(usage) != set(maxima)
+            or any(
+                type(usage[k]) is not int or not 0 <= usage[k] <= maximum
+                for k, maximum in maxima.items()
+            )
+        ):
+            raise IsolationError("Invalid bounded PI03 qualification report")
+        self.last_controls = value["controls"]
+        self.last_usage = usage
+        return canonical_json_bytes(probe)
 
 
 class IsolatedFakeProvider:
