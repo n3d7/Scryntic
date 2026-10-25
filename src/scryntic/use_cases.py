@@ -23,11 +23,12 @@ class Handler(Protocol):
 
 def available_workflows() -> tuple[Workflow, ...]:
     from scryntic.application.data_operations import WORKFLOWS as data
+    from scryntic.application.forecast_operations import WORKFLOWS as forecasts
     from scryntic.application.job_operations import WORKFLOWS as jobs
     from scryntic.application.local_operations import WORKFLOWS as local
     from scryntic.application.sync_operations import WORKFLOWS as sync
 
-    return local + sync + data + jobs
+    return local + sync + data + jobs + forecasts
 
 
 class ApplicationServices:
@@ -49,7 +50,7 @@ class ApplicationServices:
     def _handler(self, request: Request) -> Handler:
         group = _operation_group(request.operation)
         if (
-            group in ("data", "jobs")
+            group in ("data", "jobs", "forecasts")
             and request.operation is not Operation.PROVIDERS_LIST
         ):
             configuration = load_configuration(self.context.installation)
@@ -60,6 +61,10 @@ class ApplicationServices:
         return self._handlers[group]
 
     def _create_handler(self, group: str) -> Handler:
+        if group == "forecasts":
+            from scryntic.workflows.forecasts import ForecastWorkflows
+
+            return ForecastWorkflows(self.context)
         if group == "data":
             from scryntic.workflows.data import DataWorkflows
 
@@ -164,6 +169,8 @@ async def _join(task: asyncio.Task[None]) -> None:
 
 
 def _operation_group(operation: Operation) -> str:
+    if operation.value.startswith("forecasts."):
+        return "forecasts"
     if operation in (
         Operation.DATA_INSPECT,
         Operation.DATASET_BUILD,

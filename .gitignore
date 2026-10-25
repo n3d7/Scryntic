@@ -234,6 +234,7 @@ AGENTS.md
 /benchmarks/results/
 /docs/data/performance/results/
 /docs/task-reports/
+/docs/DEVELOPMENT_LICENSE_EXCEPTIONS.md
 
 # Private local source captures and full provider terms remain off GitHub.
 /docs/research/bybit/API_TERMS_PDF_TEXT_2026-10-20.md
