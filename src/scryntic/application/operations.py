@@ -32,6 +32,11 @@ class Operation(StrEnum):
     JOBS_RESUME = "jobs.resume"
     JOBS_CANCEL = "jobs.cancel"
     JOBS_RESULT = "jobs.result"
+    FORECASTS_STATUS = "forecasts.status"
+    FORECASTS_INSPECT = "forecasts.inspect"
+    FORECASTS_COMPARE = "forecasts.compare"
+    FORECASTS_RUN = "forecasts.run"
+    FORECASTS_MATURE = "forecasts.mature"
 
 
 class ErrorCode(StrEnum):

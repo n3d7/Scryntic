@@ -1,0 +1,23 @@
+{
+  "contract_id": "pi04-binance-shadow-v1",
+  "authority": "Operator explicitly authorized discretionary PI04 scope extension on 2026-10-24 after the concrete source/window/deadline proposal was explained.",
+  "source_id": "binance-usdm-public-hourly-v1",
+  "base_url": "https://fapi.binance.com",
+  "endpoints": ["/fapi/v1/time", "/fapi/v1/exchangeInfo", "/fapi/v1/klines"],
+  "venue": "Binance",
+  "category": "USD-M-futures",
+  "instruments": ["BTCUSDT", "ETHUSDT"],
+  "contract_type": "PERPETUAL",
+  "price_basis": "last-trade-close",
+  "interval_seconds": 3600,
+  "shadow_origins_utc": ["2026-10-24T00:00:00Z", "2026-11-01T00:00:00Z"],
+  "source_finality": "REST hourly close candidate only after server time passes the exact UTC close; preserve actual first receipt and every subsequently observed correction. No immutable-exchange-truth claim.",
+  "acceptance": "Atomic WAL/FULL content publication, trusted UTC/monotonic observation after COMMIT, separate durable certificate; conservative upper bound <= origin+60s and strictly < endpoint. Unknown/regressed clocks never certify forward evidence.",
+  "clock": "Existing ClockMonitor/SystemClockReader/ChronyStatus; numerical error bounds and current health required. No independent public witness deployed.",
+  "baseline": "zero-log-return-v1; deterministic point only; no fitting, calibration, ModelRelease or PI03 trial accounting",
+  "outcome_access": "Only target paths fully before 2026-11-01. Cross-final forecasts may be recorded but remain sealed/unscored; no final-label grant.",
+  "recovery": "Explicit due/missed slots; no backdated collection or publication. Recovered candles retain their new observation time; same-slot content changes create conflicts.",
+  "resources": {"max_active_inference": 1, "max_due_slots_per_tick": 64, "max_http_seconds": 10, "max_http_bytes": 2097152, "max_events": 10000, "max_ledger_payload_bytes": 8388608},
+  "licensing": "Operator development exception; external source rights not represented as verified. Local exception register is Git-ignored.",
+  "storage": "Private Debian local raw payloads, immutable receipts and lineage authorized by operator; no exchange credentials or financial execution authority."
+}

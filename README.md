@@ -24,6 +24,9 @@ and statistical forecast evaluation: [replay guide](docs/data/REPLAY.md).
 F20 explicit provider/model admission, durable jobs and bounded loopback HTTP
 fixtures: [provider jobs guide](docs/operations/JOBS.md).
 
+PI04 immutable forecast evidence, finite frozen-baseline scheduling and outcome
+vintages: [forward ledger guide](docs/operations/FORECASTS.md).
+
 ## License
 
 Scryntic is licensed under the [Apache License, Version 2.0](LICENSE).

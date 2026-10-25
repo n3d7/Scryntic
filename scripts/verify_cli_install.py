@@ -630,11 +630,11 @@ async def _verify_tui(home: Path) -> None:
     installation = Installation.workstation(home=home, environment={})
     _installation(home)
     workflows = available_workflows()
-    assert len(workflows) == 23
-    assert len({workflow.operation for workflow in workflows}) == 23
+    assert len(workflows) == 28
+    assert len({workflow.operation for workflow in workflows}) == 28
     app = ScrynticApp(ApplicationServices(installation), workflows)
     async with app.run_test(size=(100, 36)) as pilot:
-        assert app.query_one("#workflows", OptionList).option_count == 23
+        assert app.query_one("#workflows", OptionList).option_count == 28
         await pilot.press(_RUN_KEY)
         await pilot.pause()
         assert app.query_one("#results", DataTable).row_count > 0
@@ -662,6 +662,12 @@ async def _verify_tui(home: Path) -> None:
                     )
                 else:
                     assert isinstance(control, Input) and control.value == field.default
+
+        await choose("forecasts.status")
+        await pilot.press(_RUN_KEY)
+        await pilot.pause()
+        assert "Complete" in str(app.query_one(_STATUS_SELECTOR, Static).render())
+        assert ("publications", "0") in app._rows
 
         await choose("sources.inspect")
         app.query_one("#field-profile", Select).value = "bybit"
