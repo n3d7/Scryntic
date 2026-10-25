@@ -131,16 +131,16 @@ def test_failed_refresh_preserves_already_available_score(tmp_path: Path) -> Non
 def test_forecast_source_identity_and_score_as_of_fail_closed(tmp_path: Path) -> None:
     wrong = series()
     wrong.key = replace(wrong.key, instrument="ETHUSDT")
+    slot = content().slot
     with pytest.raises(ValueError):
-        prepare_content(content().slot, wrong)
+        prepare_content(slot, wrong)
     clock = Clock(T + 1)
     with ForecastLedger(installation(tmp_path), clock) as ledger:
         forecast = prepare_content(content().slot, series())
         ledger.publish(forecast, attempt_id="1" * 32)
+        scoring, available = ForecastScores(ledger), series()
         with pytest.raises(ValueError):
-            ForecastScores(ledger).mature(
-                forecast.slot.sha256, series(), T + 3 * HOUR_NS
-            )
+            scoring.mature(forecast.slot.sha256, available, T + 3 * HOUR_NS)
 
 
 def test_comparison_denominators_keep_unpublished_states_and_honor_cutoff(

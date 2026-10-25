@@ -66,11 +66,14 @@ def test_scheduler_denies_unbounded_batches_and_input_conflict(tmp_path: Path) -
         InferenceStore(target, ledger, clock=lambda: clock.now) as store,
     ):
         service = InferenceService(store, ledger)
+        forecast = content()
+        oversized = (forecast,) * 65
+        conflicting = (replace(forecast, input_sha256="c" * 64),)
         with pytest.raises(ValueError):
-            service.schedule((content(),) * 65)
-        service.schedule((content(),))
+            service.schedule(oversized)
+        service.schedule((forecast,))
         with pytest.raises(ValueError):
-            service.schedule((replace(content(), input_sha256="c" * 64),))
+            service.schedule(conflicting)
 
 
 def test_inference_preserves_an_existing_fit_ledger_byte_for_byte(

@@ -120,8 +120,9 @@ def test_crash_after_publication_never_backdates_missing_certificate(
             return original(kind, subject, body)
 
         monkeypatch.setattr(ledger, "_append", crash)
+        forecast = content()
         with pytest.raises(RuntimeError):
-            ledger.publish(content(), attempt_id="1" * 32)
+            ledger.publish(forecast, attempt_id="1" * 32)
     with ForecastLedger(target, Clock(T + 2 * HOUR_NS)) as ledger:
         receipt = ledger.publish(content(), attempt_id="2" * 32)
         assert receipt["timeliness"] == "recovery-unknown"
@@ -129,14 +130,15 @@ def test_crash_after_publication_never_backdates_missing_certificate(
 
 
 def test_live_admission_and_final_overlap_fail_closed() -> None:
+    slot = content().slot
     with pytest.raises(ValueError):
         content("1")
     with pytest.raises(ValueError):
         Stream("live-zero", "genuine-forward", "binance-api")
     with pytest.raises(ValueError):
-        replace(content().slot, origin_ns=1793491200 * 10**9)  # final start
+        replace(slot, origin_ns=1793491200 * 10**9)  # final start
     with pytest.raises(ValueError):
-        replace(content().slot, origin_ns=1793404800 * 10**9, horizon_seconds=604800)
+        replace(slot, origin_ns=1793404800 * 10**9, horizon_seconds=604800)
 
 
 def test_real_process_death_after_commit_retains_uncertified_publication(
@@ -173,12 +175,14 @@ def test_corrupt_content_and_second_owner_fail_closed(tmp_path: Path) -> None:
     target = installation(tmp_path)
     with ForecastLedger(target, Clock()) as ledger:
         ledger.publish(content(), attempt_id="1" * 32)
+        clock = Clock()
         with pytest.raises(BlockingIOError):
-            ForecastLedger(target, Clock())
+            ForecastLedger(target, clock)
     with sqlite3.connect(target.state_dir / "forecast-ledger.sqlite3") as connection:
         connection.execute("UPDATE events SET payload=? WHERE sequence=1", (b"{}",))
+    clock = Clock()
     with pytest.raises(ValueError):
-        ForecastLedger(target, Clock())
+        ForecastLedger(target, clock)
 
 
 def test_committed_prefix_loss_is_detected_by_retained_head(tmp_path: Path) -> None:
@@ -189,5 +193,6 @@ def test_committed_prefix_loss_is_detected_by_retained_head(tmp_path: Path) -> N
         connection.execute(
             "DELETE FROM events WHERE sequence=(SELECT max(sequence) FROM events)"
         )
+    clock = Clock()
     with pytest.raises(ValueError):
-        ForecastLedger(target, Clock())
+        ForecastLedger(target, clock)
