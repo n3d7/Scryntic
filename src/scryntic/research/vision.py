@@ -77,6 +77,59 @@ def _checked_archive(path: Path, member_name: str) -> tuple[str, list[list[str]]
         raise ValueError("Invalid archive CSV") from exc
 
 
+def _data_rows(rows: list[list[str]]) -> list[list[str]]:
+    if not rows:
+        raise ValueError("Empty monthly archive")
+    if tuple(rows[0]) == _HEADER:
+        rows = rows[1:]
+        if not rows:
+            raise ValueError("Empty monthly archive")
+    return rows
+
+
+def _hourly_bar(
+    row: list[str], row_number: int, archive_sha256: str, month: str
+) -> HourlyBar:
+    if len(row) != 12:
+        raise ValueError("Invalid Vision row width")
+    try:
+        start_ms = int(row[0])
+        close_ms = int(row[6])
+        opening, high, low, closing = (Decimal(row[i]) for i in (1, 2, 3, 4))
+        volume = Decimal(row[5])
+        trades = int(row[8])
+    except (ValueError, InvalidOperation) as exc:
+        raise ValueError("Invalid Vision row value") from exc
+    if start_ms < 0 or start_ms % 3_600_000 or close_ms != start_ms + 3_600_000 - 1:
+        raise ValueError("Invalid hourly close time")
+    if datetime.fromtimestamp(start_ms / 1000, UTC).strftime("%Y-%m") != month:
+        raise ValueError("Row outside declared archive month")
+    if (
+        not all(value.is_finite() for value in (opening, high, low, closing, volume))
+        or low <= 0
+        or volume < 0
+        or trades < 0
+        or not low <= min(opening, closing) <= max(opening, closing) <= high
+    ):
+        raise ValueError("Invalid Vision OHLC or volume")
+    return HourlyBar(
+        start_ns=start_ms * 1_000_000,
+        close=closing,
+        raw_sha256=sha256(
+            canonical_json_bytes(
+                cast(
+                    JsonObject,
+                    {
+                        "archive_sha256": archive_sha256,
+                        "row_number": row_number,
+                        "row": row,
+                    },
+                )
+            )
+        ).hexdigest(),
+    )
+
+
 def load_monthly_hourly(
     root: Path, symbol: str, months: tuple[str, ...]
 ) -> HourlySeries:
@@ -99,59 +152,8 @@ def load_monthly_hourly(
         base = f"{symbol}-1h-{month}"
         archive_sha256, rows = _checked_archive(root / f"{base}.zip", f"{base}.csv")
         archives.append({"name": f"{base}.zip", "sha256": archive_sha256})
-        if not rows:
-            raise ValueError("Empty monthly archive")
-        if tuple(rows[0]) == _HEADER:
-            rows = rows[1:]
-            if not rows:
-                raise ValueError("Empty monthly archive")
-        for row_number, row in enumerate(rows, 1):
-            if len(row) != 12:
-                raise ValueError("Invalid Vision row width")
-            try:
-                start_ms = int(row[0])
-                close_ms = int(row[6])
-                opening, high, low, closing = (Decimal(row[i]) for i in (1, 2, 3, 4))
-                volume = Decimal(row[5])
-                trades = int(row[8])
-            except (ValueError, InvalidOperation) as exc:
-                raise ValueError("Invalid Vision row value") from exc
-            if (
-                start_ms < 0
-                or start_ms % 3_600_000
-                or close_ms != start_ms + 3_600_000 - 1
-            ):
-                raise ValueError("Invalid hourly close time")
-            if datetime.fromtimestamp(start_ms / 1000, UTC).strftime("%Y-%m") != month:
-                raise ValueError("Row outside declared archive month")
-            if (
-                not all(
-                    value.is_finite() for value in (opening, high, low, closing, volume)
-                )
-                or low <= 0
-                or volume < 0
-                or trades < 0
-                or not low <= min(opening, closing) <= max(opening, closing) <= high
-            ):
-                raise ValueError("Invalid Vision OHLC or volume")
-            bars.append(
-                HourlyBar(
-                    start_ns=start_ms * 1_000_000,
-                    close=closing,
-                    raw_sha256=sha256(
-                        canonical_json_bytes(
-                            cast(
-                                JsonObject,
-                                {
-                                    "archive_sha256": archive_sha256,
-                                    "row_number": row_number,
-                                    "row": row,
-                                },
-                            )
-                        )
-                    ).hexdigest(),
-                )
-            )
+        for row_number, row in enumerate(_data_rows(rows), 1):
+            bars.append(_hourly_bar(row, row_number, archive_sha256, month))
             if len(bars) > MAX_HOURLY_ROWS:
                 raise ValueError("Unbounded Vision input")
     snapshot_sha256 = sha256(

@@ -148,13 +148,7 @@ async def operate(
                     "usage": service.executor.worker.last_usage,
                 }, 0
             if args.operation == "compare":
-                results = {}
-                for algorithm in ALGORITHMS:
-                    existing = service.find(algorithm)
-                    if existing is None:
-                        raise ValueError("Registered PI03 comparison is incomplete")
-                    results[algorithm] = service.result(existing.job.job_id)
-                return compare_results(results, service.input["spec"]), 0
+                return _comparison(service), 0
             if args.algorithm is None:
                 raise ValueError("A registered algorithm is required")
             record = (
@@ -165,26 +159,42 @@ async def operate(
             if record is None:
                 return _report(service, None, args.operation)
             if args.operation == "run":
-
-                async def dispatch(
-                    operation: str, algorithm: str
-                ) -> tuple[dict[str, Any], int]:
-                    existing = service.find(algorithm)
-                    if existing is None:
-                        return _report(service, None, operation)
-                    if operation == "cancel":
-                        await service.cancel_and_wait(existing.job.job_id)
-                    return _report(service, store.get(existing.job.job_id), operation)
-
-                async with owner_control(root, dispatch):
-                    record = await service.run(
-                        record.job.job_id, resume=record.state is JobState.INTERRUPTED
-                    )
+                record = await _run_owned(service, store, root, record)
             elif args.operation == "cancel":
                 record = service.cancel(record.job.job_id)
             return _report(service, record, args.operation)
         finally:
             await service.aclose()
+
+
+def _comparison(service: BaselineService) -> dict[str, Any]:
+    results = {}
+    for algorithm in ALGORITHMS:
+        existing = service.find(algorithm)
+        if existing is None:
+            raise ValueError("Registered PI03 comparison is incomplete")
+        results[algorithm] = service.result(existing.job.job_id)
+    return compare_results(results, service.input["spec"])
+
+
+async def _run_owned(
+    service: BaselineService,
+    store: BaselineJobStore,
+    root: Installation,
+    record: DurableRecord[BaselineJob, BaselineArtifact],
+) -> DurableRecord[BaselineJob, BaselineArtifact]:
+    async def dispatch(operation: str, algorithm: str) -> tuple[dict[str, Any], int]:
+        existing = service.find(algorithm)
+        if existing is None:
+            return _report(service, None, operation)
+        if operation == "cancel":
+            await service.cancel_and_wait(existing.job.job_id)
+        return _report(service, store.get(existing.job.job_id), operation)
+
+    async with owner_control(root, dispatch):
+        return await service.run(
+            record.job.job_id, resume=record.state is JobState.INTERRUPTED
+        )
 
 
 def _report(

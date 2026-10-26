@@ -1,6 +1,8 @@
 """Adoption requires every workload, exact semantics and the registered memory gate."""
 
+import json
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -82,3 +84,14 @@ def test_fixture_identity_drift_and_warmup_failure_prevent_adoption() -> None:
         }
     )
     assert summarize(records, protocol)["selected"] == "pyarrow-pages"
+
+
+def test_published_registered_decision_recomputes_exactly() -> None:
+    root = Path(__file__).resolve().parents[2]
+    evidence = json.loads((root / "docs/validation/pi05/results-v1.json").read_text())
+    protocol = json.loads((root / "docs/validation/pi05/protocol-v1.json").read_text())
+    records = [
+        evidence["identities"] | record | {"boot_id": record["environment_epoch"]}
+        for record in evidence["records"]
+    ]
+    assert summarize(records, protocol) == evidence["decision"]

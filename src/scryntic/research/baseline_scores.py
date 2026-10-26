@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass, field
 from hashlib import sha256
 from math import log, sqrt
 from random import Random
@@ -28,6 +29,58 @@ from scryntic.research.baselines import (
 )
 
 
+@dataclass(slots=True)
+class _ProbabilityScores:
+    pinball: list[float] = field(default_factory=lambda: [0.0] * 5)
+    coverage: list[int] = field(default_factory=lambda: [0, 0])
+    width: list[float] = field(default_factory=lambda: [0.0, 0.0])
+    brier: float = 0.0
+    logarithmic: float = 0.0
+    binary: int = 0
+    reliability: dict[int, list[int]] = field(
+        default_factory=lambda: defaultdict(lambda: [0, 0])
+    )
+
+    def add(
+        self, y: float, qs: tuple[float, ...], p: float, block: list[float]
+    ) -> None:
+        for i, q in enumerate(QUANTILES):
+            residual = y - qs[i]
+            self.pinball[i] += max(q * residual, (q - 1) * residual)
+        for i, (lo, hi) in enumerate(((1, 3), (0, 4))):
+            covered = qs[lo] <= y <= qs[hi]
+            self.coverage[i] += covered
+            self.width[i] += qs[hi] - qs[lo]
+            block[3 + i] += covered
+            block[5 + i] += qs[hi] - qs[lo]
+        if y != 0:
+            actual = int(y > 0)
+            self.brier += (p - actual) ** 2
+            self.logarithmic -= log(p if actual else 1 - p)
+            self.binary += 1
+            self.reliability[min(9, int(p * 10))][0] += 1
+            self.reliability[min(9, int(p * 10))][1] += actual
+            block[7] += 1
+
+    def report(self, probability: float, n: int) -> dict[str, Any]:
+        return {
+            "pinball": [repr(x / n) for x in self.pinball],
+            "coverage": [repr(x / n) for x in self.coverage],
+            "width": [repr(x / n) for x in self.width],
+            "direction_brier": repr(self.brier / self.binary) if self.binary else None,
+            "direction_log_score": repr(self.logarithmic / self.binary)
+            if self.binary
+            else None,
+            "direction_probability": repr(probability),
+            "binary_denominator": self.binary,
+            "reliability_bins": {
+                str(k): v for k, v in sorted(self.reliability.items())
+            },
+            "calibration_qualified": False,
+            "qualification_reason": "development evidence; dependence-aware calibration gates required",
+        }
+
+
 def score_rows(model: Predictor, evaluation: list[Row]) -> dict[str, Any]:
     if not evaluation:
         raise ValueError("No paired evaluation rows")
@@ -36,12 +89,7 @@ def score_rows(model: Predictor, evaluation: list[Row]) -> dict[str, Any]:
     daily: dict[int, list[float]] = defaultdict(lambda: [0.0] * 8)
     absolute = squared = magnitude = 0.0
     ties = target_ties = positive = negative = true_positive = true_negative = 0
-    pinball = [0.0] * 5
-    coverage = [0, 0]
-    width = [0.0, 0.0]
-    brier = logarithmic = 0.0
-    binary = 0
-    reliability: dict[int, list[int]] = defaultdict(lambda: [0, 0])
+    probability_scores = _ProbabilityScores()
     samples: list[dict[str, Any]] = []
     for row in evaluation:
         point, qs, p = model.predict(row)
@@ -74,38 +122,13 @@ def score_rows(model: Predictor, evaluation: list[Row]) -> dict[str, Any]:
         true_positive += y > 0 and point > 0
         true_negative += y < 0 and point < 0
         if qs and p is not None:
-            for i, q in enumerate(QUANTILES):
-                residual = y - qs[i]
-                pinball[i] += max(q * residual, (q - 1) * residual)
-            for i, (lo, hi) in enumerate(((1, 3), (0, 4))):
-                covered = qs[lo] <= y <= qs[hi]
-                coverage[i] += covered
-                width[i] += qs[hi] - qs[lo]
-                block[3 + i] += covered
-                block[5 + i] += qs[hi] - qs[lo]
-            if y != 0:
-                actual = int(y > 0)
-                brier += (p - actual) ** 2
-                logarithmic -= log(p if actual else 1 - p)
-                binary += 1
-                reliability[min(9, int(p * 10))][0] += 1
-                reliability[min(9, int(p * 10))][1] += actual
-                block[7] += 1
+            probability_scores.add(y, qs, p, block)
     n = len(evaluation)
-    probabilistic: dict[str, Any] | None = None
-    if model.probability is not None:
-        probabilistic = {
-            "pinball": [repr(x / n) for x in pinball],
-            "coverage": [repr(x / n) for x in coverage],
-            "width": [repr(x / n) for x in width],
-            "direction_brier": repr(brier / binary) if binary else None,
-            "direction_log_score": repr(logarithmic / binary) if binary else None,
-            "direction_probability": repr(model.probability),
-            "binary_denominator": binary,
-            "reliability_bins": {str(k): v for k, v in sorted(reliability.items())},
-            "calibration_qualified": False,
-            "qualification_reason": "development evidence; dependence-aware calibration gates required",
-        }
+    probabilistic = (
+        probability_scores.report(model.probability, n)
+        if model.probability is not None
+        else None
+    )
     return {
         "count": n,
         "mae": repr(absolute / n),
@@ -193,9 +216,29 @@ def _window_sums(values: list[float], length: int) -> list[float]:
     return [prefix[i + length] - prefix[i] for i in range(len(values) - length + 1)]
 
 
-def _coverage_intervals(
+def _append_coverage_draw(
+    draws: dict[tuple[str, int], list[float]],
+    assets: list[str],
+    sums: dict[tuple[str, int], list[float]],
+    tails: dict[tuple[str, int], list[float]],
+    starts: list[int],
+    tail: int,
+    last: int,
+) -> None:
+    for asset in assets:
+        count = sum(sums[asset, 1][i] for i in starts) + (
+            tails[asset, 1][last] if tail else 0
+        )
+        for column in (4, 5):
+            covered = sum(sums[asset, column][i] for i in starts) + (
+                tails[asset, column][last] if tail else 0
+            )
+            draws[asset, column].append(covered / count)
+
+
+def _coverage_draws(
     result: dict[str, Any], assets: list[str], horizon: str, length: int
-) -> dict[str, Any]:
+) -> tuple[dict[tuple[str, int], list[float]], int]:
     daily = {
         asset: result["scores"][asset][horizon]["daily_losses"] for asset in assets
     }
@@ -220,15 +263,14 @@ def _coverage_intervals(
     for _ in range(2000):
         starts = [rng.randrange(n - window + 1) for _ in range(n // window)]
         last = rng.randrange(n - tail + 1) if tail else 0
-        for asset in assets:
-            count = sum(sums[asset, 1][i] for i in starts) + (
-                tails[asset, 1][last] if tail else 0
-            )
-            for column in (4, 5):
-                covered = sum(sums[asset, column][i] for i in starts) + (
-                    tails[asset, column][last] if tail else 0
-                )
-                draws[asset, column].append(covered / count)
+        _append_coverage_draw(draws, assets, sums, tails, starts, tail, last)
+    return draws, n
+
+
+def _coverage_intervals(
+    result: dict[str, Any], assets: list[str], horizon: str, length: int
+) -> dict[str, Any]:
+    draws, n = _coverage_draws(result, assets, horizon, length)
     report = {}
     for asset in assets:
         probabilistic = result["scores"][asset][horizon]["probabilistic"]
@@ -261,6 +303,148 @@ def _coverage_intervals(
     return report
 
 
+def _comparison_arrays(
+    results: dict[str, dict[str, Any]], assets: list[str], h: str, days: list[int]
+) -> dict[tuple[str, str], tuple[list[float], list[float]]]:
+    arrays: dict[tuple[str, str], tuple[list[float], list[float]]] = {}
+    for a in ALGORITHMS:
+        for asset in assets:
+            entries = results[a]["scores"][asset][h]["daily_losses"]
+            if [e[0] for e in entries] != days:
+                raise ValueError("Cross-asset UTC window drift")
+            arrays[a, asset] = (
+                [float(e[2]) for e in entries],
+                [float(e[1]) for e in entries],
+            )
+    return arrays
+
+
+def _sampled_mae(
+    assets: list[str],
+    sums: dict[tuple[str, str], tuple[list[float], list[float]]],
+    tail_sums: dict[tuple[str, str], tuple[list[float], list[float]]],
+    starts: list[int],
+    tail: int,
+    last: int,
+) -> dict[str, float]:
+    sampled: dict[str, float] = {}
+    for a in ALGORITHMS:
+        losses = []
+        for asset in assets:
+            numerator, denominator = sums[a, asset]
+            total = sum(numerator[i] for i in starts)
+            count = sum(denominator[i] for i in starts)
+            if tail:
+                ta, tn = tail_sums[a, asset]
+                total += ta[last]
+                count += tn[last]
+            losses.append(total / count)
+        sampled[a] = fmean(losses)
+    return sampled
+
+
+def _skill_draws(
+    arrays: dict[tuple[str, str], tuple[list[float], list[float]]],
+    assets: list[str],
+    n: int,
+    length: int,
+    champion: str,
+) -> dict[str, list[float]]:
+    window = min(length, n)
+    sums = {
+        key: (_window_sums(a, window), _window_sums(n, window))
+        for key, (a, n) in arrays.items()
+    }
+    tail = n % window
+    tail_sums = (
+        {
+            key: (_window_sums(a, tail), _window_sums(n, tail))
+            for key, (a, n) in arrays.items()
+        }
+        if tail
+        else {}
+    )
+    draws: dict[str, list[float]] = {a: [] for a in ALGORITHMS}
+    rng = Random(42)
+    for _ in range(2000):
+        starts = [rng.randrange(n - window + 1) for _ in range(n // window)]
+        last = rng.randrange(n - tail + 1) if tail else 0
+        sampled = _sampled_mae(assets, sums, tail_sums, starts, tail, last)
+        for a in ALGORITHMS:
+            draws[a].append(
+                1 - sampled[a] / sampled[champion] if sampled[champion] else 0.0
+            )
+    return draws
+
+
+def _compare_horizon(
+    results: dict[str, dict[str, Any]],
+    spec: dict[str, Any],
+    horizon: int,
+    family: int,
+    all_p: list[tuple[float, str, str]],
+) -> dict[str, Any]:
+    h = str(horizon)
+    assets = spec["instruments"]
+    for asset in assets:
+        pairs = {
+            (
+                r["scores"][asset][h]["pairs_sha256"],
+                r["scores"][asset][h]["count"],
+                body_sha256(r["scores"][asset][h]["evaluation_exclusions"]),
+            )
+            for r in results.values()
+        }
+        if len(pairs) != 1:
+            raise ValueError("Comparison pairs/exclusions differ")
+    mae = {
+        a: fmean(float(results[a]["scores"][asset][h]["mae"]) for asset in assets)
+        for a in ALGORITHMS
+    }
+    champion = min(ALGORITHMS[:4], key=lambda a: (mae[a], a))
+    days = [
+        entry[0] for entry in results[champion]["scores"][assets[0]][h]["daily_losses"]
+    ]
+    if any(b - a != DAY for a, b in zip(days, days[1:], strict=False)):
+        raise ValueError(
+            "Noncontiguous UTC comparison windows require a new registration"
+        )
+    length = max(1, horizon // 86400, *(r["dependence_days"] for r in results.values()))
+    effective = (len(days) + length - 1) // length
+    floor = spec["comparison"]["minimum_blocks"][h]
+    arrays = _comparison_arrays(results, assets, h, days)
+    draws = _skill_draws(arrays, assets, len(days), length, champion)
+    contrasts: dict[str, Any] = {}
+    for a in ALGORITHMS:
+        distribution = sorted(draws[a])
+        lower = quantile(distribution, 0.025 / family)
+        skill = 1 - mae[a] / mae[champion] if mae[champion] else 0.0
+        # Paired bootstrap centered under the zero-skill null.
+        p = (1 + sum(x - skill >= skill for x in distribution)) / 2001
+        all_p.append((p, h, a))
+        contrasts[a] = {
+            "relative_mae_skill": repr(skill),
+            "simultaneous_lower_95": repr(lower),
+            "bootstrap_p": repr(p),
+            "margin_bound_pass": lower > 0.02,
+            "holm_reject": False,
+            "claim_allowed": False,
+        }
+    comparison = {
+        "champion": champion,
+        "equal_asset_mae": {a: repr(v) for a, v in mae.items()},
+        "block_days": length,
+        "effective_time_blocks_upper_bound": effective,
+        "required_blocks": floor,
+        "block_floor_met": effective >= floor,
+        "contrasts": contrasts,
+        "probabilistic_calibration": _coverage_intervals(
+            results["volatility-empirical"], assets, h, length
+        ),
+    }
+    return comparison
+
+
 def compare_results(
     results: dict[str, dict[str, Any]], spec: dict[str, Any]
 ) -> dict[str, Any]:
@@ -285,114 +469,9 @@ def compare_results(
     comparisons: dict[str, Any] = {}
     all_p: list[tuple[float, str, str]] = []
     for horizon in spec["horizons_seconds"]:
-        h = str(horizon)
-        assets = spec["instruments"]
-        for asset in assets:
-            pairs = {
-                (
-                    r["scores"][asset][h]["pairs_sha256"],
-                    r["scores"][asset][h]["count"],
-                    body_sha256(r["scores"][asset][h]["evaluation_exclusions"]),
-                )
-                for r in results.values()
-            }
-            if len(pairs) != 1:
-                raise ValueError("Comparison pairs/exclusions differ")
-        mae = {
-            a: fmean(float(results[a]["scores"][asset][h]["mae"]) for asset in assets)
-            for a in ALGORITHMS
-        }
-        champion = min(ALGORITHMS[:4], key=lambda a: (mae[a], a))
-        days = [
-            entry[0]
-            for entry in results[champion]["scores"][assets[0]][h]["daily_losses"]
-        ]
-        if any(b - a != DAY for a, b in zip(days, days[1:], strict=False)):
-            raise ValueError(
-                "Noncontiguous UTC comparison windows require a new registration"
-            )
-        length = max(
-            1, horizon // 86400, *(r["dependence_days"] for r in results.values())
+        comparisons[str(horizon)] = _compare_horizon(
+            results, spec, horizon, family, all_p
         )
-        effective = (len(days) + length - 1) // length
-        floor = spec["comparison"]["minimum_blocks"][h]
-        arrays: dict[tuple[str, str], tuple[list[float], list[float]]] = {}
-        for a in ALGORITHMS:
-            for asset in assets:
-                entries = results[a]["scores"][asset][h]["daily_losses"]
-                if [e[0] for e in entries] != days:
-                    raise ValueError("Cross-asset UTC window drift")
-                arrays[a, asset] = (
-                    [float(e[2]) for e in entries],
-                    [float(e[1]) for e in entries],
-                )
-        window = min(length, len(days))
-        sums = {
-            key: (_window_sums(a, window), _window_sums(n, window))
-            for key, (a, n) in arrays.items()
-        }
-        tail = len(days) % window
-        tail_sums = (
-            {
-                key: (_window_sums(a, tail), _window_sums(n, tail))
-                for key, (a, n) in arrays.items()
-            }
-            if tail
-            else {}
-        )
-        draws: dict[str, list[float]] = {a: [] for a in ALGORITHMS}
-        rng = Random(42)
-        for _ in range(2000):
-            starts = [
-                rng.randrange(len(days) - window + 1)
-                for _ in range(len(days) // window)
-            ]
-            last = rng.randrange(len(days) - tail + 1) if tail else 0
-            sampled: dict[str, float] = {}
-            for a in ALGORITHMS:
-                losses = []
-                for asset in assets:
-                    numerator, denominator = sums[a, asset]
-                    total = sum(numerator[i] for i in starts)
-                    count = sum(denominator[i] for i in starts)
-                    if tail:
-                        ta, tn = tail_sums[a, asset]
-                        total += ta[last]
-                        count += tn[last]
-                    losses.append(total / count)
-                sampled[a] = fmean(losses)
-            for a in ALGORITHMS:
-                draws[a].append(
-                    1 - sampled[a] / sampled[champion] if sampled[champion] else 0.0
-                )
-        contrasts: dict[str, Any] = {}
-        for a in ALGORITHMS:
-            distribution = sorted(draws[a])
-            lower = quantile(distribution, 0.025 / family)
-            skill = 1 - mae[a] / mae[champion] if mae[champion] else 0.0
-            # Paired bootstrap centered under the zero-skill null.
-            p = (1 + sum(x - skill >= skill for x in distribution)) / 2001
-            all_p.append((p, h, a))
-            contrasts[a] = {
-                "relative_mae_skill": repr(skill),
-                "simultaneous_lower_95": repr(lower),
-                "bootstrap_p": repr(p),
-                "margin_bound_pass": lower > 0.02,
-                "holm_reject": False,
-                "claim_allowed": False,
-            }
-        comparisons[h] = {
-            "champion": champion,
-            "equal_asset_mae": {a: repr(v) for a, v in mae.items()},
-            "block_days": length,
-            "effective_time_blocks_upper_bound": effective,
-            "required_blocks": floor,
-            "block_floor_met": effective >= floor,
-            "contrasts": contrasts,
-            "probabilistic_calibration": _coverage_intervals(
-                results["volatility-empirical"], assets, h, length
-            ),
-        }
     for rank, (p, h, a) in enumerate(sorted(all_p)):
         if p > 0.05 / (family - rank):
             break

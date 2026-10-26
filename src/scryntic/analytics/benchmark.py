@@ -18,6 +18,52 @@ from scryntic.dataset.protocol import (
 from scryntic.imports.protocol import ImportLimits
 
 
+def _page(
+    path: Path,
+    fixture: dict[str, Any],
+    decoder: ScanDecoder,
+    candidate: str,
+    offset: int,
+    step: int,
+) -> tuple[dict[str, Any], int]:
+    # Retain repeated input reads/hashes/seals for independent page requests.
+    manifest = (path / "manifest.json").read_bytes()
+    parquet = (path / "dataset.parquet").read_bytes()
+    if (
+        sha256(manifest).hexdigest() != fixture["manifest_sha256"]
+        or sha256(parquet).hexdigest() != fixture["parquet_sha256"]
+    ):
+        raise ValueError("Registered fixture bytes changed")
+    request = {
+        "protocol": 1,
+        "operation": "inspect" if candidate == "pyarrow-pages" else "scan",
+        "manifest_sha256": fixture["manifest_sha256"],
+        "dataset_schema": fixture["dataset_schema"],
+        "row_count": fixture["row_count"],
+        "offset": offset,
+        "limit": step,
+    }
+    response = decoder.qualify(request, manifest, parquet, candidate)
+    if set(response) != {"request_sha256", "rows", "usage"}:
+        raise ValueError("Invalid qualified response")
+    page = response["rows"]
+    if type(page) is not list or len(page) != min(
+        step, max(0, fixture["row_count"] - offset)
+    ):
+        raise ValueError("Qualified result count mismatch")
+    if candidate == "pyarrow-pages":
+        validate_rows(page, evolved=True)
+    return response, len(manifest) + len(parquet)
+
+
+def _merge_usage(usage: dict[str, int], response: dict[str, Any]) -> None:
+    for key in usage:
+        value = response["usage"][key]
+        if type(value) is not int or value < 0:
+            raise ValueError("Invalid qualified usage")
+        usage[key] += value
+
+
 def run_fixture(path: Path, candidate: str) -> dict[str, Any]:
     if candidate not in CANDIDATES:
         raise ValueError("Unregistered scan candidate")
@@ -32,40 +78,11 @@ def run_fixture(path: Path, candidate: str) -> dict[str, Any]:
     usage = {"decoded_bytes": 0, "rows_considered": 0, "scan_count": 0}
     wire_bytes = encoded = 0
     for offset in range(0, max(1, count), step):
-        # Deliberately retain repeated input reads/hashes/seals in the unchanged
-        # paginated comparator, matching independent snapshot requests.
-        manifest = (path / "manifest.json").read_bytes()
-        parquet = (path / "dataset.parquet").read_bytes()
-        if (
-            sha256(manifest).hexdigest() != fixture["manifest_sha256"]
-            or sha256(parquet).hexdigest() != fixture["parquet_sha256"]
-        ):
-            raise ValueError("Registered fixture bytes changed")
-        request = {
-            "protocol": 1,
-            "operation": "inspect" if candidate == "pyarrow-pages" else "scan",
-            "manifest_sha256": fixture["manifest_sha256"],
-            "dataset_schema": fixture["dataset_schema"],
-            "row_count": count,
-            "offset": offset,
-            "limit": step,
-        }
-        response = decoder.qualify(request, manifest, parquet, candidate)
-        if set(response) != {"request_sha256", "rows", "usage"}:
-            raise ValueError("Invalid qualified response")
-        page = response["rows"]
-        if type(page) is not list or len(page) != min(step, max(0, count - offset)):
-            raise ValueError("Qualified result count mismatch")
-        if candidate == "pyarrow-pages":
-            validate_rows(page, evolved=True)
-        rows.extend(page)
-        for key in usage:
-            value = response["usage"][key]
-            if type(value) is not int or value < 0:
-                raise ValueError("Invalid qualified usage")
-            usage[key] += value
+        response, input_bytes = _page(path, fixture, decoder, candidate, offset, step)
+        rows.extend(response["rows"])
+        _merge_usage(usage, response)
         wire_bytes += len(canonical_json_bytes(response))
-        encoded += len(manifest) + len(parquet)
+        encoded += input_bytes
     compare_rows(rows, fixture)
     rows_body: dict[str, Any] = {"rows": rows}
     result = {

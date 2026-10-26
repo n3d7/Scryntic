@@ -433,24 +433,7 @@ class CPUWorker:
                     "canary": str(canary),
                 }
                 request = staging / "request"
-                request_value: dict[str, Any] = {
-                    "attempt": data.decode("utf-8"),
-                    "host": host,
-                    "mode": mode,
-                }
-                if self._model is not None and window is not None:
-                    request_value.update(
-                        model=self._model.name, context=window.projection()
-                    )
-                if baseline is not None:
-                    request_value = {
-                        "baseline_attempt": data.decode("utf-8"),
-                        "host": host,
-                        "mode": mode,
-                        "baseline_input": baseline.decode("utf-8"),
-                    }
-                    if len(canonical_json_bytes(request_value)) > REQUEST_BYTES:
-                        raise IsolationError("PI03 worker request byte limit")
+                request_value = self._request_value(data, host, mode, window, baseline)
                 request.write_bytes(canonical_json_bytes(request_value))
                 request.chmod(0o444)  # private 0700 ancestor; read-only unit bind
                 unit = "scryntic-model-" + uuid4().hex + ".service"
@@ -471,6 +454,32 @@ class CPUWorker:
             raise IsolationError(
                 "Required CPU worker isolation or execution failed"
             ) from None
+
+    def _request_value(
+        self,
+        data: bytes,
+        host: dict[str, Any],
+        mode: str,
+        window: ForecastWindow | None,
+        baseline: bytes | None,
+    ) -> dict[str, Any]:
+        request_value: dict[str, Any] = {
+            "attempt": data.decode("utf-8"),
+            "host": host,
+            "mode": mode,
+        }
+        if self._model is not None and window is not None:
+            request_value.update(model=self._model.name, context=window.projection())
+        if baseline is not None:
+            request_value = {
+                "baseline_attempt": data.decode("utf-8"),
+                "host": host,
+                "mode": mode,
+                "baseline_input": baseline.decode("utf-8"),
+            }
+            if len(canonical_json_bytes(request_value)) > REQUEST_BYTES:
+                raise IsolationError("PI03 worker request byte limit")
+        return request_value
 
     async def _launch(
         self,
@@ -544,52 +553,66 @@ class CPUWorker:
             fields,
             maximum=2 * RESPONSE_BYTES + 65536 if self._baseline_active else WIRE_BYTES,
         )
+        version = 1
+        if self._baseline_active:
+            version = 3
+        elif self._model is not None:
+            version = 2
         if (
             type(value["version"]) is not int
-            or value["version"]
-            != (3 if self._baseline_active else 2 if self._model is not None else 1)
+            or value["version"] != version
             or type(value["response"]) is not str
         ):
             raise IsolationError("Unsupported worker response")
         verify_controls(value["controls"], host, self.profile)
         if self._model is not None or self._baseline_active:
-            usage = value["usage"]
-            maxima = {
-                "elapsed_ns": (self.profile.wall_seconds + 5) * 10**9,
-                "cpu_ns": self.profile.cpu_seconds * 10**9,
-                "max_rss_kib": self.profile.memory // 1024,
-            }
-            if (
-                type(usage) is not dict
-                or set(usage) != set(maxima)
-                or any(
-                    type(usage[k]) is not int or not 0 <= usage[k] <= maximum
-                    for k, maximum in maxima.items()
-                )
-            ):
-                raise IsolationError("Invalid bounded worker resource report")
-            self.last_usage = usage
+            self._decode_usage(value["usage"])
         response = value["response"].encode("utf-8", "strict")
         if self._baseline_active:
-            from scryntic.research.baseline_jobs import (
-                decode_response as baseline_response,
-            )
-
-            baseline_result = baseline_response(
-                response, cast(DurableAttempt[BaselineJob], attempt)
-            )
-            from hashlib import sha256
-
-            if (
-                baseline_result["resource_usage"] != value["usage"]
-                or baseline_result["controls_sha256"]
-                != sha256(canonical_json_bytes(value["controls"])).hexdigest()
-            ):
-                raise IsolationError("PI03 control or usage report binding mismatch")
+            self._verify_baseline_response(response, value, attempt)
         else:
             decode_response(response, cast(JobAttempt, attempt))
         self.last_controls = value["controls"]
         return response
+
+    def _decode_usage(self, usage: Any) -> None:
+        maxima = {
+            "elapsed_ns": (self.profile.wall_seconds + 5) * 10**9,
+            "cpu_ns": self.profile.cpu_seconds * 10**9,
+            "max_rss_kib": self.profile.memory // 1024,
+        }
+        if (
+            type(usage) is not dict
+            or set(usage) != set(maxima)
+            or any(
+                type(usage[k]) is not int or not 0 <= usage[k] <= maximum
+                for k, maximum in maxima.items()
+            )
+        ):
+            raise IsolationError("Invalid bounded worker resource report")
+        self.last_usage = usage
+
+    def _verify_baseline_response(
+        self,
+        response: bytes,
+        value: dict[str, Any],
+        attempt: JobAttempt | DurableAttempt[BaselineJob],
+    ) -> None:
+        from scryntic.research.baseline_jobs import (
+            decode_response as baseline_response,
+        )
+
+        baseline_result = baseline_response(
+            response, cast(DurableAttempt[BaselineJob], attempt)
+        )
+        from hashlib import sha256
+
+        if (
+            baseline_result["resource_usage"] != value["usage"]
+            or baseline_result["controls_sha256"]
+            != sha256(canonical_json_bytes(value["controls"])).hexdigest()
+        ):
+            raise IsolationError("PI03 control or usage report binding mismatch")
 
     def _decode_baseline_probe(
         self, output: bytes, host: dict[str, Any], attempt: DurableAttempt[BaselineJob]

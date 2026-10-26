@@ -44,11 +44,11 @@ def test_protected_pi02_input_is_exactly_scoped_and_audited(tmp_path: Path) -> N
             {**_input(), "label_horizon_seconds": 3600},
             {**_input(), "unknown": True},
         ):
+            invalid_sha256 = sha256(
+                canonical_json_bytes(cast(JsonObject, invalid))
+            ).hexdigest()
             with pytest.raises(ResearchDenied):
-                ledger.check_pi02_input(
-                    sha256(canonical_json_bytes(cast(JsonObject, invalid))).hexdigest(),
-                    invalid,
-                )
+                ledger.check_pi02_input(invalid_sha256, invalid)
         with pytest.raises(ResearchDenied):
             ledger.check_dataset("d" * 64, {"time_range_ns": [10, 80]}, "build")
         assert sum(event["kind"] == "access_allowed" for event in ledger.events) == 1

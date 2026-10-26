@@ -105,10 +105,12 @@ def test_quality_failure_and_missing_history_fail_closed() -> None:
 
 
 def test_duplicate_unknown_revision_and_invalid_alignment_are_rejected() -> None:
+    duplicate_bars = [_bar(0), _bar(0, close="101", revision=1)]
     with pytest.raises(ValueError, match="revision"):
-        _series([_bar(0), _bar(0, close="101", revision=1)])
+        _series(duplicate_bars)
+    close = Decimal("100")
     with pytest.raises(ValueError, match="aligned"):
-        _series([HourlyBar(1, Decimal("100"), "b" * 64)])
+        HourlyBar(1, close, "b" * 64)
 
 
 def test_outcome_cannot_join_another_instrument_under_same_origin_time() -> None:

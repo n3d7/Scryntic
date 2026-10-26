@@ -26,8 +26,9 @@ def test_closed_fixed_job_contract_and_source_binding() -> None:
         replace(value, algorithm="arbitrary-training")
     raw = json.loads(encode_job(value))
     raw["final_access_allowed"] = True
+    encoded = json.dumps(raw).encode()
     with pytest.raises(ValueError):
-        decode_job(json.dumps(raw).encode())
+        decode_job(encoded)
 
 
 def test_research_restart_uses_existing_fencing_and_retry_state(tmp_path: Path) -> None:

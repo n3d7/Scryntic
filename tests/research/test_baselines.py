@@ -106,8 +106,9 @@ class AdmissionTests(unittest.TestCase):
                 value["series"]["BTCUSDT"]["closes"].append("100.0")
             if defect == "cutoff":
                 value["series"]["ETHUSDT"]["start_ns"] += HOUR
+            data = canonical_json_bytes(value)
             with self.assertRaises(ValueError):
-                validate_input(canonical_json_bytes(value))
+                validate_input(data)
 
 
 if __name__ == "__main__":

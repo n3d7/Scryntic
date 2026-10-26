@@ -58,9 +58,11 @@ def test_reproducible_paired_bootstrap_retains_baseline_on_null_or_insufficient_
     value = results()
     first = compare_results(value, load_spec(SPEC))
     assert first == compare_results(value, load_spec(SPEC))
-    assert first["bootstrap_draws"] == 2000 and first["seed"] == 42
+    assert first["bootstrap_draws"] == 2000
+    assert first["seed"] == 42
     assert first["decision"] == "retain-baseline"
-    assert not first["aggregate_claim_allowed"] and not first["promotion_allowed"]
+    assert not first["aggregate_claim_allowed"]
+    assert not first["promotion_allowed"]
     for horizon in first["horizons"].values():
         assert horizon["champion"] == "zero"
         assert not horizon["block_floor_met"]
@@ -90,8 +92,9 @@ def test_pair_and_chronology_drift_or_missing_failed_configuration_denies_compar
                 result["scores"][asset]["3600"]["daily_losses"][1][0] += DAY
     if defect == "failed-family":
         value.pop("ridge-ar-24")
+    spec = load_spec(SPEC)
     with pytest.raises(ValueError):
-        compare_results(value, load_spec(SPEC))
+        compare_results(value, spec)
 
 
 def test_bootstrap_synchronizes_asset_windows_under_a_common_loss_rescaling() -> None:

@@ -99,7 +99,7 @@ def _parameters(value: Any, algorithm: str) -> None:
         "intercept means scales coefficients quantiles direction_probability empirical_sha256",
     )
     intercept = _number(value["intercept"])
-    lags = 1 if algorithm == "ridge-ar-1" else 24 if algorithm == "ridge-ar-24" else 0
+    lags = {"ridge-ar-1": 1, "ridge-ar-24": 24}.get(algorithm, 0)
     _numbers(value["means"], lags)
     scales = _numbers(value["scales"], lags)
     _numbers(value["coefficients"], lags)
@@ -162,35 +162,9 @@ def _probabilistic(
         raise ValueError("Reliability denominator mismatch")
 
 
-def _score(score: Any, algorithm: str, horizon: int) -> None:
-    _fields(
-        score,
-        "count mae rmse magnitude_mae direction_balanced_accuracy direction_prediction_ties direction_target_ties positive_targets negative_targets pairs_sha256 forecasts_sha256 daily_losses probabilistic samples training_rows training_exclusions evaluation_exclusions model_parameters model_parameters_sha256",
-    )
-    count = _integer(score["count"], 1, 60000)
-    _integer(score["training_rows"], 2, 60000)
-    mae = _number(score["mae"], 0)
-    rmse = _number(score["rmse"], 0)
-    _number(score["magnitude_mae"], 0)
-    _integer(score["direction_prediction_ties"], 0, count)
-    ties = _integer(score["direction_target_ties"], 0, count)
-    pos = _integer(score["positive_targets"], 0, count)
-    neg = _integer(score["negative_targets"], 0, count)
-    if pos + neg + ties != count:
-        raise ValueError("Direction denominator mismatch")
-    if score["direction_balanced_accuracy"] is not None:
-        _number(score["direction_balanced_accuracy"], 0, 1)
-    for key in ("pairs_sha256", "forecasts_sha256", "model_parameters_sha256"):
-        digest(score[key])
-    for key in ("training_exclusions", "evaluation_exclusions"):
-        _exclusions(score[key])
-    parameters = score["model_parameters"]
-    _parameters(parameters, algorithm)
-    if body_sha256(parameters) != score["model_parameters_sha256"]:
-        raise ValueError("PI03 model parameters changed")
-    daily = score["daily_losses"]
-    if type(daily) is not list or not 0 < len(daily) <= 1218:
-        raise ValueError("Unbounded PI03 daily losses")
+def _daily_losses(
+    daily: Any, horizon: int, count: int, mae: float, rmse: float
+) -> None:
     n = 0
     absolute = squared = 0.0
     previous = 0
@@ -220,11 +194,15 @@ def _score(score: Any, algorithm: str, horizon: int) -> None:
         or not isclose(squared / n, rmse * rmse, rel_tol=1e-10, abs_tol=1e-12)
     ):
         raise ValueError("PI03 loss denominator or score mismatch")
-    if algorithm == "volatility-empirical":
-        _probabilistic(score["probabilistic"], count, ties, parameters)
-    elif score["probabilistic"] is not None:
-        raise ValueError("Point forecast has fabricated probability scores")
-    samples = score["samples"]
+
+
+def _samples(
+    samples: Any,
+    count: int,
+    daily: list[Any],
+    algorithm: str,
+    parameters: dict[str, Any],
+) -> None:
     if type(samples) is not list or len(samples) != min(2, count):
         raise ValueError("Missing bounded numerical verification samples")
     for sample in samples:
@@ -235,6 +213,43 @@ def _score(score: Any, algorithm: str, horizon: int) -> None:
         _numbers(sample["quantiles"], 5 if algorithm == "volatility-empirical" else 0)
         if sample["direction_probability"] != parameters["direction_probability"]:
             raise ValueError("Direction probability sample drift")
+
+
+def _score(score: Any, algorithm: str, horizon: int) -> None:
+    _fields(
+        score,
+        "count mae rmse magnitude_mae direction_balanced_accuracy direction_prediction_ties direction_target_ties positive_targets negative_targets pairs_sha256 forecasts_sha256 daily_losses probabilistic samples training_rows training_exclusions evaluation_exclusions model_parameters model_parameters_sha256",
+    )
+    count = _integer(score["count"], 1, 60000)
+    _integer(score["training_rows"], 2, 60000)
+    mae = _number(score["mae"], 0)
+    rmse = _number(score["rmse"], 0)
+    _number(score["magnitude_mae"], 0)
+    _integer(score["direction_prediction_ties"], 0, count)
+    ties = _integer(score["direction_target_ties"], 0, count)
+    pos = _integer(score["positive_targets"], 0, count)
+    neg = _integer(score["negative_targets"], 0, count)
+    if pos + neg + ties != count:
+        raise ValueError("Direction denominator mismatch")
+    if score["direction_balanced_accuracy"] is not None:
+        _number(score["direction_balanced_accuracy"], 0, 1)
+    for key in ("pairs_sha256", "forecasts_sha256", "model_parameters_sha256"):
+        digest(score[key])
+    for key in ("training_exclusions", "evaluation_exclusions"):
+        _exclusions(score[key])
+    parameters = score["model_parameters"]
+    _parameters(parameters, algorithm)
+    if body_sha256(parameters) != score["model_parameters_sha256"]:
+        raise ValueError("PI03 model parameters changed")
+    daily = score["daily_losses"]
+    if type(daily) is not list or not 0 < len(daily) <= 1218:
+        raise ValueError("Unbounded PI03 daily losses")
+    _daily_losses(daily, horizon, count, mae, rmse)
+    if algorithm == "volatility-empirical":
+        _probabilistic(score["probabilistic"], count, ties, parameters)
+    elif score["probabilistic"] is not None:
+        raise ValueError("Point forecast has fabricated probability scores")
+    _samples(score["samples"], count, daily, algorithm, parameters)
 
 
 def validate_result(result: Any, algorithm: str, input_sha256: str) -> None:

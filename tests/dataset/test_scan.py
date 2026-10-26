@@ -75,8 +75,9 @@ def test_scan_over_ceiling_fails_before_input_access(tmp_path: Path) -> None:
         service = DatasetService(
             catalog, root, code_revision="fixture", dependency_lock_sha256="d" * 64
         )
+        reference = DatasetRef("a" * 64, EVOLVED_DATASET_SCHEMA, 10001)
         with pytest.raises(ValueError, match="[Ss]can.*limit"):
-            service.scan(DatasetRef("a" * 64, EVOLVED_DATASET_SCHEMA, 10001))
+            service.scan(reference)
 
 
 def test_native_scan_validates_lineage_beyond_first_page(
@@ -111,5 +112,6 @@ def test_native_scan_validates_lineage_beyond_first_page(
     broken = deepcopy(lineage)
     broken[256]["semantic_revision"] = "sha256:" + "f" * 64
     manifest["rows"] = broken
+    limits = ImportLimits()
     with pytest.raises(ValueError, match="lineage mismatch"):
-        worker._inspect(request, ImportLimits())
+        worker._inspect(request, limits)

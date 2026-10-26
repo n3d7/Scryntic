@@ -18,6 +18,8 @@ from scryntic.analytics.provenance import (
     source_identity,
 )
 
+_CAMPAIGN_FILE = "campaign.json"
+
 
 def claim_once(path: Path, value: dict[str, Any]) -> None:
     """An interrupted claim remains consumed; a new evidence directory cannot retry."""
@@ -158,7 +160,7 @@ def main() -> None:
         sequence = 60 + index
         campaign.durable_json(args.evidence / f"intent-{sequence:03}.json", intent)
         campaign.durable_json(
-            args.evidence / "campaign.json",
+            args.evidence / _CAMPAIGN_FILE,
             {
                 "identities": identities,
                 "state": "incomplete",
@@ -183,7 +185,7 @@ def main() -> None:
         records.append(result)
         campaign.durable_json(args.evidence / f"record-{sequence:03}.json", result)
         campaign.durable_json(
-            args.evidence / "campaign.json",
+            args.evidence / _CAMPAIGN_FILE,
             {
                 "identities": identities,
                 "state": "incomplete",
@@ -213,7 +215,7 @@ def main() -> None:
         "recovery": disposition | {"total_attempts_started": 84},
         "decision": summarize(records, protocol),
     }
-    campaign.durable_json(args.evidence / "campaign.json", final, replace=True)
+    campaign.durable_json(args.evidence / _CAMPAIGN_FILE, final, replace=True)
     print(json.dumps(final["decision"], sort_keys=True), flush=True)
 
 

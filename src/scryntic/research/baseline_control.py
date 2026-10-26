@@ -66,6 +66,19 @@ async def active_owner(
             await writer.wait_closed()
 
 
+async def _finish_clients(clients: set[asyncio.Task[Any]]) -> None:
+    if clients:
+        pending = tuple(clients)
+        try:
+            async with asyncio.timeout(5):
+                await asyncio.gather(*pending, return_exceptions=True)
+        finally:
+            for task in pending:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+
+
 @asynccontextmanager
 async def owner_control(root: Installation, dispatch: Dispatch) -> AsyncIterator[None]:
     """Called only while holding the installation's exclusive durable-store lock."""
@@ -95,7 +108,7 @@ async def owner_control(root: Installation, dispatch: Dispatch) -> AsyncIterator
             async with asyncio.timeout(2):
                 writer.write(data)
                 await writer.drain()
-        except (ValueError, OSError, TimeoutError):
+        except (ValueError, OSError):
             pass  # A malformed control request cannot mutate the workload policy.
         finally:
             writer.close()
@@ -122,16 +135,7 @@ async def owner_control(root: Installation, dispatch: Dispatch) -> AsyncIterator
         finally:
             server.close()
             await server.wait_closed()
-            if clients:
-                pending = tuple(clients)
-                try:
-                    async with asyncio.timeout(5):
-                        await asyncio.gather(*pending, return_exceptions=True)
-                finally:
-                    for task in pending:
-                        if not task.done():
-                            task.cancel()
-                    await asyncio.gather(*pending, return_exceptions=True)
+            await _finish_clients(clients)
             current = _socket(parent, root.owner_uid)
             if (current.st_dev, current.st_ino) != (info.st_dev, info.st_ino):
                 raise ValueError("PI03 control socket changed")
