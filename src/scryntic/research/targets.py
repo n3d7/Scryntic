@@ -26,6 +26,20 @@ def _key(body: dict[str, Any]) -> str:
     return sha256(canonical_json_bytes(body)).hexdigest()
 
 
+def _validate_revision(
+    key: SeriesKey, bar: HourlyBar, prior: list[HourlyBar] | None
+) -> None:
+    if key.availability_plane == "historical-reconstruction":
+        if bar.known_at_ns is not None or prior is not None:
+            raise ValueError("Historical revision or availability is unqualified")
+    elif bar.known_at_ns is None:
+        raise ValueError("Observed revision needs recorded availability")
+    if prior and bar.known_at_ns is not None:
+        earlier = prior[-1].known_at_ns
+        if earlier is None or bar.known_at_ns <= earlier:
+            raise ValueError("Observed revisions need increasing knowledge time")
+
+
 @dataclass(frozen=True, slots=True)
 class SeriesKey:
     source_id: str
@@ -129,20 +143,7 @@ class HourlySeries:
             if previous is not None and marker <= previous:
                 raise ValueError("Hourly input must be ordered with distinct revisions")
             previous = marker
-            if key.availability_plane == "historical-reconstruction":
-                if bar.known_at_ns is not None or bar.start_ns in versions:
-                    raise ValueError(
-                        "Historical revision or availability is unqualified"
-                    )
-            elif bar.known_at_ns is None:
-                raise ValueError("Observed revision needs recorded availability")
-            prior = versions.get(bar.start_ns)
-            if prior and bar.known_at_ns is not None:
-                earlier = prior[-1].known_at_ns
-                if earlier is None or bar.known_at_ns <= earlier:
-                    raise ValueError(
-                        "Observed revisions need increasing knowledge time"
-                    )
+            _validate_revision(key, bar, versions.get(bar.start_ns))
             versions.setdefault(bar.start_ns, []).append(bar)
         self.key = key
         self._series_identity_key = _key(
@@ -214,38 +215,39 @@ class HourlySeries:
         bars: list[ResampledBar] = []
         exclusions: list[tuple[int, str]] = []
         for bucket in range(start_ns, end_ns, interval_ns):
-            selected: list[HourlyBar] = []
-            for start in range(bucket, bucket + interval_ns, HOUR_NS):
-                bar, reason = self._select(start, as_of_ns)
-                if bar is None:
-                    exclusions.append((bucket, reason or "missing-constituent"))
-                    break
-                selected.append(bar)
+            bar, reason = self._resample_bucket(bucket, interval_ns, as_of_ns)
+            if bar is None:
+                exclusions.append((bucket, reason or "missing-constituent"))
             else:
-                known = (
-                    max(
-                        bar.known_at_ns
-                        for bar in selected
-                        if bar.known_at_ns is not None
-                    )
-                    if self.key.availability_plane == "as-observed"
-                    else None
-                )
-                bars.append(
-                    ResampledBar(
-                        start_ns=bucket,
-                        interval_ns=interval_ns,
-                        close=selected[-1].close,
-                        known_at_ns=known,
-                        raw_lineage_sha256=_key(
-                            {
-                                "bucket": bucket,
-                                "constituents": [bar.raw_sha256 for bar in selected],
-                            }
-                        ),
-                    )
-                )
+                bars.append(bar)
         return ResampleResult(tuple(bars), tuple(exclusions))
+
+    def _resample_bucket(
+        self, bucket: int, interval_ns: int, as_of_ns: int | None
+    ) -> tuple[ResampledBar | None, str | None]:
+        selected: list[HourlyBar] = []
+        for start in range(bucket, bucket + interval_ns, HOUR_NS):
+            bar, reason = self._select(start, as_of_ns)
+            if bar is None:
+                return None, reason
+            selected.append(bar)
+        known = (
+            max(bar.known_at_ns for bar in selected if bar.known_at_ns is not None)
+            if self.key.availability_plane == "as-observed"
+            else None
+        )
+        return ResampledBar(
+            start_ns=bucket,
+            interval_ns=interval_ns,
+            close=selected[-1].close,
+            known_at_ns=known,
+            raw_lineage_sha256=_key(
+                {
+                    "bucket": bucket,
+                    "constituents": [bar.raw_sha256 for bar in selected],
+                }
+            ),
+        ), None
 
     def origin(
         self,

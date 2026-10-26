@@ -117,6 +117,7 @@ def main() -> None:
             "base",
             "collector",
             "analysis",
+            "benchmark",
             "dev",
             "build",
             "uv",

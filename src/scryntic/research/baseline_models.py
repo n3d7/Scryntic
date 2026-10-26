@@ -92,6 +92,10 @@ def fit_model(algorithm: str, training: list[Row]) -> FittedModel:
         nonzero = [x for x in empirical if x != 0]
         probability = (sum(x > 0 for x in nonzero) + 0.5) / (len(nonzero) + 1)
         return FittedModel(algorithm, 0.0, empirical=empirical, probability=probability)
+    return _fit_ridge(algorithm, training, mean)
+
+
+def _fit_ridge(algorithm: str, training: list[Row], mean: float) -> FittedModel:
     lags = 1 if algorithm == "ridge-ar-1" else 24
     means = tuple(fmean(row.features[j] for row in training) for j in range(lags))
     scales = tuple(

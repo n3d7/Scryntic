@@ -39,12 +39,12 @@ class DurableAttempt[Request: DurableRequest]:
 
 
 @dataclass(frozen=True, slots=True)
-class DurableRecord[Request: DurableRequest, Artifact: DurableArtifact]:
+class DurableRecord[Request: DurableRequest, ArtifactT: DurableArtifact]:
     job: Request
     state: "JobState"
     attempt: int
     token: str | None
-    artifact: Artifact | None
+    artifact: ArtifactT | None
     reason: str | None
     updated_ns: int
 

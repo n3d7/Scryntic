@@ -1,0 +1,631 @@
+{
+  "base_commit": "aaf336347750ee97455c36daf6ec94fec2f12cf6",
+  "counts": {
+    "false-positive": 48,
+    "intentional-control-flow-or-interface": 19
+  },
+  "historical_reviews_revalidated": 59,
+  "reviews": [
+    {
+      "classification": "false-positive",
+      "origin": "new non-security statistical PRNG context",
+      "path": "src/scryntic/research/baseline_scores.py",
+      "rationale": "Seeded PRNG is used only for reproducible synthetic workloads, registered execution order or statistical bootstrap; not for credentials, identifiers or security decisions. Seeds and draws are part of the scientific reproducibility contract.",
+      "rule": "python:S2245",
+      "source_sha256": "85bce258ccb736b8bda6212da1156523e9969b9e8a891f68beab0dd4c1ed2d3c",
+      "symbol": "_skill_draws"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "new non-security statistical PRNG context",
+      "path": "src/scryntic/research/baseline_scores.py",
+      "rationale": "Seeded PRNG is used only for reproducible synthetic workloads, registered execution order or statistical bootstrap; not for credentials, identifiers or security decisions. Seeds and draws are part of the scientific reproducibility contract.",
+      "rule": "python:S2245",
+      "source_sha256": "85bce258ccb736b8bda6212da1156523e9969b9e8a891f68beab0dd4c1ed2d3c",
+      "symbol": "_skill_draws"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "new non-security statistical PRNG context",
+      "path": "scripts/pi05_campaign.py",
+      "rationale": "Seeded PRNG is used only for reproducible synthetic workloads, registered execution order or statistical bootstrap; not for credentials, identifiers or security decisions. Seeds and draws are part of the scientific reproducibility contract.",
+      "rule": "python:S2245",
+      "source_sha256": "87e5e2bfc1cfc451c16a10915a9a8a946da96cf3e61cf97ff991516687ce36ad",
+      "symbol": "_Campaign.run"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "new non-security statistical PRNG context",
+      "path": "scripts/pi05_recover.py",
+      "rationale": "Seeded PRNG is used only for reproducible synthetic workloads, registered execution order or statistical bootstrap; not for credentials, identifiers or security decisions. Seeds and draws are part of the scientific reproducibility contract.",
+      "rule": "python:S2245",
+      "source_sha256": "a4bab3c5473d3e5cbd379a240a5d403ae1dee83f22f7a8c76bc28cd1d227457a",
+      "symbol": "registered_schedule"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "new non-security statistical PRNG context",
+      "path": "src/scryntic/analytics/decision.py",
+      "rationale": "Seeded PRNG is used only for reproducible synthetic workloads, registered execution order or statistical bootstrap; not for credentials, identifiers or security decisions. Seeds and draws are part of the scientific reproducibility contract.",
+      "rule": "python:S2245",
+      "source_sha256": "48729e3612ebf80bcfcbe93a34bdfd8069863f7044f899c772aa7ebdc9102c87",
+      "symbol": "_candidate"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "required awaitable cancellation interface",
+      "path": "src/scryntic/workflows/forecasts.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "b4b27c4b43791c5a10c10409b344f7647ffc2ec044c32a8c8f7cfebd17e3df6c",
+      "symbol": "ForecastWorkflows.cancel"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "new non-security statistical PRNG context",
+      "path": "src/scryntic/research/baseline_scores.py",
+      "rationale": "Seeded PRNG is used only for reproducible synthetic workloads, registered execution order or statistical bootstrap; not for credentials, identifiers or security decisions. Seeds and draws are part of the scientific reproducibility contract.",
+      "rule": "python:S2245",
+      "source_sha256": "85bce258ccb736b8bda6212da1156523e9969b9e8a891f68beab0dd4c1ed2d3c",
+      "symbol": "_coverage_draws"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "new non-security statistical PRNG context",
+      "path": "src/scryntic/research/baseline_scores.py",
+      "rationale": "Seeded PRNG is used only for reproducible synthetic workloads, registered execution order or statistical bootstrap; not for credentials, identifiers or security decisions. Seeds and draws are part of the scientific reproducibility contract.",
+      "rule": "python:S2245",
+      "source_sha256": "85bce258ccb736b8bda6212da1156523e9969b9e8a891f68beab0dd4c1ed2d3c",
+      "symbol": "_coverage_draws"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/workflows/context.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "00546fb39dc35caa03197c13807241f024260aae57ca117476c8042f14b0c5be",
+      "symbol": "WorkflowContext.aclose"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/workflows/jobs.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "1bae8061870413371f02cf0ff6ebd86cd74487a3b599a599a5c76abcb61905c0",
+      "symbol": "_Owner._run"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/workflows/jobs.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "1bae8061870413371f02cf0ff6ebd86cd74487a3b599a599a5c76abcb61905c0",
+      "symbol": "_Owner._run"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/workflows/jobs.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "1bae8061870413371f02cf0ff6ebd86cd74487a3b599a599a5c76abcb61905c0",
+      "symbol": "_Owner._run"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/workflows/jobs.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "1bae8061870413371f02cf0ff6ebd86cd74487a3b599a599a5c76abcb61905c0",
+      "symbol": "_Owner._run"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/workflows/local.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "4728136fa3ae535c5df3e813feaa5d2274e909cff0c4634e51e72fe57cacdb3c",
+      "symbol": "_await_owned"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/workflows/synchronization.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "28870017c629a04f5133bff23ede6bd07c30506362796c2c61ac9cfdac263d5b",
+      "symbol": "_join_transport"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/daemon/runtime.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "6a39751b9f8f886441277d80beaf03a4e11bec3e327d51969b5b3cfa2bae93f3",
+      "symbol": "Daemon.run"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/supervisor.py",
+      "rationale": "ingest has both True and False return paths, covered by supervisor tests; it does not always return the same value.",
+      "rule": "python:S3516",
+      "source_sha256": "e9e863bba3193f60c46d6ddd0563c572223a28492e49eebd73b9e0d730f50b42",
+      "symbol": "SourceSupervisor.ingest"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/model_worker/controls.py",
+      "rationale": "This is an effective-denial probe in the isolated worker. Private scratch is created with mkstemp and existing links are not followed; the symlink-preservation regression covers the boundary.",
+      "rule": "python:S5443",
+      "source_sha256": "a8aa6575cfa84747ff86e6f9ee172dacf05dcd70e4bb45b9d0951839f859b68e",
+      "symbol": "probe_boundaries"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/model_worker/controls.py",
+      "rationale": "This is an effective-denial probe in the isolated worker. Private scratch is created with mkstemp and existing links are not followed; the symlink-preservation regression covers the boundary.",
+      "rule": "python:S5443",
+      "source_sha256": "a8aa6575cfa84747ff86e6f9ee172dacf05dcd70e4bb45b9d0951839f859b68e",
+      "symbol": "probe_boundaries"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/model_worker/launcher.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "0633e7f85fcc02c89af06fe387dbf39188c8b2f2f1879977f8ad326d59271780",
+      "symbol": "CPUWorker._snapshot"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/models/artifacts.py",
+      "rationale": "Mode0444 is applied only to a size/hash/source-verified immutable model artifact inside the admitted private storage boundary; it does not grant write or execute authority.",
+      "rule": "python:S2612",
+      "source_sha256": "f313494b3a7571ac076302e19de726b6f9e9f034a14a6983d06de60020d26ed9",
+      "symbol": "snapshot_file"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/model_worker/launcher.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "0633e7f85fcc02c89af06fe387dbf39188c8b2f2f1879977f8ad326d59271780",
+      "symbol": "_join_cleanup"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/model_worker/launcher.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "0633e7f85fcc02c89af06fe387dbf39188c8b2f2f1879977f8ad326d59271780",
+      "symbol": "CPUWorker._launch"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "tests/model_worker/test_launcher.py",
+      "rationale": "The test already installs a copy of sys.path with monkeypatch, whose fixture restores the original state.",
+      "rule": "python:S8997",
+      "source_sha256": "17db1c00a145b2ad6c9c179f6fd676af681c41be2b874502212a9ae69b793367",
+      "symbol": "test_missing_effective_controls_never_invoke_provider"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/jobs/fake.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "2624d0a95d2da93ea98e800c15a2a492e309b39b676451f58e3f99f7a21c5d66",
+      "symbol": "LocalFakeProvider.execute"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/jobs/http.py",
+      "rationale": "HTTP is restricted to the pinned fake fixture on numeric127.0.0.1, fixed path, checked response origin, trust_env=False and redirects disabled; no real remote transport is downgraded.",
+      "rule": "python:S5332",
+      "source_sha256": "54a30ea5a476509144861ff0cf8f69b41753c04ae0cc78120db58d87cc3fafbf",
+      "symbol": "HttpFakeProvider.__init__"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/jobs/http.py",
+      "rationale": "HTTP is restricted to the pinned fake fixture on numeric127.0.0.1, fixed path, checked response origin, trust_env=False and redirects disabled; no real remote transport is downgraded.",
+      "rule": "python:S5332",
+      "source_sha256": "54a30ea5a476509144861ff0cf8f69b41753c04ae0cc78120db58d87cc3fafbf",
+      "symbol": "HttpFakeProvider.__init__"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/archive/normalized_parquet.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "1388e0145917535518b675ef6d85ade1d185149c7643d5c01c636672cc28a445",
+      "symbol": "NormalizedParquetArchive.seal"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/ingestion/sqlite_spool.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "000cdf65668cdeb3427068845d2bea8105aaa693fe79fa3a8949fb62687023c1",
+      "symbol": "DurableIngestor._dispatch_request"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/ingestion/sqlite_spool.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "000cdf65668cdeb3427068845d2bea8105aaa693fe79fa3a8949fb62687023c1",
+      "symbol": "DurableIngestor._rollback_transaction"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sources/bybit_live.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "046d3862a0f979922617a9529d55adef35aafe172c9afdbfbf803e84012cd08e",
+      "symbol": "BybitLiveSource._stream_attempt"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sqlite_state.py",
+      "rationale": "The locked runtime is Python3.12.14, which supports sqlite3.connect(autocommit=True); the analyzer signature is older than the admitted runtime. Direct runtime verification and SQLite tests pass.",
+      "rule": "python:S930",
+      "source_sha256": "3f9b7ef742e452c89e75f5a5dc7a496327e5ef220ccd40c638fdac59e120dbaa",
+      "symbol": "connect_pinned"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sync/catalog.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "4659373f4ef039d024d8c11ca41ceada490c96902c3e2633f6130c2bbbb4578b",
+      "symbol": "PullCatalog._transaction"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sync/catalog.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "4659373f4ef039d024d8c11ca41ceada490c96902c3e2633f6130c2bbbb4578b",
+      "symbol": "PullCatalog.authorize_epoch"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sync/catalog.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "4659373f4ef039d024d8c11ca41ceada490c96902c3e2633f6130c2bbbb4578b",
+      "symbol": "PullCatalog.authorize_epoch"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/normalization/bybit_candle.py",
+      "rationale": "Subscription follows exact dict/key/value type checks; the analyzer misses that type narrowing.",
+      "rule": "python:S5864",
+      "source_sha256": "fddf1d668c8a4b387be49d081ccc19f806372c9bf0d616e13d8a3a3ccf940eaa",
+      "symbol": "_publication_time"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/normalization/bybit_candle.py",
+      "rationale": "Subscription follows exact dict/key/value type checks; the analyzer misses that type narrowing.",
+      "rule": "python:S5864",
+      "source_sha256": "fddf1d668c8a4b387be49d081ccc19f806372c9bf0d616e13d8a3a3ccf940eaa",
+      "symbol": "_publication_time"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/normalization/bybit_candle.py",
+      "rationale": "Subscription follows exact dict/key/value type checks; the analyzer misses that type narrowing.",
+      "rule": "python:S5864",
+      "source_sha256": "fddf1d668c8a4b387be49d081ccc19f806372c9bf0d616e13d8a3a3ccf940eaa",
+      "symbol": "_publication_time"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/normalization/bybit_candle.py",
+      "rationale": "Subscription follows exact dict/key/value type checks; the analyzer misses that type narrowing.",
+      "rule": "python:S5864",
+      "source_sha256": "fddf1d668c8a4b387be49d081ccc19f806372c9bf0d616e13d8a3a3ccf940eaa",
+      "symbol": "_publication_time"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/imports/bootstrap.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "6db37a6173a9584941f3bcd551b5e1530d8c77e039d97ca7eefb770983406fa2",
+      "symbol": "<module>"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/imports/catalog.py",
+      "rationale": "The locked runtime is Python3.12.14, which supports sqlite3.connect(autocommit=True); the analyzer signature is older than the admitted runtime. Direct runtime verification and SQLite tests pass.",
+      "rule": "python:S930",
+      "source_sha256": "8c3e0d24bd77e79bcb8e4f1d0d3a8d906f88d702255295d63b47e125d364249d",
+      "symbol": "ImportCatalog.__init__"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.begin"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.finish"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.loss"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.observed"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.repair_page"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.resnapshot"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.exhaust"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.repair_attempt"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/coverage.py",
+      "rationale": "dataclasses.replace preserves the validated CoverageSnapshot/Enrollment type. _save/_add_epoch/_projection receive the expected objects; this is a static inference false positive.",
+      "rule": "python:S5655",
+      "source_sha256": "be1c16f294c44f36872165174c7a5aa2cb0ce52ca8f8f27c4bfc7864c9e6ba46",
+      "symbol": "CoverageLedger.book_delta"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/recovery/supervisor.py",
+      "rationale": "Cancellation is delayed only until the actual owner, shielded snapshot/spawn or cleanup completes, then propagated; premature re-raise could orphan resources. Cancellation regressions exercise repeated cancellation.",
+      "rule": "python:S7497",
+      "source_sha256": "e9e863bba3193f60c46d6ddd0563c572223a28492e49eebd73b9e0d730f50b42",
+      "symbol": "_settle"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sources/bybit_live.py",
+      "rationale": "Both public-source clients use ssl.create_default_context(), with hostname checking and CERT_REQUIRED; this is not disabled certificate validation.",
+      "rule": "python:S4830",
+      "source_sha256": "046d3862a0f979922617a9529d55adef35aafe172c9afdbfbf803e84012cd08e",
+      "symbol": "BybitPublicWebSocketClient.connect"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sources/bybit.py",
+      "rationale": "Both public-source clients use ssl.create_default_context(), with hostname checking and CERT_REQUIRED; this is not disabled certificate validation.",
+      "rule": "python:S4830",
+      "source_sha256": "9e37202f1c633be1f0ff60bf8e3590b9647963e61839154366247e1cf5ce6010",
+      "symbol": "BybitPublicClient.get"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sources/bybit.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "9e37202f1c633be1f0ff60bf8e3590b9647963e61839154366247e1cf5ce6010",
+      "symbol": "BybitHistoricalSource.close"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/archive/raw_framed.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "56cffd5c82e9f3b272077c81f567ae30134dd16c66a1c3b4f902cdb4cddca07f",
+      "symbol": "FramedZlibRawArchive.seal"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/archive/raw_framed.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "56cffd5c82e9f3b272077c81f567ae30134dd16c66a1c3b4f902cdb4cddca07f",
+      "symbol": "FramedZlibRawArchive.read"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/benchmarks/workloads.py",
+      "rationale": "Seeded PRNG is used only for reproducible synthetic workloads, registered execution order or statistical bootstrap; not for credentials, identifiers or security decisions. Seeds and draws are part of the scientific reproducibility contract.",
+      "rule": "python:S2245",
+      "source_sha256": "e23ffc91dd03b48212e26bb85cd1f823a345471856f50c4e2669f54351908e88",
+      "symbol": "build_workload"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/providers/fake.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "bd3280bdcdd4d328c6310fb13384571a635e13616d1556b4fef5d82b425ed949",
+      "symbol": "PersistenceFakeProvider.forecast"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/providers/fake.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "bd3280bdcdd4d328c6310fb13384571a635e13616d1556b4fef5d82b425ed949",
+      "symbol": "TrendFakeProvider.forecast"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sources/fake.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "44309b0a0277fc7fa602b038b7275e49a6d74e72e06dc332bdf26ba5ac4779c9",
+      "symbol": "DeterministicCandleSource.fetch"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/sources/fake.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "44309b0a0277fc7fa602b038b7275e49a6d74e72e06dc332bdf26ba5ac4779c9",
+      "symbol": "DeterministicCandleSource.close"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/archive/normalized_parquet.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "1388e0145917535518b675ef6d85ade1d185149c7643d5c01c636672cc28a445",
+      "symbol": "NormalizedParquetArchive.read"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/archive/raw_parquet.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "d6287fc1c9ca4fd68fb5f91e4e8c14cd2f36e37579b5d76961bb457cacc86ef0",
+      "symbol": "ParquetRawArchive.seal"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/archive/raw_parquet.py",
+      "rationale": "This async signature is required by the awaitable provider/source/archive/cancellation interface; removing async breaks awaited callers. No dummy await is introduced.",
+      "rule": "python:S7503",
+      "source_sha256": "d6287fc1c9ca4fd68fb5f91e4e8c14cd2f36e37579b5d76961bb457cacc86ef0",
+      "symbol": "ParquetRawArchive.read"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/ingestion/sqlite_spool.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "000cdf65668cdeb3427068845d2bea8105aaa693fe79fa3a8949fb62687023c1",
+      "symbol": "DurableIngestor.__init__"
+    },
+    {
+      "classification": "false-positive",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/ingestion/sqlite_spool.py",
+      "rationale": "The locked runtime is Python3.12.14, which supports sqlite3.connect(autocommit=True); the analyzer signature is older than the admitted runtime. Direct runtime verification and SQLite tests pass.",
+      "rule": "python:S930",
+      "source_sha256": "000cdf65668cdeb3427068845d2bea8105aaa693fe79fa3a8949fb62687023c1",
+      "symbol": "DurableIngestor._run"
+    },
+    {
+      "classification": "intentional-control-flow-or-interface",
+      "origin": "revalidated historical main review",
+      "path": "src/scryntic/ingestion/sqlite_spool.py",
+      "rationale": "The exception is propagated through an owned future, re-raised after cleanup, or causes fatal restricted-bootstrap exit. Rollback failure is fatal. No successful result is accepted from the failure path.",
+      "rule": "python:S5754",
+      "source_sha256": "000cdf65668cdeb3427068845d2bea8105aaa693fe79fa3a8949fb62687023c1",
+      "symbol": "DurableIngestor._run"
+    }
+  ],
+  "schema": "scryntic.pi05.sonar-triage.v1",
+  "scope": "Source-level review of inherited and statistical/interface findings after requested maintenance fixes. Individual dispositions only; no rule, gate or source exclusion disabled. Exact file hashes bind the reviewed code.",
+  "semgrep": [
+    {
+      "classification": "false-positive",
+      "path": "src/scryntic/workflows/jobs.py",
+      "rationale": "SubmitJobRequest is a closed application command, not a Django HTTP request. The projection is validated before writing; _Plans.write enforces canonical JSON size, private owned directory, no-follow/exclusive staging and durable immutable publication.",
+      "rule": "django.security.injection.request-data-write.request-data-write"
+    },
+    {
+      "classification": "intentional-negative-test",
+      "path": "tests/configuration/test_boundary.py",
+      "rationale": "The test deliberately attempts to log a synthetic secret wrapper and proves its sentinel never reaches captured output, logs or exception text. No real credential is logged.",
+      "rule": "python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure",
+      "symbol": "test_secret_wrappers_do_not_log_or_serialize"
+    }
+  ],
+  "statistical_or_interface_reviews": 8
+}

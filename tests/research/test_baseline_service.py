@@ -74,7 +74,8 @@ def test_status_does_not_register_or_consume_trial_slots(
     report, code = asyncio.run(
         operate(argparse.Namespace(operation="status", algorithm="zero"), root)
     )
-    assert code == 0 and report["state"] == "not_submitted"
+    assert code == 0
+    assert report["state"] == "not_submitted"
     with ResearchLedger(root) as ledger:
         assert not [e for e in ledger.events if e["kind"] == "trial"]
 
@@ -104,7 +105,8 @@ def test_qualification_probe_cannot_consume_a_fitting_slot(
     report, code = asyncio.run(
         operate(argparse.Namespace(operation="probe", algorithm=None), root)
     )
-    assert code == 0 and report["probe"]["model_fitted"] is False
+    assert code == 0
+    assert report["probe"]["model_fitted"] is False
     with ResearchLedger(root) as ledger:
         assert not [e for e in ledger.events if e["kind"] == "trial"]
 
@@ -148,7 +150,8 @@ def test_service_cli_result_and_failure_parity(
     report, code = asyncio.run(
         operate(argparse.Namespace(operation="status", algorithm="zero"), root)
     )
-    assert code == 0 and report["job_id"] == job_id
+    assert code == 0
+    assert report["job_id"] == job_id
     assert report["result"] == direct
     assert report["reason"] == (None if verified_controls else "provider_failed")
     assert calls == [1]
@@ -191,11 +194,9 @@ def test_cancel_waits_for_actual_owner_cleanup(
             assert reopened.get(record.job.job_id).state is JobState.CANCELLED
         with ResearchLedger(root) as ledger:
             phases = [e["body"]["phase"] for e in ledger.events if e["kind"] == "trial"]
-            assert (
-                "started" in phases
-                and "intervention" in phases
-                and "cancelled" in phases
-            )
+            assert "started" in phases
+            assert "intervention" in phases
+            assert "cancelled" in phases
 
     asyncio.run(scenario())
 
@@ -248,12 +249,15 @@ def test_separate_cli_status_and_cancel_reach_running_owner(
         try:
             await asyncio.wait_for(started.wait(), 5)
             status, code = await cli("status")
-            assert code == 0 and status["state"] == "running"
+            assert code == 0
+            assert status["state"] == "running"
             cancelled, code = await cli("cancel")
-            assert code == 0 and cancelled["state"] == "cancelled"
+            assert code == 0
+            assert cancelled["state"] == "cancelled"
             assert cleaned.is_set()
             result, code = await task
-            assert code == 1 and result["state"] == "cancelled"
+            assert code == 1
+            assert result["state"] == "cancelled"
         finally:
             if not task.done():
                 task.cancel()
@@ -304,7 +308,8 @@ def test_control_rejects_fitting_commands_and_unsafe_socket_leaf(
         leaf.symlink_to(target)
         with pytest.raises(ValueError, match="Unsafe PI03 control socket"):
             await active_owner(root, "cancel", "zero")
-        assert leaf.is_symlink() and target.is_file()
+        assert leaf.is_symlink()
+        assert target.is_file()
 
     asyncio.run(scenario())
 
@@ -339,7 +344,8 @@ def test_recovery_counts_retry_and_drops_stale_attempt_before_artifact_write(
             try:
                 assert recovered.get(record.job.job_id).state is JobState.INTERRUPTED
                 complete = await service.run(record.job.job_id, resume=True)
-                assert complete.state is JobState.SUCCEEDED and complete.attempt == 2
+                assert complete.state is JobState.SUCCEEDED
+                assert complete.attempt == 2
                 assert service.result(complete.job.job_id) == result
             finally:
                 await service.aclose()

@@ -103,13 +103,12 @@ class Stream:
             "forward-shadow",
         ):
             raise ValueError("PI04 live source is not admitted")
-        allowed = (
-            {FORWARD_SOURCE}
-            if self.evidence_class == "forward-shadow"
-            else {"synthetic-hourly"}
-            if self.evidence_class == "synthetic-fixture"
-            else {"synthetic-hourly", "binance-vision-hourly"}
-        )
+        if self.evidence_class == "forward-shadow":
+            allowed = {FORWARD_SOURCE}
+        elif self.evidence_class == "synthetic-fixture":
+            allowed = {"synthetic-hourly"}
+        else:
+            allowed = {"synthetic-hourly", "binance-vision-hourly"}
         if self.source_id not in allowed or self.baseline_sha256 != BASELINE_SHA256:
             raise ValueError("Unadmitted PI04 source or baseline")
         digest(self.runtime_sha256)

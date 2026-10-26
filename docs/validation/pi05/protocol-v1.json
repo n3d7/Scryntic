@@ -1,0 +1,29 @@
+{
+  "schema": "scryntic.pi05.protocol.v1",
+  "registered_before_execution": true,
+  "workloads": [
+    {"id": "hourly-512", "rows": 512, "gaps": false},
+    {"id": "hourly-4096", "rows": 4096, "gaps": false},
+    {"id": "hourly-4096-gaps", "rows": 4096, "gaps": true}
+  ],
+  "source": "deterministic synthetic hourly candles only; no market download, holdout or fit",
+  "horizons_hours": [1, 24, 168, 672],
+  "candidates": ["pyarrow-pages", "pyarrow-scan", "duckdb-2.0.0"],
+  "candidate_configurations": 1,
+  "polars": "not required for this scan workload; no unregistered engine search",
+  "warmup_runs": 1,
+  "measured_process_runs": 7,
+  "order_seed": 6505,
+  "cache": "OS cache not cleared; separate fresh process first-use from later filesystem-warm runs; hashing included",
+  "worker": {"address_space_bytes": 2147483648, "cpu_seconds": 10, "wall_seconds": 20, "new_threads": 0, "spill_bytes": 0, "network": false, "readonly_inputs": true},
+  "outer_job": {"memory_max_bytes": 3221225472, "tasks_max": 16, "cpu_quota_percent": 100, "wall_seconds": 180, "memory_swap_bytes": 0},
+  "result": "all canonical primitive rows in original manifest order plus exact per-horizon eligible/excluded/common-pair digests; complete result consumption and verification included",
+  "numeric_tolerance": "exact decimal strings and integer ns; no approximate comparison",
+  "metrics": ["full_job_wall_ns", "full_job_cpu_ns", "coordinator_peak_rss_kib", "max_worker_rss_kib", "cgroup_memory_peak_bytes", "cgroup_io_bytes", "encoded_input_bytes", "decoded_bytes", "output_bytes", "scan_count", "spill_bytes", "failure", "cleanup"],
+  "minimum_wall_reduction_fraction": 0.25,
+  "memory_regression_fraction": 0.10,
+  "uncertainty": "paired ratio bootstrap across 7 independent process runs, 10000 resamples, seed 6505, 95 percent interval; exploratory descriptive evidence on one host, not universal statistical guarantee",
+  "disqualify": "any semantic mismatch, effective-control failure, quota/cancel/cleanup failure, unsupported candidate startup; retain failures and do not silently change configuration",
+  "max_attempts": 72,
+  "decision": "minimum sufficient qualified path or unchanged PyArrow; no Rust, capacity, predictive-skill, automatic promotion or old-path deprecation claim"
+}

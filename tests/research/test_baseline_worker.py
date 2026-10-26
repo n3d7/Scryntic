@@ -93,17 +93,22 @@ def test_probe_is_bound_and_cannot_be_accepted_as_a_fitted_result(
         "usage": {"elapsed_ns": 1, "cpu_ns": 1, "max_rss_kib": 1},
     }
     data = worker._decode_worker(canonical_json_bytes(frame), {}, attempt)
-    assert json.loads(data) == probe and seen == [BASELINE_CPU]
+    assert json.loads(data) == probe
+    assert seen == [BASELINE_CPU]
     with pytest.raises(ValueError):
         decode_response(data, attempt)
     probe["model_fitted"] = 0
+    mismatched_frame = canonical_json_bytes(frame)
     with pytest.raises(IsolationError):
-        worker._decode_worker(canonical_json_bytes(frame), {}, attempt)
+        worker._decode_worker(mismatched_frame, {}, attempt)
 
 
 def test_code_drift_has_a_new_identity_and_is_denied_before_input_access() -> None:
     job = BaselineJob("zero", EXPECTED_INPUT_SHA256, 100, 100 + 180 * 10**9)
     changed = replace(job, workload_sha256="a" * 64)
-    assert changed.job_id != job.job_id and changed.sha256 != job.sha256
+    assert changed.job_id != job.job_id
+    assert changed.sha256 != job.sha256
+    worker = CPUWorker()
+    attempt = DurableAttempt(changed, 1, "a" * 32)
     with pytest.raises(IsolationError, match="inventory changed"):
-        CPUWorker()._verify_baseline(DurableAttempt(changed, 1, "a" * 32), b"")
+        worker._verify_baseline(attempt, b"")

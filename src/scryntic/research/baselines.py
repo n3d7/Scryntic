@@ -77,6 +77,17 @@ def _pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _validate_closes(closes: list[Any]) -> None:
+    for close in closes:
+        if close is not None and (
+            type(close) is not str
+            or len(close) > 64
+            or not isfinite(float(close))
+            or float(close) <= 0
+        ):
+            raise ValueError("Invalid PI03 price")
+
+
 def validate_input(data: bytes) -> dict[str, Any]:
     """Validate fixed source pins and label-free development prices before access."""
     if type(data) is not bytes or not 0 < len(data) <= REQUEST_BYTES:
@@ -115,14 +126,7 @@ def validate_input(data: bytes) -> dict[str, Any]:
             or len(closes) != (end - start) // HOUR
         ):
             raise ValueError("PI03 input crosses or differs from development")
-        for close in closes:
-            if close is not None and (
-                type(close) is not str
-                or len(close) > 64
-                or not isfinite(float(close))
-                or float(close) <= 0
-            ):
-                raise ValueError("Invalid PI03 price")
+        _validate_closes(closes)
     return value
 
 
@@ -302,6 +306,21 @@ def prepare_input(
     return data
 
 
+def _dependence_span(points: list[float], span: int) -> int:
+    mean = fmean(points)
+    centered = [x - mean for x in points]
+    denominator = sum(x * x for x in centered)
+    if denominator:
+        for lag in range(1, 113):
+            correlation = (
+                sum(a * b for a, b in zip(centered[lag:], centered[:-lag], strict=True))
+                / denominator
+            )
+            if abs(correlation) > 2 / sqrt(len(points)):
+                span = max(span, lag + 1)
+    return span
+
+
 def training_dependence(value: dict[str, Any]) -> int:
     """Conservative predeclared dependence diagnostic using training prices only."""
     cutoff = utc_ns(value["spec"]["folds"][0]["fit_cutoff_utc"])
@@ -325,20 +344,5 @@ def training_dependence(value: dict[str, Any]) -> int:
                 raise ValueError(
                     "Insufficient training history for dependence diagnostic"
                 )
-            mean = fmean(points)
-            centered = [x - mean for x in points]
-            denominator = sum(x * x for x in centered)
-            if denominator:
-                for lag in range(1, 113):
-                    correlation = (
-                        sum(
-                            a * b
-                            for a, b in zip(
-                                centered[lag:], centered[:-lag], strict=True
-                            )
-                        )
-                        / denominator
-                    )
-                    if abs(correlation) > 2 / sqrt(len(points)):
-                        span = max(span, lag + 1)
+            span = _dependence_span(points, span)
     return span

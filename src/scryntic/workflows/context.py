@@ -200,4 +200,4 @@ def _write(parent: int, name: str, data: bytes) -> None:
         os.close(fd)
 
 
-LOCK_SHA256 = "6cd859bf4d10fe10e35c209a358b337cb1d04165b30870636caf88e82cf10aa3"
+LOCK_SHA256 = "ee23f99e221c72627a19d6ece4f97d3e1f8acf65aa20c07c95bf7282bb7dd095"

@@ -169,7 +169,23 @@ class HorizonCounts:
     data_exclusions: dict[str, int]
 
 
-def assess_horizon(
+def _structural_exclusion(
+    series: HourlySeries,
+    split: Split,
+    origin_ns: int,
+    horizon_ns: int,
+    lookback_hours: int,
+) -> str | None:
+    if origin_ns < split.start_ns + split.embargo_ns:
+        return "embargo"
+    if origin_ns - lookback_hours * HOUR_NS < series.first_start_ns:
+        return "missing-history-boundary"
+    if origin_ns + horizon_ns >= split.end_ns:
+        return "split-endpoint"
+    return None
+
+
+def _require_horizon_grid(
     series: HourlySeries,
     split: Split,
     horizon_seconds: int,
@@ -177,8 +193,7 @@ def assess_horizon(
     lookback_hours: int,
     minimum_block_seconds: int,
     policy_sha256: str,
-) -> HorizonCounts:
-    """Count allowed origins, matured labels and conservative time blocks."""
+) -> None:
     if type(series) is not HourlySeries or type(split) is not Split:
         raise TypeError("Expected hourly series and chronological split")
     digest(policy_sha256)
@@ -192,6 +207,27 @@ def assess_horizon(
         or lookback_hours > 672
     ):
         raise ValueError("Unsupported bounded PI02 feasibility grid")
+
+
+def assess_horizon(
+    series: HourlySeries,
+    split: Split,
+    horizon_seconds: int,
+    cadence_seconds: int,
+    lookback_hours: int,
+    minimum_block_seconds: int,
+    policy_sha256: str,
+) -> HorizonCounts:
+    """Count allowed origins, matured labels and conservative time blocks."""
+    _require_horizon_grid(
+        series,
+        split,
+        horizon_seconds,
+        cadence_seconds,
+        lookback_hours,
+        minimum_block_seconds,
+        policy_sha256,
+    )
     cadence_ns = cadence_seconds * 1_000_000_000
     horizon_ns = horizon_seconds * 1_000_000_000
     block_ns = minimum_block_seconds * 1_000_000_000
@@ -206,14 +242,11 @@ def assess_horizon(
     next_block_ns = 0
     for origin_ns in range(first, split.end_ns, cadence_ns):
         candidates += 1
-        if origin_ns < split.start_ns + split.embargo_ns:
-            structural["embargo"] += 1
-            continue
-        if origin_ns - lookback_hours * HOUR_NS < series.first_start_ns:
-            structural["missing-history-boundary"] += 1
-            continue
-        if origin_ns + horizon_ns >= split.end_ns:
-            structural["split-endpoint"] += 1
+        reason = _structural_exclusion(
+            series, split, origin_ns, horizon_ns, lookback_hours
+        )
+        if reason is not None:
+            structural[reason] += 1
             continue
         structural_count += 1
         origin = series.origin(
@@ -284,6 +317,49 @@ def _months(first: str, last: str) -> tuple[str, ...]:
     return tuple(result)
 
 
+def _split_counts(
+    series: HourlySeries,
+    spec: dict[str, Any],
+    policy: dict[str, Any],
+    policy_sha256: str,
+    started: float,
+) -> dict[str, dict[str, Any]]:
+    counts: dict[str, dict[str, Any]] = {}
+    for split_name, boundaries in spec["splits_utc"].items():
+        split = Split(
+            split_name,
+            _utc_ns(boundaries[0]),
+            _utc_ns(boundaries[1]),
+            spec["embargo_seconds"] * 1_000_000_000
+            if split_name != "development"
+            else 0,
+        )
+        horizon_counts: dict[str, Any] = {}
+        for horizon in spec["horizons_seconds"]:
+            cadence = spec["origin_cadence_seconds"][str(horizon)]
+            minimum_block = policy["evaluation"]["minimum_block_duration_seconds"][
+                str(horizon)
+            ]
+            measured = assess_horizon(
+                series,
+                split,
+                horizon,
+                cadence,
+                spec["feature_lookback_hours"],
+                minimum_block,
+                policy_sha256,
+            )
+            result = asdict(measured)
+            result["completeness"] = (
+                f"{measured.matured}/{measured.structurally_eligible}"
+            )
+            horizon_counts[str(horizon)] = result
+            if time.perf_counter() - started > spec["max_wall_seconds"]:
+                raise TimeoutError("PI02 feasibility exceeded registered wall budget")
+        counts[split_name] = horizon_counts
+    return counts
+
+
 def run_registered_feasibility(
     policy_path: Path,
     spec_path: Path,
@@ -332,41 +408,7 @@ def run_registered_feasibility(
             "row_count": series.row_count,
             "time_range_ns": input_manifest["time_range_ns"],
         }
-        counts[instrument] = {}
-        for split_name, boundaries in spec["splits_utc"].items():
-            split = Split(
-                split_name,
-                _utc_ns(boundaries[0]),
-                _utc_ns(boundaries[1]),
-                spec["embargo_seconds"] * 1_000_000_000
-                if split_name != "development"
-                else 0,
-            )
-            horizon_counts: dict[str, Any] = {}
-            for horizon in spec["horizons_seconds"]:
-                cadence = spec["origin_cadence_seconds"][str(horizon)]
-                minimum_block = policy["evaluation"]["minimum_block_duration_seconds"][
-                    str(horizon)
-                ]
-                measured = assess_horizon(
-                    series,
-                    split,
-                    horizon,
-                    cadence,
-                    spec["feature_lookback_hours"],
-                    minimum_block,
-                    policy_sha256,
-                )
-                result = asdict(measured)
-                result["completeness"] = (
-                    f"{measured.matured}/{measured.structurally_eligible}"
-                )
-                horizon_counts[str(horizon)] = result
-                if time.perf_counter() - started > spec["max_wall_seconds"]:
-                    raise TimeoutError(
-                        "PI02 feasibility exceeded registered wall budget"
-                    )
-            counts[instrument][split_name] = horizon_counts
+        counts[instrument] = _split_counts(series, spec, policy, policy_sha256, started)
     gates: dict[str, Any] = {}
     for horizon in spec["horizons_seconds"]:
         key = str(horizon)

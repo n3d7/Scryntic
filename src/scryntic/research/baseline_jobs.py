@@ -383,9 +383,6 @@ class BaselineService(DurableRunner[BaselineJob, BaselineArtifact]):
     def _accept(
         self, active: DurableRecord[BaselineJob, BaselineArtifact], data: bytes
     ) -> None:
-        from scryntic.research.baseline_results import FrozenPredictor
-        from scryntic.research.baseline_scores import score_rows
-
         current = self._store.get(active.job.job_id)
         if (
             current.state is not JobState.RUNNING
@@ -403,29 +400,36 @@ class BaselineService(DurableRunner[BaselineJob, BaselineArtifact]):
             raise JobError("PI03 registered dependence span changed")
         for asset in self.input["spec"]["instruments"]:
             for horizon, counts in self.counts["horizons"].items():
-                score = result["scores"][asset][horizon]
-                if (
-                    score["count"] != counts["paired_origins_per_asset"]
-                    or score["evaluation_exclusions"] != counts["exclusions"]
-                ):
-                    raise JobError("PI03 pair/exclusion denominator mismatch")
-                training, exclusions = eligible_indices(self.input, int(horizon), True)
-                if (
-                    score["training_rows"] != len(training)
-                    or score["training_exclusions"] != exclusions
-                ):
-                    raise JobError("PI03 training eligibility changed")
-                recomputed = score_rows(
-                    FrozenPredictor(score["model_parameters"]),
-                    rows(self.input, asset, int(horizon), False),
+                self._verify_score(
+                    result["scores"][asset][horizon], asset, horizon, counts
                 )
-                if any(score[key] != value for key, value in recomputed.items()):
-                    raise JobError(
-                        "PI03 independent score/prediction recomputation mismatch"
-                    )
         if self._store.get(active.job.job_id).state is JobState.RUNNING:
             reference = self.artifacts.write(active.job, data)
             self._store.finish(active, JobState.SUCCEEDED, artifact=reference)
+
+    def _verify_score(
+        self, score: dict[str, Any], asset: str, horizon: str, counts: dict[str, Any]
+    ) -> None:
+        from scryntic.research.baseline_results import FrozenPredictor
+        from scryntic.research.baseline_scores import score_rows
+
+        if (
+            score["count"] != counts["paired_origins_per_asset"]
+            or score["evaluation_exclusions"] != counts["exclusions"]
+        ):
+            raise JobError("PI03 pair/exclusion denominator mismatch")
+        training, exclusions = eligible_indices(self.input, int(horizon), True)
+        if (
+            score["training_rows"] != len(training)
+            or score["training_exclusions"] != exclusions
+        ):
+            raise JobError("PI03 training eligibility changed")
+        recomputed = score_rows(
+            FrozenPredictor(score["model_parameters"]),
+            rows(self.input, asset, int(horizon), False),
+        )
+        if any(score[key] != value for key, value in recomputed.items()):
+            raise JobError("PI03 independent score/prediction recomputation mismatch")
 
     def result(self, job_id: str) -> dict[str, Any]:
         record = self._store.get(job_id)
