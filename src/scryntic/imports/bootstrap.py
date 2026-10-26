@@ -162,6 +162,11 @@ def main() -> None:
 
         analyze(sys.argv[4:])
         return
+    if sys.argv[3] == "pi05":
+        from scryntic.analytics.worker import run as qualify
+
+        qualify(sys.argv[4:])
+        return
     from scryntic.imports.worker import run
 
     run(sys.argv[3:])

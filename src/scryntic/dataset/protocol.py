@@ -16,6 +16,7 @@ MAX_DATASET_BYTES = 32 * 1024 * 1024
 MAX_PROVENANCE_BYTES = 24 * 1024 * 1024
 MAX_REQUEST_BYTES = 1024 * 1024
 MAX_INSPECT_ROWS = 128
+MAX_SCAN_ROWS = 10000
 
 
 def primitive_document(data: bytes, limit: int) -> dict[str, Any]:
@@ -55,6 +56,16 @@ def validate_rows(rows: object, *, evolved: bool) -> list[dict[str, Any]]:
     """Check the closed inspection result; parser trust never crosses IPC."""
     if type(rows) is not list or len(rows) > MAX_INSPECT_ROWS:
         raise ImportError("Invalid inspection rows")
+    checked = cast(list[dict[str, Any]], rows)
+    for row in checked:
+        _validate_row(row, evolved)
+    return checked
+
+
+def validate_scan_rows(rows: object, *, evolved: bool) -> list[dict[str, Any]]:
+    """Full scans have their own fixed ceiling; page inspection stays unchanged."""
+    if type(rows) is not list or len(rows) > MAX_SCAN_ROWS:
+        raise ImportError("Invalid scan rows")
     checked = cast(list[dict[str, Any]], rows)
     for row in checked:
         _validate_row(row, evolved)

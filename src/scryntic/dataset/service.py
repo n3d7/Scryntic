@@ -22,9 +22,11 @@ from scryntic.dataset.protocol import (
     MAX_PROVENANCE_BYTES,
     MAX_REQUEST_BYTES,
     MAX_RESULT_BYTES,
+    MAX_SCAN_ROWS,
     environment,
     primitive_document,
     validate_rows,
+    validate_scan_rows,
 )
 from scryntic.dataset.recipes import CoverageClaim, RecipePolicy
 from scryntic.dataset.schemas import (
@@ -286,7 +288,12 @@ class DatasetService:
     ) -> tuple[dict[str, Any], bytes]:
         integer(offset, 0)
         integer(limit, 1)
-        if limit > MAX_INSPECT_ROWS:
+        scan = operation == "scan"
+        if scan and reference.row_count > min(
+            MAX_SCAN_ROWS, self._catalog.limits.max_records
+        ):
+            raise ValueError("Scan row limit")
+        if limit > (MAX_SCAN_ROWS if scan else MAX_INSPECT_ROWS):
             raise ValueError("Inspection row limit")
         manifest = self.read_manifest(reference)
         from scryntic.research.ledger import guard_dataset
@@ -307,7 +314,7 @@ class DatasetService:
             response = self._launch(
                 {
                     "protocol": 1,
-                    "operation": "inspect",
+                    "operation": "scan" if scan else "inspect",
                     "manifest_sha256": reference.manifest_sha256,
                     "dataset_schema": schema_projection(reference.schema),
                     "row_count": reference.row_count,
@@ -323,9 +330,8 @@ class DatasetService:
             or len(response["rows"]) != min(limit, max(0, reference.row_count - offset))
         ):
             raise ImportError("Invalid inspection response")
-        validate_rows(
-            response["rows"], evolved=reference.schema == EVOLVED_DATASET_SCHEMA
-        )
+        validate = validate_scan_rows if scan else validate_rows
+        validate(response["rows"], evolved=reference.schema == EVOLVED_DATASET_SCHEMA)
         return response, parquet
 
     def inspect(
@@ -338,6 +344,13 @@ class DatasetService:
     def export(self, reference: DatasetRef) -> tuple[bytes, bytes]:
         _, parquet = self._read(reference, 0, 1, "export")
         return canonical_json_bytes(self.read_manifest(reference)), parquet
+
+    def scan(self, reference: DatasetRef) -> list[dict[str, Any]]:
+        """Read one bounded immutable snapshot through one restricted worker."""
+        return cast(
+            list[dict[str, Any]],
+            self._read(reference, 0, max(1, reference.row_count), "scan")[0]["rows"],
+        )
 
     def pins(self, reference: DatasetRef) -> dict[str, Any]:
         return self._pins.read(reference, self.read_manifest(reference))

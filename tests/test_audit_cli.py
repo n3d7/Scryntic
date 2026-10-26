@@ -50,20 +50,23 @@ def test_audit_profiles_require_complete_reports(
         "base",
         "collector",
         "analysis",
+        "benchmark",
         "dev",
         "build",
         "uv",
         "forecast-cpu",
     ]
-    assert records[4]["audit"]["dependencies"] == [
+    profiles = {record["profile"]: record for record in records}
+    assert profiles["build"]["audit"]["dependencies"] == [
         {"name": "build-pkg", "version": "1", "vulns": []}
     ]
-    assert records[5]["audit"]["dependencies"] == [
+    assert profiles["uv"]["audit"]["dependencies"] == [
         {"name": "uv", "version": "0.12.13", "vulns": []}
     ]
-    assert ["torch", "2.14.0+cpu"] in records[6]["locked_identities"]
+    assert ["torch", "2.14.0+cpu"] in profiles["forecast-cpu"]["locked_identities"]
     assert (
-        records[6]["advisory_identity_mapping"]["torch==2.14.0+cpu"] == "torch==2.14.0"
+        profiles["forecast-cpu"]["advisory_identity_mapping"]["torch==2.14.0+cpu"]
+        == "torch==2.14.0"
     )
 
 

@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "linear_receipt": {
+  "verified_at_utc": "2026-10-26 09:19 UTC",
+  "parent": "KER-65",
+  "status": "Backlog",
+  "original_parent_description_prefix_preserved": true,
+  "relations_unchanged": {
+    "blockedBy": [
+      "KER-64"
+    ],
+    "blocks": [
+      "KER-67"
+    ]
+  },
+  "children": [
+    {
+      "id": "KER-90",
+      "title": "PI05.1 — Freeze analytical workloads, semantic oracle and measurement protocol",
+      "status": "Backlog",
+      "parentId": "KER-65",
+      "url": "https://linear.app/kerigan/issue/KER-90/pi051-freeze-analytical-workloads-semantic-oracle-and-measurement",
+      "authority_present": true,
+      "acceptance_present": true,
+      "evidence_tail_present": true
+    },
+    {
+      "id": "KER-91",
+      "title": "PI05.2 — Close verified prerequisite gaps in earlier PI contracts",
+      "status": "Backlog",
+      "parentId": "KER-65",
+      "url": "https://linear.app/kerigan/issue/KER-91/pi052-close-verified-prerequisite-gaps-in-earlier-pi-contracts",
+      "authority_present": true,
+      "acceptance_present": true,
+      "evidence_tail_present": true
+    },
+    {
+      "id": "KER-92",
+      "title": "PI05.3 — Establish PyArrow baseline and remove measured repeated-scan overhead",
+      "status": "Backlog",
+      "parentId": "KER-65",
+      "url": "https://linear.app/kerigan/issue/KER-92/pi053-establish-pyarrow-baseline-and-remove-measured-repeated-scan",
+      "authority_present": true,
+      "acceptance_present": true,
+      "evidence_tail_present": true
+    },
+    {
+      "id": "KER-93",
+      "title": "PI05.4 — Qualify pinned isolated DuckDB and gate optional Polars",
+      "status": "Backlog",
+      "parentId": "KER-65",
+      "url": "https://linear.app/kerigan/issue/KER-93/pi054-qualify-pinned-isolated-duckdb-and-gate-optional-polars",
+      "authority_present": true,
+      "acceptance_present": true,
+      "evidence_tail_present": true
+    },
+    {
+      "id": "KER-94",
+      "title": "PI05.5 — Verify engine semantic parity and adversarial edge cases",
+      "status": "Backlog",
+      "parentId": "KER-65",
+      "url": "https://linear.app/kerigan/issue/KER-94/pi055-verify-engine-semantic-parity-and-adversarial-edge-cases",
+      "authority_present": true,
+      "acceptance_present": true,
+      "evidence_tail_present": true
+    },
+    {
+      "id": "KER-95",
+      "title": "PI05.6 — Verify bounded memory, spill, cancellation and recovery",
+      "status": "Backlog",
+      "parentId": "KER-65",
+      "url": "https://linear.app/kerigan/issue/KER-95/pi056-verify-bounded-memory-spill-cancellation-and-recovery",
+      "authority_present": true,
+      "acceptance_present": true,
+      "evidence_tail_present": true
+    },
+    {
+      "id": "KER-96",
+      "title": "PI05.7 — Run registered comparisons and record minimum sufficient engine choice",
+      "status": "Backlog",
+      "parentId": "KER-65",
+      "url": "https://linear.app/kerigan/issue/KER-96/pi057-run-registered-comparisons-and-record-minimum-sufficient-engine",
+      "authority_present": true,
+      "acceptance_present": true,
+      "evidence_tail_present": true
+    }
+  ]
+},
+  "research_date": "2026-10-26",
+  "scope": "Research only; no PI05 execution",
+  "local_head": "ce34cbb83338c381c1c81d4a060647f4e7f5d226",
+  "graph": {
+    "project": "home-void-Project-Scryntic",
+    "generation": "2026-10-25T21:13:33Z",
+    "tier": 2,
+    "paths": [
+      "src/scryntic/dataset/worker.py",
+      "src/scryntic/archive/normalized_parquet.py",
+      "src/scryntic/forecast/scoring.py"
+    ],
+    "coverage": "no_recorded_issue; metadata_match; best effort only",
+    "broad_search": "mature score returned 8/14; no exhaustive claim"
+  },
+  "papers": [
+    {
+      "id": "P1",
+      "title": "Robust External Hash Aggregation in the Solid State Age",
+      "doi": "10.1109/ICDE60146.2024.00288",
+      "venue": "ICDE 2024",
+      "consensus_id": "dca64afc6bbd55ac90fd72d69ffb4510",
+      "url": "https://hannes.muehleisen.org/publications/icde2024-out-of-core-kuiper-boncz-muehleisen.pdf",
+      "read_depth": "Abstract, introduction and selected experimental-setup excerpts; no replication/proof audit"
+    },
+    {
+      "id": "P2",
+      "title": "Saving Private Hash Join",
+      "doi": "10.14778/3742728.3742762",
+      "venue": "PVLDB 18(8), 2025",
+      "consensus_id": "6459d6e6d7475ea9818d02889706d5f9",
+      "url": "https://www.vldb.org/pvldb/vol18/p2748-kuiper.pdf",
+      "read_depth": "Abstract, introduction and selected experimental passages; no replication/proof audit"
+    },
+    {
+      "id": "P3",
+      "title": "Rigorous Benchmarking in Reasonable Time",
+      "doi": "10.1145/2464157.2464160",
+      "venue": "ISMM 2013",
+      "url": "https://kar.kent.ac.uk/33611/45/p63-kaliber.pdf",
+      "read_depth": "Abstract/introduction and section 9.1 excerpts; no estimator implementation or proof validation",
+      "version_note": "Institutional record distinguishes accepted manuscripts; no silent final-version equivalence"
+    },
+    {
+      "id": "P4",
+      "title": "Producing Wrong Data Without Doing Anything Obviously Wrong!",
+      "doi": "10.1145/1508244.1508275",
+      "venue": "ASPLOS 2009",
+      "url": "https://www2.ccs.neu.edu/racket/Performance/mytkowicz.pdf",
+      "read_depth": "Abstract/introduction and selected setup-randomization discussion; no replication"
+    }
+  ],
+  "projects": [
+    {
+      "repository": "duckdb/duckdb",
+      "commit": "da535f103a88b361ef7096a7267eeb6cc8fbb9d4",
+      "files": [
+        {
+          "path": "benchmark/README.md",
+          "blob": "f73f7700f9ac10b3539444b31641b307a5551d50",
+          "inspected_lines": "1-44"
+        },
+        {
+          "path": "benchmark/interpreted_benchmark.cpp",
+          "blob": "2bb5437d1de2299b2ce5f0eeac4255cde953f8c1",
+          "inspected_lines": "762-816 (bounded excerpt from retrieved file)"
+        }
+      ]
+    },
+    {
+      "repository": "ibis-project/ibis",
+      "commit": "90656f775df94ce73ef8b28577800b5c2e3ef163",
+      "files": [
+        {
+          "path": "ibis/backends/tests/test_asof_join.py",
+          "blob": "4d902a01d7d5d75fc28cd7287ba10d676e20e2de",
+          "inspected_lines": "1-230"
+        }
+      ]
+    },
+    {
+      "repository": "feast-dev/feast",
+      "commit": "1e5e90ca01b0a6b1877a6c809436f0d8d574aad6",
+      "files": [
+        {
+          "path": "docs/getting-started/concepts/point-in-time-joins.md",
+          "blob": "9e385774327e2bc8009fc57bb617c4cb0d4911d2",
+          "inspected_lines": "1-180 requested; full returned document read"
+        },
+        {
+          "path": "sdk/python/feast/infra/offline_stores/redshift.py",
+          "blob": "76effbf2aa666b7466d06dbef07f9a2b5c7849eb",
+          "inspected_lines": "1333-1399 (bounded excerpt from retrieved file)"
+        }
+      ]
+    }
+  ],
+  "saved_research": {
+    "files": [
+      "docs/research/readme.md",
+      "docs/research/consensus/readme.md",
+      "docs/research/RUST_BENCHMARKS.md",
+      "docs/research/ACADEMIC_EVIDENCE.md",
+      "docs/research/CONSENSUS_FOLLOWUP_2026-10-18.md",
+      "docs/research/consensus/PI02_PI04_FOLLOWUP_2026-10-21.md",
+      "docs/research/consensus/PAPER_RECORDS.json",
+      "docs/research/consensus/FOLLOWUP_RECORDS.json"
+    ],
+    "record_ids": [
+      "f5ef21e8509b544fba76ccc9aa2de55c",
+      "cb608bdcfc4b52baa11789d9cfee6d2c",
+      "fe5093b7ccba53cf812ebbb5a7505e42",
+      "9decc6f21ba757f5a549d9b90a77a380"
+    ],
+    "qualification": "Existing read-depth/version caveats preserved; not newly read primary papers"
+  },
+  "documentation": {
+    "access_date": "2026-10-26",
+    "duckdb_version_scope": "2.0 documentation; not an admitted engine build",
+    "arrow_version_scope": "Current Scanner docs v26; local lock 25.0.1; attempted v25 URL unavailable",
+    "urls": [
+      "https://duckdb.org/docs/2.0/operations_manual/securing_duckdb/overview",
+      "https://duckdb.org/docs/2.0/guides/performance/how_to_tune_workloads",
+      "https://duckdb.org/docs/2.0/sql/data_types/timestamp",
+      "https://duckdb.org/docs/2.0/sql/data_types/numeric",
+      "https://duckdb.org/docs/2.0/operations_manual/non-deterministic_behavior",
+      "https://www.duckdb.org/docs/current/sql/functions/aggregates",
+      "https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Scanner.html",
+      "https://docs.pola.rs/user-guide/concepts/streaming/",
+      "https://docs.kernel.org/7.0/admin-guide/cgroup-v2.html"
+    ]
+  },
+  "retrieval": {
+    "consensus": {
+      "search_calls": 1,
+      "fetch_calls": 2,
+      "remaining_balance": "unknown"
+    },
+    "local_firecrawl": "search failed before retrieval: SSH configuration permissions; not repaired",
+    "cloud_firecrawl": "not used",
+    "github": "Read-only public source retrieval; no execution",
+    "failed_reference": "h2oai/db-benchmark duckdb/groupby-duckdb.py returned 404, excluded",
+    "linear_context": "get_agent_context returned Tool not found; get_issue/list_issues succeeded",
+    "local_ai": "Provisional extracts verified against source; handoff extraction missed PI05 and was superseded by direct read"
+  },
+  "linear_plan": [
+    {
+      "key": "PI05.1",
+      "title": "PI05.1 — Freeze analytical workloads, semantic oracle and measurement protocol",
+      "description": "## Authority\n\nFuture PI05 work only. Keep Backlog until the operator explicitly approves execution. Research preparation does not authorize implementation, engine installation, benchmarking, fitting, calibration, final-holdout access, ModelRelease, production promotion or financial execution. Preserve ARCHITECTURE.md and PI00 policy. No arbitrary SQL, private-data upload or relaxation of worker isolation.\n\n## Scope\n\nPrepare the preregistration for KER-65 on admitted development/synthetic inputs. Freeze workload IDs/manifests/hashes, complete result shapes and owner-produced immutable PI04 projections at a fixed as-of. Current ForecastScores.mature samples owner time and appends events; do not benchmark by mutating live maturation state.\n\n## Acceptance for future execution\n\n- Exact fixture provenance, selected input/revision/origin/common-pair/exclusion identities and archive-format admission.\n- Independent small hand-derived oracle cases alongside the unchanged PyArrow reference; exact identity/type/time/mask fields versus separately registered numeric tolerances.\n- Candidate/build/configuration budget, host/profile/resource and output limits, service objective and minimum meaningful gain.\n- Phase and full-job timing boundaries, complete output consumption/verification/acceptance cost, RSS/cgroup/spill/logical/device-I/O definitions.\n- Fresh-process versus warm/cache regimes, seeded interleaved candidate order, pilot/decision run separation, independent-run uncertainty and repetition/stop budget.\n- No final labels or fitting. Execution order may be randomized; chronology/revision precedence may not. Older 20-asset/1–100M-row profiles and 2x/40% Rust proposals are not approved PI05 thresholds.\n\nOutcome is a reviewable protocol; unresolved values block execution.\n\n## Preparation evidence\n\nLocal research: `docs/research/PI05_RESEARCH_FOUNDATION_2026-10-26.md` and `docs/research/PI05_BENCHMARK_PREPARATION_2026-10-24.md`. Checkout inspected: `ce34cbb83338c381c1c81d4a060647f4e7f5d226`. Preparation is not measured performance or an approved execution protocol."
+    },
+    {
+      "key": "PI05.2",
+      "title": "PI05.2 — Close verified prerequisite gaps in earlier PI contracts",
+      "description": "## Authority\n\nFuture PI05 work only. Keep Backlog until the operator explicitly approves execution. Research preparation does not authorize implementation, engine installation, benchmarking, fitting, calibration, final-holdout access, ModelRelease, production promotion or financial execution. Preserve ARCHITECTURE.md and PI00 policy. No arbitrary SQL, private-data upload or relaxation of worker isolation.\n\n## Scope\n\nThe operator permits necessary changes to earlier steps to be scoped within PI05. First create a gap/disposition record for PI01–PI04; do not assume defects or reopen Done issues. Suggested questions: immutable benchmark input/export and fixed as-of; integrity-preserving validation reuse; scan-count/phase observability; revision, reference, scorer and first-score-as-of preservation.\n\n## Acceptance for future execution\n\nFor each gap record exact current-source evidence, affected contract, why KER-65 cannot meet its criteria without the change, smallest compatible fix, regression checks and rollback. Mark adequate contracts no-change. Current mature() owner writes/current-clock semantics are intentional workflow evidence, not an asserted bug.\n\nOnly separately approved implementation necessary for PI05 may follow. Preserve canonical schemas/identities, archive admission, owner SQLite/ledger semantics, PI00 inference/holdout policy and accepted PI02/03/04 history. A fixture adapter may suffice. Do not implement PI06/PI07 incidentally. Stop affected work for an architecture/security contradiction rather than changing policy. Retain compatibility and relevant rejection/restart/parity evidence.\n\nDeliver a prerequisite disposition and, only when authorized, bounded verified corrections; retain earlier Done history.\n\n## Preparation evidence\n\nLocal research: `docs/research/PI05_RESEARCH_FOUNDATION_2026-10-26.md` and `docs/research/PI05_BENCHMARK_PREPARATION_2026-10-24.md`. Checkout inspected: `ce34cbb83338c381c1c81d4a060647f4e7f5d226`. Preparation is not measured performance or an approved execution protocol."
+    },
+    {
+      "key": "PI05.3",
+      "title": "PI05.3 — Establish PyArrow baseline and remove measured repeated-scan overhead",
+      "description": "## Authority\n\nFuture PI05 work only. Keep Backlog until the operator explicitly approves execution. Research preparation does not authorize implementation, engine installation, benchmarking, fitting, calibration, final-holdout access, ModelRelease, production promotion or financial execution. Preserve ARCHITECTURE.md and PI00 policy. No arbitrary SQL, private-data upload or relaxation of worker isolation.\n\n## Proposed sequence\n\nAfter PI05.1 and necessary PI05.2 dispositions; execution requires separate approval.\n\n## Acceptance for future execution\n\nMeasure the unchanged locked PyArrow 25.0.1 path first, including hash/metadata/lineage validation, decode, Python retention, page selection, IPC and complete output acceptance. Record full-job time, peak memory, opens/scans, considered/eligible/excluded rows and bytes.\n\nCurrent dataset/worker.py _inspect scans all batches for lineage/count despite returning a page; normalized_parquet.decode_normalized_path materializes a tuple. Treat these as profiling hypotheses, not proven bottlenecks. Compare only justified projection/batching/one-job immutable-validation reuse variants under identical assurance. Include corrupt data outside selected pages/columns; no early LIMIT bypass or pathname-only trust cache. Account for hashing warming file cache.\n\nRetain a reversible unchanged oracle and preserve the current exact one-row-group normalized format unless a separate compatible format change is approved. Do not claim streaming/zero-copy from API names; measure retained objects and full process cost.\n\n## Preparation evidence\n\nLocal research: `docs/research/PI05_RESEARCH_FOUNDATION_2026-10-26.md` and `docs/research/PI05_BENCHMARK_PREPARATION_2026-10-24.md`. Checkout inspected: `ce34cbb83338c381c1c81d4a060647f4e7f5d226`. Preparation is not measured performance or an approved execution protocol."
+    },
+    {
+      "key": "PI05.4",
+      "title": "PI05.4 — Qualify pinned isolated DuckDB and gate optional Polars",
+      "description": "## Authority\n\nFuture PI05 work only. Keep Backlog until the operator explicitly approves execution. Research preparation does not authorize implementation, engine installation, benchmarking, fitting, calibration, final-holdout access, ModelRelease, production promotion or financial execution. Preserve ARCHITECTURE.md and PI00 policy. No arbitrary SQL, private-data upload or relaxation of worker isolation.\n\n## Proposed sequence\n\nAfter workload/prerequisite registration and the unchanged baseline; future execution only.\n\n## Acceptance for future execution\n\nPin engine/package/build/runtime/extension hashes and platform/profile. Test app-owned fixed query templates with typed values and parent-admitted exact manifest files; no arbitrary SQL, paths/globs, model code, replacement callbacks or dynamic UDF/plugins. No coordinator/collector writable DB, ambient/exchange credentials or network.\n\nTrusted setup must verify effective file allowlists, disable unapproved extension install/autoload/loading, lock supported configuration, and enforce OS isolation plus CPU/task/RAM/temp/output/deadline bounds. Disabling external access also affects ordinary file readers; test the actual allowed input path. A configuration string or read-only DB flag is not an OS sandbox.\n\nRecord thread/helper-pool startup, native allocations, output collection, plan and spill capability under the approved launcher. If a candidate requires additional privileges/threads/profile, classify unsupported and obtain separate profile review; do not relax limits silently. Test selected-version timestamp/Decimal/interchange behavior. Current public docs are DuckDB 2.0 and Arrow 26; they do not qualify a chosen wheel or locked Arrow 25.0.1.\n\nPolars is optional: add one pinned variant only for a documented unresolved workload; inspect streaming fallback and complete result materialization. Keeping PyArrow is valid.\n\nReferences: https://duckdb.org/docs/2.0/operations_manual/securing_duckdb/overview ; https://docs.pola.rs/user-guide/concepts/streaming/\n\n## Preparation evidence\n\nLocal research: `docs/research/PI05_RESEARCH_FOUNDATION_2026-10-26.md` and `docs/research/PI05_BENCHMARK_PREPARATION_2026-10-24.md`. Checkout inspected: `ce34cbb83338c381c1c81d4a060647f4e7f5d226`. Preparation is not measured performance or an approved execution protocol."
+    },
+    {
+      "key": "PI05.5",
+      "title": "PI05.5 — Verify engine semantic parity and adversarial edge cases",
+      "description": "## Authority\n\nFuture PI05 work only. Keep Backlog until the operator explicitly approves execution. Research preparation does not authorize implementation, engine installation, benchmarking, fitting, calibration, final-holdout access, ModelRelease, production promotion or financial execution. Preserve ARCHITECTURE.md and PI00 policy. No arbitrary SQL, private-data upload or relaxation of worker isolation.\n\n## Acceptance for future execution\n\nOn registered immutable fixtures, compare exact schemas/dtypes/units, input/lineage/revision/forecast/outcome IDs, origin/endpoints/availability, order/tie-breakers, pending/invalid/abstained/null masks, common-pair populations, exclusion reasons/denominators and score vintage/scorer identity. Preserve Decimal28 PI04 scores unless separately changed; tolerances cannot excuse different eligibility or fact selection.\n\nInclude ns-separated facts, equal availability/origin boundaries, timezone conversion, latest-revision leakage, duplicate keys/fanout/skew, empty groups, NULL versus NaN/zero, near-zero signs, overflow, Decimal division/casts, quantiles, parallel reductions, missing intervals and malformed rows outside a requested page. Add physical-order/batch-partition invariance and contract-defined revision-impact checks. Use hand-derived cases so two engines cannot share a mistaken oracle.\n\nCross-project lessons: Feast's PIT default only constrains event time; created-time filtering is optional and still not Scryntic's uncertainty-plane policy. Ibis as-of tests use check_dtype=False for timestamp differences; Scryntic must assert its own exact precision/types. DuckDB 2.0 has ns-specific types: qualify the actual conversion rather than claiming all timestamps are equivalent or zoned ns impossible.\n\nAny unexplained semantic difference disqualifies the candidate before speed ranking. Do not add new fitted features or alter the registered statistical inference.\n\nPinned examples are in the local source register; official docs: https://duckdb.org/docs/2.0/sql/data_types/timestamp ; https://duckdb.org/docs/2.0/sql/data_types/numeric\n\n## Preparation evidence\n\nLocal research: `docs/research/PI05_RESEARCH_FOUNDATION_2026-10-26.md` and `docs/research/PI05_BENCHMARK_PREPARATION_2026-10-24.md`. Checkout inspected: `ce34cbb83338c381c1c81d4a060647f4e7f5d226`. Preparation is not measured performance or an approved execution protocol."
+    },
+    {
+      "key": "PI05.6",
+      "title": "PI05.6 — Verify bounded memory, spill, cancellation and recovery",
+      "description": "## Authority\n\nFuture PI05 work only. Keep Backlog until the operator explicitly approves execution. Research preparation does not authorize implementation, engine installation, benchmarking, fitting, calibration, final-holdout access, ModelRelease, production promotion or financial execution. Preserve ARCHITECTURE.md and PI00 policy. No arbitrary SQL, private-data upload or relaxation of worker isolation.\n\n## Acceptance for future execution\n\nUnder approved isolation, exercise memory/spill onset, high group cardinality, wide/string keys, skew and join fanout, multiple blocking operators, output pressure, temp quota/full-disk, malformed input, query cancellation, owner deadline, crash/OOM and restart. Include unsupported spilling/streaming states. Stress fixture size is registered and bounded; no synthetic capacity claim.\n\nMeasure whole worker/process-tree peak RSS separately from engine allocation and cgroup peak; capture cgroup memory/events, tasks, spill/output bytes and logical versus device I/O with actual host/kernel support. File cache/tmpfs and lifetime peak reuse can invalidate naive comparisons. Use fresh per-run accounting or a supported reset protocol; do not change global caches/host policy.\n\nAssert all owned native/background tasks stop within the registered bound, temp/output cleanup completes, original immutable objects remain unchanged, and no partial/late/expired-fence result is accepted. Preserve effective file/network/extension denial, pins and owner authority. API interrupt success alone is insufficient. No unsafe fallback, silent quota increase or coordinator-side parsing escape.\n\nKeep every timeout/OOM/cancel/failure visible and include relevant negative/recovery checks.\n\nResearch: ICDE 2024 DOI 10.1109/ICDE60146.2024.00288; PVLDB 2025 DOI 10.14778/3742728.3742762. These motivate tests, not Scryntic performance/security claims.\n\n## Preparation evidence\n\nLocal research: `docs/research/PI05_RESEARCH_FOUNDATION_2026-10-26.md` and `docs/research/PI05_BENCHMARK_PREPARATION_2026-10-24.md`. Checkout inspected: `ce34cbb83338c381c1c81d4a060647f4e7f5d226`. Preparation is not measured performance or an approved execution protocol."
+    },
+    {
+      "key": "PI05.7",
+      "title": "PI05.7 — Run registered comparisons and record minimum sufficient engine choice",
+      "description": "## Authority\n\nFuture PI05 work only. Keep Backlog until the operator explicitly approves execution. Research preparation does not authorize implementation, engine installation, benchmarking, fitting, calibration, final-holdout access, ModelRelease, production promotion or financial execution. Preserve ARCHITECTURE.md and PI00 policy. No arbitrary SQL, private-data upload or relaxation of worker isolation.\n\n## Proposed sequence\n\nOnly after explicit PI05 execution approval and the registered protocol, prerequisite dispositions, unchanged baseline and candidate parity/isolation/failure gates.\n\n## Acceptance for future execution\n\nCompare identical admitted inputs and complete result/acceptance contracts across the unchanged path, justified minimal PyArrow improvements, one qualified DuckDB and optional justified Polars. Pin all code/lock/plan/config/host/fixture versions. Include startup, validation, scan, materialization, IPC, output verification/acceptance and cleanup; report operator phases separately from full-job totals.\n\nRetain raw run records, randomized candidate execution order, declared cache conditions, independent-run effect uncertainty, RSS/cgroup/spill/bytes/scan counts, failed and timed-out runs. Do not count correlated query iterations as independent processes or use the fastest success. Register any revised exploratory configuration as a new candidate; no post-hoc threshold or final-label tuning.\n\nDecision must meet predeclared material service-objective and resource criteria after all exact semantic/security gates. Select minimum sufficient pinned engine/version, retain current PyArrow, or state evidence insufficient. Record rejected candidates, limits, reversible rollout requirements and requalification triggers (build/dependency/profile/schema/plan/hardware changes). No invented capacity, Rust gain, predictive skill, automatic production rollout or old-path deprecation.\n\nMethods: Kalibera/Jones ISMM 2013 DOI 10.1145/2464157.2464160 and Mytkowicz et al. ASPLOS 2009 DOI 10.1145/1508244.1508275. Forecast DM/SPA procedures are not engine-timing tests.\n\n## Preparation evidence\n\nLocal research: `docs/research/PI05_RESEARCH_FOUNDATION_2026-10-26.md` and `docs/research/PI05_BENCHMARK_PREPARATION_2026-10-24.md`. Checkout inspected: `ce34cbb83338c381c1c81d4a060647f4e7f5d226`. Preparation is not measured performance or an approved execution protocol."
+    }
+  ]
+}

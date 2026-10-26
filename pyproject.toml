@@ -22,6 +22,8 @@ tui = ["textual==8.2.8"]
 # Add dependencies only when their implementation task is approved.
 collector = ["pyarrow==25.0.1"]
 analysis = ["asyncssh==2.24.0", "pyarrow==25.0.1"]
+# PI05 comparison only; never installed by the default/product profiles.
+benchmark = ["duckdb==2.0.0", "pyarrow==25.0.1"]
 dev = [
     "coverage==7.16.2",
     "mypy==2.3.1",

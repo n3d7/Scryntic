@@ -1,0 +1,23 @@
+{
+  "controller_sha256": "f52b23b65ddcef15d9fa4602bce90527a77a996211c676c3ee7fe758478ab8b3",
+  "controls": "same frozen v3 worker/source/runtime/fixtures/configurations, exact semantic oracle and original adoption/resource gates; no data-dependent tuning",
+  "environment": "recovery uses one new boot epoch after process-logger installation; comparisons remain within workload, not across boot epochs",
+  "exclude_from_comparison": "third partial workload:11 completed plus1 cancelled attempt; all raw evidence preserved",
+  "failure_rule": "retain result and stop on any candidate/control/source/runtime/boot failure; no automatic repeat",
+  "limits": "administrative protocol amendment after partial execution; exploratory bounded synthetic comparison on one unstable host, not a universal or predictive claim",
+  "maximum_total_attempts": 84,
+  "original_completed_records": 59,
+  "original_consumed_attempts": 60,
+  "original_pending_disposition": "operator-cancelled; no report; preserved and counted, not silently repeated or classified as an engine failure",
+  "previous_campaign_sha256": "56e3a6737907d62a7b09d5af365d1165097d4595dbceb4d595a4711fb2dedaea",
+  "protocol_sha256": "412895fb9c19a90f2cfdfe6d57f487addfd0bc613dff611b69299040f3694b4b",
+  "reason": "Explicit operator stop at physical attempt60, followed by host reboot; incomplete within-workload pairs must not combine different boots.",
+  "recovery_attempts": 24,
+  "recovery_workload": "hourly-4096-gaps",
+  "registered_at_utc": "2026-10-26T14:25:13.035523+00:00",
+  "registered_before_recovery_execution": true,
+  "retain": "first48 records, the two complete workloads with one boot epoch per workload",
+  "schedule": "same original seed6505 and registered order for third workload;1 warmup+7 measured process runs per candidate",
+  "schema": "scryntic.pi05.protocol-amendment.v1",
+  "single_use": "durable exclusive root-owned fixed claim keyed to the previous campaign digest; no automatic resume, retry or new evidence-directory bypass"
+}

@@ -21,6 +21,7 @@ from scryntic.dataset.protocol import (
     MAX_PROVENANCE_BYTES,
     MAX_REQUEST_BYTES,
     MAX_RESULT_BYTES,
+    MAX_SCAN_ROWS,
     clock_from,
     primitive_document,
 )
@@ -296,7 +297,19 @@ def _inspection_file(
     integer(request["row_count"], 0)
     integer(request["offset"], 0)
     integer(request["limit"], 1)
-    if request["row_count"] > limits.max_records or request["limit"] > MAX_INSPECT_ROWS:
+    scan = request.get("operation") == "scan"
+    maximum = min(limits.max_records, MAX_SCAN_ROWS) if scan else MAX_INSPECT_ROWS
+    if (
+        request["row_count"] > limits.max_records
+        or request["limit"] > maximum
+        or (
+            scan
+            and (
+                request["offset"] != 0
+                or request["limit"] != max(1, request["row_count"])
+            )
+        )
+    ):
         raise ValueError("Inspection limit")
     parquet = Path("/input/parquet").read_bytes()
     if (
@@ -322,7 +335,12 @@ def _inspection_file(
     return manifest, file
 
 
-def _inspect(request: dict[str, Any], limits: ImportLimits) -> dict[str, Any]:
+def _inspect(
+    request: dict[str, Any],
+    limits: ImportLimits,
+    *,
+    usage: dict[str, int] | None = None,
+) -> dict[str, Any]:
     manifest, file = _inspection_file(request, limits)
     total = decoded = 0
     rows: list[dict[str, Any]] = []
@@ -342,6 +360,8 @@ def _inspect(request: dict[str, Any], limits: ImportLimits) -> dict[str, Any]:
             total += 1
     if total != request["row_count"]:
         raise ValueError("Inspection row count mismatch")
+    if usage is not None:
+        usage.update(decoded_bytes=decoded, rows_considered=total, scan_count=1)
     return {"rows": rows}
 
 
@@ -358,7 +378,7 @@ def run(arguments: list[str]) -> None:
     operation = request.get("operation")
     if operation == "build":
         result = _build(request, limits)
-    elif operation == "inspect":
+    elif operation in ("inspect", "scan"):
         result = _inspect(request, limits)
     else:
         raise ValueError("Unsupported analytical operation")
